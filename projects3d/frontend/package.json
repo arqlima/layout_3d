@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "test": "node scripts/test-selection.mjs",
     "build": "node scripts/stage-vendor.mjs && tsc --noEmit && vite build"
   },
   "dependencies": {

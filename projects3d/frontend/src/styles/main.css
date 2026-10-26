@@ -33,6 +33,16 @@ h1 em { color: #8b9c8a; font-weight: 500; font-style: normal; }
 .scene-arrow { margin-left: auto; align-self: flex-start; color: #9aaba1; font-size: 16px; }
 .layer-section { margin-top: 29px; padding-top: 24px; border-top: 1px solid #dce1d8; }
 .layer-section[hidden] { display: none; }
+.selection-modes { display: flex; gap: 7px; margin-bottom: 22px; }
+.selection-modes[hidden] { display: none; }
+.selection-modes button { flex: 1; min-height: 34px; border: 1px solid #49615d; border-radius: 4px; background: #26373a; color: #d6e8de; cursor: pointer; font: 700 12px/1 'Manrope', sans-serif; }
+.selection-modes button[aria-pressed="true"] { border-color: #81b49d; background: #437764; color: #fff; }
+.selection-modes button:focus-visible, .hide-unchecked input:focus-visible { outline: 2px solid #81b49d; outline-offset: 3px; }
+.hide-unchecked { display: flex; align-items: center; gap: 9px; margin-top: 20px; color: #c2d7cc; font-size: 11px; cursor: pointer; }
+.hide-unchecked input { appearance: none; flex: 0 0 32px; width: 32px; height: 18px; margin: 0; padding: 2px; border: 1px solid #779087; border-radius: 12px; background: #26373a; cursor: pointer; }
+.hide-unchecked input::before { content: ''; display: block; width: 12px; height: 12px; border-radius: 50%; background: #a3b8ae; transition: transform .15s; }
+.hide-unchecked input:checked { background: #437764; border-color: #81b49d; }
+.hide-unchecked input:checked::before { transform: translateX(14px); background: #fff; }
 .layer-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .layer-summary { color: #91a297; white-space: nowrap; font: 700 9px/1 'Manrope', sans-serif; }
 .layer-actions { display: flex; gap: 7px; margin: 16px 0 10px; }

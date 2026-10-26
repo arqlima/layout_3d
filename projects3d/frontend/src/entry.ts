@@ -23,9 +23,12 @@ async function start(): Promise<void> {
     import('./viewer/ArchitecturalViewer'), import('./viewer/demoScene'),
   ]);
   let objectData = new Map<string, ObjectRecord>();
+  let refreshTotals = () => {};
   const viewer = new ArchitecturalViewer(ui.viewport, (selection) => {
     const record = selection?.id ? objectData.get(selection.id.toLowerCase()) : undefined;
     ui.setSelection(selection, record);
+    ui.updateLayers(viewer.getLayers());
+    refreshTotals();
   }, (state) => ui.setViewState(state));
   activeViewer = viewer;
   viewer.setActive(massingVisible);
@@ -69,10 +72,16 @@ async function start(): Promise<void> {
       }
       usageFilter.setTotals(totals);
     };
+    refreshTotals = updateUsageTotals;
     ui.setLayers(
       viewer.getLayers(),
       (index, visible) => { viewer.setLayerVisible(index, visible); updateUsageTotals(); },
       (visible) => { viewer.setAllLayersVisible(visible); updateUsageTotals(); },
+      {
+        onModeChange: mode => viewer.setSelectionMode(mode),
+        onHideUncheckedChange: hide => { viewer.setHideUnchecked(hide); updateUsageTotals(); },
+        onToggleMany: (indices, checked) => { viewer.setLayersChecked(indices, checked); updateUsageTotals(); },
+      },
     );
     ui.setElevationFilter(viewer.getElevationLevels(), (base, top) => {
       viewer.setElevationRange(base, top);

@@ -1,4 +1,5 @@
 import type { LayerInfo } from '../types/layers';
+import { mountLayerPanel, type LayerPanelActions } from './LayerPanel';
 import type { ObjectRecord, ObjectSelection } from '../types/model';
 import { mountElevationFilter } from './ElevationFilter';
 import { mountUsageFilter, type UsageFilter } from './UsageFilter';
@@ -18,7 +19,8 @@ export interface AppElements {
   setBrand(name: string, markUrl: string): void;
   setSceneInfo(title: string, subtitle: string, status: string): void;
   setSelection(selection: ObjectSelection | null, record?: ObjectRecord): void;
-  setLayers(layers: LayerInfo[], onToggle: (index: number, visible: boolean) => void, onSetAll: (visible: boolean) => void): void;
+  setLayers(layers: LayerInfo[], onToggle: (index: number, visible: boolean) => void, onSetAll: (visible: boolean) => void, actions: LayerPanelActions): void;
+  updateLayers(layers: LayerInfo[]): void;
   setElevationFilter(levels: number[], onChange: (base: number, top: number) => void): void;
   setUsageFilter(onChange: (active: ReadonlySet<UsageCode>) => void): UsageFilter;
   setViewActions(onView: (view: StandardView) => void, onProjection: (mode: ProjectionMode) => void): void;
@@ -49,6 +51,7 @@ export function createApp(mount: HTMLElement): AppElements {
       <main id="massing-panel" class="workspace" role="tabpanel" aria-labelledby="tab-massing" tabindex="0" hidden>
         <aside class="sidebar" aria-label="Informações do estudo">
           <div class="sidebar-inner">
+            <div id="selection-modes" class="selection-modes" role="group" aria-label="Selecionar objetos por" hidden><button type="button" data-mode="name" aria-pressed="true">Nome</button><button type="button" data-mode="use" aria-pressed="false">Uso</button><button type="button" data-mode="group" aria-pressed="false">Grupo</button></div>
             <div class="eyebrow"><span class="eyebrow-line"></span> ESTUDO 001 <span class="eyebrow-count">/ 001</span></div>
             <p class="intro">Um espaço de trabalho para explorar modelos arquitetônicos com liberdade de movimento e clareza visual.</p>
             <div class="sidebar-divider"></div>
@@ -60,8 +63,9 @@ export function createApp(mount: HTMLElement): AppElements {
             </div>
             <section id="layer-section" class="layer-section" aria-label="Filtro de layers" hidden>
               <div class="layer-heading"><span class="detail-label">LAYERS DO MODELO</span><span id="layer-summary" class="layer-summary"></span></div>
-              <div class="layer-actions"><button id="show-layers" type="button">Mostrar todas</button><button id="hide-layers" type="button">Ocultar todas</button></div>
+              <div class="layer-actions"><button id="show-layers" type="button">Marcar todos</button><button id="hide-layers" type="button">Marcar nenhum</button></div>
               <div id="layer-list" class="layer-list"></div>
+              <label class="hide-unchecked"><input id="hide-unchecked" type="checkbox" role="switch" /> Ocultar desmarcados</label>
             </section>
             <div class="sidebar-spacer"></div>
             <div class="controls-guide">
@@ -177,6 +181,7 @@ export function createApp(mount: HTMLElement): AppElements {
   if (!viewport || !fitButton || !homeButton || !clearSelectionButton || !brand || !brandName || !brandMark || !selectionHint || !selectionName || !selectionArea || !selectionUse || !selectionElevation || !elevationFilter || !usageFilter || !viewCubePanel || !viewName || !viewProjection || !sceneTitle || !sceneSubtitle || !sceneStatus || !sidebar || !layerSection || !layerList || !layerSummary || !showLayers || !hideLayers) throw new Error('Interface incompleta.');
   const metric = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const viewCube = createViewCube(viewCubePanel);
+  let updateLayerPanel = (_layers: LayerInfo[]) => {};
   return {
     viewport,
     fitButton,
@@ -221,60 +226,11 @@ export function createApp(mount: HTMLElement): AppElements {
       sceneSubtitle.textContent = subtitle;
       sceneStatus.textContent = status;
     },
-    setLayers(layers, onToggle, onSetAll) {
+    setLayers(layers, onToggle, onSetAll, actions) {
       layerSection.hidden = layers.length === 0;
       sidebar.classList.toggle('has-layers', layers.length > 0);
-      layerList.replaceChildren();
-      if (layers.length === 0) return;
-
-      const updateSummary = () => {
-        const visible = layerList.querySelectorAll('input:checked').length;
-        layerSummary.textContent = `${visible} / ${layers.length} visíveis`;
-      };
-
-      for (const layer of layers) {
-        const row = document.createElement('label');
-        row.className = 'layer-row';
-        const input = document.createElement('input');
-        input.type = 'checkbox';
-        input.checked = layer.visible;
-        input.addEventListener('change', () => {
-          onToggle(layer.index, input.checked);
-          updateSummary();
-        });
-        const name = document.createElement('span');
-        name.className = 'layer-name';
-        name.textContent = layer.name;
-        const swatch = document.createElement('span');
-        swatch.className = 'layer-swatch';
-        swatch.setAttribute('aria-hidden', 'true');
-        const swatchFill = document.createElement('span');
-        swatchFill.style.backgroundColor = layer.color;
-        swatchFill.style.opacity = String(layer.opacityMin);
-        swatch.append(swatchFill);
-        const opacity = document.createElement('span');
-        opacity.className = 'layer-opacity';
-        if (layer.opacityMin < 0.999) {
-          const min = Math.round(layer.opacityMin * 100);
-          const max = Math.round(layer.opacityMax * 100);
-          opacity.textContent = min === max ? `${min}%` : `${min}–${max}%`;
-          opacity.title = 'Opacidade dos objetos desta layer';
-        }
-        const count = document.createElement('span');
-        count.className = 'layer-count';
-        count.textContent = String(layer.objectCount);
-        row.append(input, swatch, name, opacity, count);
-        layerList.append(row);
-      }
-
-      const setAll = (visible: boolean) => {
-        layerList.querySelectorAll<HTMLInputElement>('input').forEach((input) => { input.checked = visible; });
-        onSetAll(visible);
-        updateSummary();
-      };
-      showLayers.onclick = () => setAll(true);
-      hideLayers.onclick = () => setAll(false);
-      updateSummary();
+      updateLayerPanel = mountLayerPanel(mount, layers, onToggle, onSetAll, actions);
     },
+    updateLayers(layers) { updateLayerPanel(layers); },
   };
 }

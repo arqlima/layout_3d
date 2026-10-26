@@ -126,3 +126,25 @@ o CSV ou o vídeo pelo cadastro, não é necessário recompilar.
 .venv/Scripts/python.exe manage.py test
 .venv/Scripts/python.exe manage.py makemigrations --check --dry-run
 ```
+
+### Sele??o por Nome, Uso ou Grupo
+
+No Estudo de massa, os bot?es acima da cena atual definem como agrupar a lista
+lateral e a sele??o ao clicar no 3D. **Nome** seleciona a layer clicada;
+**Uso** seleciona todas as layers com o mesmo uso; **Grupo** seleciona todas as
+layers do mesmo grupo. As marca??es s?o compartilhadas entre os tr?s modos;
+um checkbox parcialmente marcado indica que apenas parte das layers daquela
+categoria est? marcada.
+
+Os nomes seguem `grupo-nome-uso`, por exemplo `00-Res_des-PRIV`: grupo `00`,
+nome `Res_des`, uso `PRIV`. O nome pode conter h?fens e sublinhados; os usos
+ignoram diferen?as entre mai?sculas e min?sculas. Layers fora dessa conven??o
+continuam na lista Nome e aparecem em **Sem uso** e **Sem grupo** nos outros modos.
+
+**Marcar todos** e **Marcar nenhum** alteram todas as marca??es. Objetos
+desmarcados ficam esmaecidos; ligue **Ocultar desmarcados** para remov?-los da
+vista, inclusive suas arestas. Desligar o interruptor restaura o esmaecimento.
+O filtro de cotas continua sendo respeitado.
+
+Para testar a sele??o sem precisar de um contexto WebGL, use Node.js 22.13+
+e execute `pnpm test` em `projects3d/frontend`.
