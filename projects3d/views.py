@@ -57,6 +57,7 @@ class ProjectDetailView(LoginRequiredMixin,DetailView):
             'objectDataUrl': reverse('projects3d:project-object-data', args=[project.pk]),
             'simulationExportUrl': reverse('projects3d:project-simulation-export', args=[project.pk]),
             'csrfToken': get_token(self.request),
+            'iconSpriteUrl': static('projects3d/design-system/icons.svg'),
             'videoUrl': project.location_video.url if project.location_video else None,
             'rhinoLibraryUrl': static('projects3d/viewer/vendor/rhino3dm/'),
             'listUrl': reverse('projects3d:project-list'),

@@ -11,11 +11,13 @@ import type { UsageCode } from '../types/model';
 import { mountLocationVideo } from './LocationVideo';
 import { projectConfig } from '../data/config';
 import { mountProjectPanels } from './ProjectPanels';
+import { iconMarkup } from './icons';
 
 export interface AppElements {
   viewport: HTMLDivElement;
   fitButton: HTMLButtonElement;
   homeButton: HTMLButtonElement;
+  exportButton: HTMLButtonElement;
   clearSelectionButton: HTMLButtonElement;
   sceneToolbar: HTMLElement;
   simulationPanel: HTMLElement;
@@ -39,18 +41,19 @@ export function createApp(mount: HTMLElement): AppElements {
     <div class="app-shell">
       <header class="topbar">
         <div class="brand" aria-label="Visualização arquitetônica">
+          ${iconMarkup('box')}
           <img id="brand-mark" class="brand-mark" alt="" width="46" height="46" hidden />
           <div><strong id="brand-name">Visualização arquitetônica</strong><small>VISUALIZAÇÃO ARQUITETÔNICA</small></div>
         </div>
         <nav class="section-tabs" aria-label="Seções do projeto" role="tablist">
-          <button id="tab-cover" class="section-tab" type="button" role="tab" aria-selected="true" aria-controls="cover-panel">Capa</button>
-          <button id="tab-location" class="section-tab" type="button" role="tab" aria-selected="false" aria-controls="location-panel" tabindex="-1">Localização</button>
-          <button id="tab-guidelines" class="section-tab" type="button" role="tab" aria-selected="false" aria-controls="guidelines-panel" tabindex="-1">Diretrizes</button>
-          <button id="tab-massing" class="section-tab" type="button" role="tab" aria-selected="false" aria-controls="massing-panel" tabindex="-1">Estudo de massa</button>
-          <button id="tab-concept" class="section-tab" type="button" role="tab" aria-selected="false" aria-controls="concept-panel" tabindex="-1">Conceito</button>
-          <button id="tab-simulation" class="section-tab" type="button" role="tab" aria-selected="false" aria-controls="simulation-panel" tabindex="-1">Simulação</button>
+          <button id="tab-cover" class="section-tab" type="button" role="tab" aria-selected="true" aria-controls="cover-panel">${iconMarkup('home')} Capa</button>
+          <button id="tab-location" class="section-tab" type="button" role="tab" aria-selected="false" aria-controls="location-panel" tabindex="-1">${iconMarkup('map-pin')} Localização</button>
+          <button id="tab-guidelines" class="section-tab" type="button" role="tab" aria-selected="false" aria-controls="guidelines-panel" tabindex="-1">${iconMarkup('file-text')} Diretrizes</button>
+          <button id="tab-massing" class="section-tab" type="button" role="tab" aria-selected="false" aria-controls="massing-panel" tabindex="-1">${iconMarkup('box')} Estudo de massa</button>
+          <button id="tab-concept" class="section-tab" type="button" role="tab" aria-selected="false" aria-controls="concept-panel" tabindex="-1">${iconMarkup('image')} Conceito</button>
+          <button id="tab-simulation" class="section-tab" type="button" role="tab" aria-selected="false" aria-controls="simulation-panel" tabindex="-1">${iconMarkup('calculator')} Simulação</button>
         </nav>
-        <div class="topbar-right"><a id="back-projects" class="back-projects">← Projetos</a><span class="project-tag"><span class="status-dot"></span> <span id="scene-status">PROJETO</span></span></div>
+        <div class="topbar-right"><a id="back-projects" class="back-projects">${iconMarkup('arrow-left')} Projetos</a><span class="project-tag"><span class="status-dot"></span> <span id="scene-status">PROJETO</span></span></div>
       </header>
 
       <section id="cover-panel" class="project-cover-panel" role="tabpanel" aria-labelledby="tab-cover" tabindex="0"></section>
@@ -68,7 +71,7 @@ export function createApp(mount: HTMLElement): AppElements {
             <div class="scene-card">
               <div class="scene-thumb" aria-hidden="true"><span class="thumb-building"></span></div>
               <div><strong id="scene-title">Pavilhão de estudo</strong><span id="scene-subtitle">Volumes demonstrativos</span></div>
-              <span class="scene-arrow" aria-hidden="true">↗</span>
+              <span class="scene-arrow" aria-hidden="true">${iconMarkup('arrow-up-right')}</span>
             </div>
             <section id="layer-section" class="layer-section" aria-label="Filtro de layers" hidden>
               <div class="layer-heading"><span class="detail-label">LAYERS DO MODELO</span><span id="layer-summary" class="layer-summary"></span></div>
@@ -84,9 +87,9 @@ export function createApp(mount: HTMLElement): AppElements {
             <div class="sidebar-spacer"></div>
             <div class="controls-guide">
               <div class="detail-label">NAVEGAÇÃO</div>
-              <div class="guide-row"><span class="guide-icon">◎</span><span>Arraste para orbitar</span></div>
-              <div class="guide-row"><span class="guide-icon">⌁</span><span>Roda para aproximar</span></div>
-              <div class="guide-row"><span class="guide-icon">✥</span><span>Botão direito para deslocar</span></div>
+              <div class="guide-row"><span class="guide-icon">${iconMarkup('orbit')}</span><span>Arraste para orbitar</span></div>
+              <div class="guide-row"><span class="guide-icon">${iconMarkup('zoom')}</span><span>Roda para aproximar</span></div>
+              <div class="guide-row"><span class="guide-icon">${iconMarkup('move')}</span><span>Botão direito para deslocar</span></div>
             </div>
           </div>
           <div class="sidebar-footer"><span>ESTUDO DE MASSA</span><span>VISUALIZADOR 3D</span></div>
@@ -99,7 +102,7 @@ export function createApp(mount: HTMLElement): AppElements {
           <aside id="elevation-filter" class="elevation-filter" aria-label="Filtro por cota" hidden></aside>
           <section id="usage-filter" class="usage-filter" aria-label="Filtro por uso" hidden></section>
           <div class="selection-hint" id="selection-hint" role="status" hidden>
-            <div class="selection-heading"><div><strong>GEOMETRIA SELECIONADA</strong><span id="selection-name"></span></div><button id="clear-selection" type="button" aria-label="Limpar seleção">Limpar ×</button></div>
+            <div class="selection-heading"><div><strong>GEOMETRIA SELECIONADA</strong><span id="selection-name"></span></div><button id="clear-selection" type="button" aria-label="Limpar seleção">Limpar ${iconMarkup('x')}</button></div>
             <dl class="selection-details">
               <div><dt>Área</dt><dd id="selection-area"></dd></div>
               <div><dt>Uso</dt><dd id="selection-use"></dd></div>
@@ -108,11 +111,11 @@ export function createApp(mount: HTMLElement): AppElements {
           </div>
           <div class="viewport-bottom">
             <div id="scene-toolbar" class="viewer-toolbar" role="toolbar" aria-label="Vistas e cenas salvas">
-              <button id="fit-view" type="button" class="scene-shortcut scene-navigation" title="Enquadrar toda a cena" aria-label="Enquadrar toda a cena"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4H4v4m12-4h4v4M4 16v4h4m12-4v4h-4" /></svg></button>
-              <button id="home-view" type="button" class="scene-shortcut scene-navigation" title="Vista inicial" aria-label="Vista inicial"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 11 9-8 9 8M6 9v12h12V9M10 21v-7h4v7" /></svg></button>
+              <button id="fit-view" type="button" class="scene-shortcut scene-navigation" title="Enquadrar toda a cena" aria-label="Enquadrar toda a cena">${iconMarkup('maximize')}</button>
+              <button id="home-view" type="button" class="scene-shortcut scene-navigation" title="Vista inicial" aria-label="Vista inicial">${iconMarkup('home')}</button>
               <div class="scene-slots" role="group" aria-label="Cenas de 1 a 10"></div>
-              <button id="update-scene" type="button" class="scene-shortcut scene-update" title="Selecione uma cena para atualizar" aria-label="Selecione uma cena para atualizar" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M5 8a8 8 0 0 1 13-3l2 2M4 17l2 2a8 8 0 0 0 13-3" /></svg></button>
-              <span class="scene-feedback" role="status" aria-live="polite"></span>
+              <button id="update-scene" type="button" class="scene-shortcut scene-update" title="Selecione uma cena para atualizar" aria-label="Selecione uma cena para atualizar" disabled>${iconMarkup('refresh')}</button>
+              <div class="scene-export-actions"><span class="scene-feedback" role="status" aria-live="polite"></span><button id="export-view" class="image-export-button" type="button" disabled>${iconMarkup('printer')} Imprimir</button></div>
             </div>
           </div>
         </section>
@@ -210,6 +213,7 @@ export function createApp(mount: HTMLElement): AppElements {
     viewport,
     fitButton,
     homeButton,
+    exportButton: mount.querySelector<HTMLButtonElement>('#export-view')!,
     clearSelectionButton,
     sceneToolbar: mount.querySelector<HTMLElement>('#scene-toolbar')!,
     simulationPanel: mount.querySelector<HTMLElement>('#simulation-panel')!,

@@ -12,9 +12,9 @@
   {% include "accounts/_painel_obras_register.html" %}
 
   <!-- Formulário -->
-  <main class="flex items-center justify-center p-6 sm:p-12">
+  <main class="au-auth-main flex items-center justify-center p-6 sm:p-12">
     <div class="w-full max-w-lg">
-      <p class="lg:hidden mb-10 text-sm font-medium tracking-[0.35em] uppercase text-center">
+      <p class="au-auth-wordmark lg:hidden mb-10 text-sm font-medium tracking-[0.35em] uppercase text-center">
         Rafael Castro <span class="font-light">Arquitetos</span>
       </p>
 
@@ -46,7 +46,7 @@
 
         <button type="submit"
                 class="botao sm:col-span-2 mt-3">
-          Criar conta
+          {% include "partials/_icon.html" with name="user" %} Criar conta
         </button>
       </form>
 

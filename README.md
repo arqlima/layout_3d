@@ -101,6 +101,13 @@ depende das malhas salvas pelo Rhino.
 
 ## Alterar o visualizador
 
+A identidade visual segue a referência local `novo_estilo/auragen-design-system`.
+Os tokens, componentes, ícones SVG e fontes locais ficam em
+`projects3d/static/projects3d/design-system/`. O mesmo CSS atende login, cadastro,
+gerenciamento de projetos e visualizador; no visualizador, ele entra no build do
+Vite com os arquivos de fontes versionados. Preserve essa fonte compartilhada ao
+alterar cores, tipografia ou botões.
+
 O código editável está em `projects3d/frontend/src/`: `viewer/` concentra Three.js,
 `ui/` a interface, `data/` a integração com o Django e `styles/` a apresentação.
 `novo_input/` permanece como referência original; seus arquivos privados não são
@@ -120,6 +127,14 @@ com a aplicação; Node e pnpm são necessários apenas para recompilar. Após a
 o CSV ou o vídeo pelo cadastro, não é necessário recompilar.
 
 ## Validar
+
+No Estudo de massa, **Imprimir** acima da barra de cenas exporta somente o modelo
+3D para PNG, na câmera e nos filtros atuais. O fundo transparente vem ativado;
+desative-o para incluir a cor de fundo da vista. As opções de 4K, 6K e 8K indicam
+o limite do lado maior, preservando a proporção e respeitando os limites da GPU
+e de memória. A renderização usa um canvas separado, sem redimensionar a tela ou
+incluir painéis, cotas da interface e botões. A geometria filtrada por cotas é
+mantida, assim como as transparências próprias dos materiais do modelo.
 
 A aba **Simulação** usa as áreas integrais do modelo e do CSV, agrupadas por
 layer, sem o grupo REP. Custos e preços de venda são preenchidos por m²; terreno

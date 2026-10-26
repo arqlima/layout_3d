@@ -1,0 +1,811 @@
+AuraGen Design System
+Overview
+Components
+Lorem Ipsum
+Components
+01Typography
+02Colors
+03Backgrounds
+04Surfaces
+05Icons
+06Actions
+07Navigation
+08Badges and chips
+09Inputs and controls
+10Cards
+11Content groups
+12Media and marquees
+13App workspace
+Foundations(01)
+Typography
+Display
+Geist · 500h1.font-geist · text-[44px] sm:text-6xl lg:text-8xl leading-[0.9] tracking-tighter · mask 290deg
+AuraGen Design System
+96px | 60px | 44px
+Heading 1
+system-ui · Tailwind sans · 500section h2 · text-2xl sm:text-5xl font-medium tracking-tighter · mask 90deg
+Lorem Ipsum Dolor Sit Amet
+48px | 24px
+Heading 2
+Manrope · 600card h3.font-manrope · text-2xl sm:text-3xl
+Lorem Ipsum
+30px | 24px
+Heading 3
+Manrope · 600info card h3.font-manrope · text-xl sm:text-2xl
+Lorem Ipsum Dolor
+24px | 20px
+Heading 4
+system-ui · Tailwind sans · 600#cta h3 · text-2xl font-semibold tracking-tight
+Lorem ipsum dolor sit amet elit?
+24px
+Title
+system-ui · Tailwind sans · 600.faq-trigger span · text-base md:text-lg leading-6
+Lorem ipsum dolor sit?
+18px | 16px
+Button
+Inter · 500.shiny-cta · font-size 1.125rem / 1.2
+Lorem Ipsum
+1.125rem
+Text 1
+system-ui · Tailwind sans · 400card p · text-sm sm:text-base text-white/70
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore.
+16px | 14px
+Text 2
+system-ui · Tailwind sans · 400p · text-sm text-slate-400
+Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+14px
+Eyebrow
+system-ui · Tailwind sans · 500p · uppercase text-sm font-medium tracking-wide
+Lorem ipsum dolor sit amet consectetur
+14px
+Caption
+Inter · 500gallery card h4 text-sm · p text-xs · font-family 'Inter' (only the 500 face loads)
+Lorem Ipsum
+Dolor sit amet
+14px | 12px
+Meta
+system-ui · Tailwind sans · 400app sidebar label · text-[11px] uppercase tracking-wide
+Recent Projects
+11px
+Mono
+ui-monospace · 400prompt chip · font-mono text-xs
+"futuristic city at sunset..."
+12px
+Micro
+system-ui · Tailwind sans · 400chip · text-[10px]
+Style Transfer
+10px
+Foundations(02)
+Colors
+Brand and accent
+CTA ring#1d4ed8
+.shiny-cta conic border, ::after sweep and span glow
+CTA shine#8484ff--gradient-shine
+bright stop travelling round the .shiny-cta border
+CTA fill#000000
+.shiny-cta padding-box fill; inset ring #1a1818
+Link underline#e879f9
+.nav-link::after grows 0 → 100% on hover
+Aa
+Selectionrgba(217, 70, 239, .3)selection:bg-fuchsia-500/30
+text selection on body
+Meter gradient#6366f1 → #9333eafrom-indigo-500 to-purple-600
+credits bar fill
+Hover glowrgba(129, 140, 248, .3)hover:from-indigo-400/30
+card hover radial-gradient(circle at top)
+Aa
+Check accentrgb(165, 180, 252)ring-indigo-300/20 · bg-indigo-500/10
+list check icons in their tinted circle
+Illustration tintrgba(37, 99, 235, .1) → rgba(67, 56, 202, .1)from-blue-600/10 via-indigo-700/10
+overlay inside card illustrations
+Aa
+Verified#60a5fatext-blue-400
+badge icon beside testimonial names
+Aa
+Help icon#7dd3fctext-sky-300
+FAQ footer help glyph
+Scene wordmark#006A64 · #53FF9D
+fills of the two IMAGI text layers in the Unicorn Studio scene
+Surfaces
+Page#020617bg-slate-950
+body background under every section
+Glass fillrgba(255, 255, 255, .05)bg-white/5
+cards, pills, chips, FAQ items
+Panel fillrgba(113, 113, 122, .05)bg-zinc-500/5
+FAQ and CTA panels (+ backdrop-blur-xl)
+Solid card#18181bbg-zinc-900
+gallery / masonry cards
+Quote cardrgba(24, 24, 27, .4)bg-zinc-900/40
+testimonial cards
+Info card#ffffff/10 → #000000/10bg-gradient-to-b from-[#ffffff]/10 to-[#000000]/10
+gallery info card
+Illustration wellrgba(250, 250, 250, .05)bg-neutral-50/5
+illustration boxes inside feature cards
+App window#171717bg-neutral-900 · xl:bg-neutral-900/20
+generator mock window
+App panelrgba(30, 30, 30, .8)
+mock sidebar and settings panel (inline style); header bar .5
+App title barrgba(40, 40, 40, .5)
+mock window title bar (inline style)
+App selectedrgba(60, 60, 60, .7)
+active nav item / selected option (inline style)
+App button#606060
+Generate / Get More Credits buttons (inline style)
+Drawerrgba(2, 6, 23, .95)bg-slate-950/95
+mobile menu drawer (+ backdrop-blur)
+Aa
+Primary fill#ffffffbg-white
+primary pills and Subscribe
+Text and icons
+Aa
+Display#f4f4f5text-zinc-100
+hero h1
+Aa
+Primary#fffffftext-white
+headings, buttons
+Aa
+Card bodyrgba(255, 255, 255, .7)text-white/70
+feature card paragraphs
+Aa
+Bullet title / bodyrgba(255, 255, 255, .9) · .6text-white/90 · text-white/60
+feature bullets
+Aa
+Secondary#cbd5e1text-slate-300
+nav links, FAQ answers, footer CTA text
+Aa
+Muted#94a3b8text-slate-400
+subtitles, captions, footer links
+Aa
+Muted zinc#a1a1aatext-zinc-400
+feature cell captions, handles
+Aa
+Quote#d4d4d8text-zinc-300
+testimonial copy
+Aa
+Caption title#f1f5f9text-slate-100
+gallery titles, FAQ questions
+Aa
+Inverse#0f172atext-slate-900
+text on white pills
+Aa
+App text#d4d4d4 · #a3a3a3 · #737373text-neutral-300 · 400 · 500
+mock UI labels and meta
+Aa
+Placeholder#64748bplaceholder-slate-500
+newsletter input; app textarea uses placeholder-neutral-500
+Borders
+Hairlinergba(255, 255, 255, .1)border-white/10 · ring-white/10
+cards, panels, pills, dividers
+Strong hairlinergba(255, 255, 255, .2)border-white/20 · ring-white/20
+outline pill, icon tiles
+Chip ringrgba(255, 255, 255, .15)ring-white/15
+year chip, bullet tiles
+Card hover borderrgba(248, 250, 252, .2)hover:border-slate-50/20
+feature / info card hover
+Quote border#18181bborder-zinc-900 · border-zinc-900/80
+testimonial cards and row divider
+App border#262626border-neutral-800 · /50
+mock window and panels
+App control#404040border-neutral-700
+mock inputs, chips, bordered buttons
+App selected#525252border-neutral-600
+selected option outline
+Semantic
+✓
+Successrgba(34, 197, 94, .2) · rgb(74, 222, 128)bg-green-500/20
+status rows: tinted circle + check
+Interactive states
+Nav link
+AaDefault#cbd5e1
+AaHover#fff + underline #e879f9
+AaSelectedcatalog .is-active holds the underline
+Glass pill
+Defaultbg-white/5
+Hoverhover:bg-white/10
+Ghost pill
+Defaulttransparent · border-white/10
+Hoverhover:bg-white/5
+App option
+Defaultborder-neutral-800/50 · text-neutral-300
+Hoverhover:bg-neutral-800/50
+Selectedrgba(60,60,60,.7) · border-neutral-600
+Collect pill
+Default#faf5ff bg-purple-50
+Hover#e9d5ff hover:bg-purple-200
+Primary pill
+Defaultbg-white · shadow
+Hoverhover:shadow-lg · Subscribe hover:bg-white/90
+Focus
+Focusring-2 ring-indigo-500/40
+Overlays
+Image hover scrimrgba(0, 0, 0, .8) → 0bg-gradient-to-t from-black/80
+generated image cards on hover
+Counter badgergba(0, 0, 0, .6)bg-black/60 backdrop-blur
+1/4 badge over images
+Edge fade#09090b → transparentfrom-zinc-950
+testimonial marquee side fades
+Foundations(03)
+Backgrounds
+Unicorn Studio scene
+.aura-background-component absolute top-0 w-full h-[900px] -z-10 · mask linear-gradient(to bottom, transparent, black 0%, black 80%, transparent) > [data-us-project="1bY8o6HVTI1oxJxuCJEG"] · unicornStudio.umd.js v1.4.31 · "Matrix (Remix)" · 60 fps · dpi 1.5 · project JSON via data-us-project-src="auragen-us-scene"
+Gradient, blur, fbm, texturize, liquify, god rays (mouse), wisps, bloom, ASCII (remix_Sprite), vignette, two beams and fog (mouse) over two Outfit “IMAGI” text layers. Specimen framed at the desktop 1440 × 900 proportion; it is the same scene that runs, live, behind this whole Components view.
+Page base
+body.bg-slate-950 · #020617 · selection:bg-fuchsia-500/30
+Progressive top blur
+Lorem ipsum dolor sit amet consectetur
+Lorem Ipsum Dolor Sit Amet
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+.gradient-blur fixed inset 0 0 auto 0 · height 12% · z-index 5 · ::before 0.5px + six div layers 1 → 32px + ::after 64px backdrop-filter, each masked to a 12.5% band
+In the page it is pinned to the top 12% of the viewport and blurs content scrolling under the transparent header; here it is anchored to the top of the box (position absolute, 40% height) over sample copy.
+Dot grid texture
+radial-gradient(circle at 1px 1px, rgba(255,255,255,0.9) 1px, transparent 1px) · background-size 14px 14px · opacity .08 (feature cards) / .07 (info card)
+Mask fades
+hero h1290deg · black 0% → 40%
+section h290deg · black 0% → 10%
+feature card 1160deg · black 30% → 75%
+FAQ panel200deg · black 25% → 65%
+CTA panel150deg · black 0% → 60%
+footer100deg · black 25% → 75%
+mask-image: linear-gradient(<angle>, transparent, black a%, black b%, transparent) — the page fades almost every heading, card, panel and the footer this way
+Shown on the glass fill; each chip uses the exact angle and stops of the element named under it.
+Foundations(04)
+Surfaces
+Glass card
+Lorem Ipsum
+Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+bg-white/5 border-white/10 rounded-2xl p-5 sm:p-8 · dot grid .08 · hover radial indigo-400/30 + border-slate-50/20 (hover it)
+Gradient card
+Lorem Ipsum Dolor
+bg-gradient-to-b from-[#ffffff]/10 to-[#000000]/10 · ring-1 ring-[#ffffff]/10 · rounded-2xl · dot grid .07
+Solid card
+Lorem Ipsum
+Dolor sit amet
+bg-zinc-900 · ring-1 ring-white/10 → hover:ring-white/20 hover:shadow-xl · rounded-2xl
+Quote card
+Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+bg-zinc-900/40 · border-zinc-900 · rounded-2xl · p-5
+Inset tile
+Lorem ipsum dolor sit?
+.faq-item · bg-white/5 border-white/10 rounded-2xl p-4 md:p-5 (also the CTA notes box and footer CTA bar)
+Illustration well
+"futuristic city at sunset..."
+bg-neutral-50/5 ring-1 ring-white/10 rounded-2xl p-4 + bg-gradient-to-b from-blue-600/10 via-indigo-700/10 to-transparent
+Glass panel
+Lorem — Ipsum & Dolor
+Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+bg-zinc-500/5 · border + ring-1 white/10 · rounded-3xl · shadow-2xl · backdrop-blur-xl · p-6 md:p-10 · mask 200deg (FAQ) / 150deg (CTA)
+App window
+bg-neutral-900 (xl:/20) · border-neutral-800 · rounded-xl · shadow-2xl · backdrop-blur-xl · title bar rgba(40,40,40,.5) · panels rgba(30,30,30,.8) / header .5
+Foundations(05)
+Icons
+arrow-rightdata-lucide · lucide lucide-arrow-right h-4 w-4 | w-5 h-5 text-white/60 shrink-0
+menudata-lucide · lucide lucide-menu w-[24px] h-[24px]
+xdata-lucide · lucide lucide-x h-6 w-6
+circle-playdata-lucide · lucide lucide-play-circle h-4 w-4
+ellipsisinline svg · h-4 w-4 text-neutral-400
+layoutinline svg · h-4 w-4
+imageinline svg · h-4 w-4 | h-3.5 w-3.5 | h-5 w-5
+userinline svg · h-4 w-4
+sparkleinline svg · h-4 w-4 | h-3.5 w-3.5 | w-6 h-6 text-white/70
+fileinline svg · h-4 w-4
+book-openinline svg · h-4 w-4
+settingsinline svg · h-4 w-4
+archiveinline svg · h-4 w-4
+downloadinline svg · h-4 w-4 inline mr-1
+thumbs-upinline svg · h-4 w-4
+copyinline svg · h-4 w-4 text-neutral-400
+alert-triangleinline svg · h-4 w-4
+chevron-rightinline svg · h-4 w-4
+codeinline svg · h-5 w-5
+clockinline svg · h-5 w-5 | w-[18px] h-[18px]
+shieldinline svg · h-5 w-5
+starsinline svg · w-[20px] h-[20px]
+sidebarinline svg · w-6 h-6 text-white/50
+checkinline svg · w-[12px] h-[12px] | w-3 h-3 text-slate-50 | w-[14px] h-[14px]
+gridinline svg · w-[18px] h-[18px]
+line-chartinline svg · w-[18px] h-[18px]
+usersinline svg · w-[18px] h-[18px]
+searchdata-lucide · lucide lucide-search text-slate-400
+circle-checkinline svg · w-3.5 h-3.5 text-blue-400
+plusinline svg · faq-icon
+circle-helpinline svg · h-5 w-5 text-sky-300
+message-squareinline svg · h-4 w-4
+facebookbrand svg · 18px
+twitterbrand svg · 18px
+githubbrand svg · 18px
+linkedinbrand svg · 18px
+Lucide glyphs inlined as SVG in the markup (lucide.createIcons() only re-renders the five with data-lucide) plus four filled brand marks in the footer. Each glyph is shown once, at its first source size and colour (faint ones are the page’s own text-white/50–70 tints); other sizes and tints it appears in are listed under it.
+Components(06)
+Actions
+Shiny CTA
+Lorem Ipsum
+.shiny-cta · conic-gradient border (#1d4ed8 / --gradient-shine #8484ff) · border-spin 2.5s · ::after shimmer 4s · span::before breathe 4.5s · :active translateY(1px) · Inter 500 1.125rem · padding 1.25rem 2.5rem
+Pills
+Dolor Sit
+Ghost + icon
+Lorem Ipsum
+Glass + arrow
+Dolor Sit Amet
+Primary
+Dolor SitOutline
+Lorem Ipsum
+Soft + icon
+rounded-full pt-3 pr-5 pb-3 pl-5 text-sm · ghost border-white/10 backdrop-blur-2xl hover:bg-white/5 · glass bg-white/5 ring-1 ring-white/10 hover:bg-white/10 (pt-2 pr-4) · primary bg-white text-slate-900 shadow hover:shadow-lg · outline border-white/20 · soft bg-white/5 border-white/10 hover:bg-white/10
+Small buttons
+CollectCollect
+SubscribeSubscribe
+Social
+Menu (md:hidden)
+Collect bg-purple-50 hover:bg-purple-200 text-black text-xs rounded-full (appears on gallery hover) · Subscribe bg-white rounded-lg hover:bg-white/90 · social w-9 h-9 rounded-lg bg-white/5 border-white/10 · menu p-2 rounded-lg hover:bg-white/5
+App buttons
+Generate (4 credits)
+Generate
+History
+Toolbar
+Icon
+Upload Image
+Random Prompt
+Bordered
+Advanced Settings
+Disclosure
+Get More Credits
+Download
+mock UI · rounded-md · fill #606060 (inline) · ghost text-neutral-300 hover:bg-neutral-800/50 · bordered border-neutral-700 text-xs · image overlay buttons rgba(255,255,255,.1) hover:bg-white/20
+Components(07)
+Navigation
+Header
+Features
+Gallery
+Reviews
+FAQ
+Lorem Ipsum
+header.sticky.z-20.top-0 · max-w-7xl px-6 py-4 · logo 120×30 bg-[url(…d3473923…png)] · nav hidden md:flex gap-6 · .nav-link text-sm text-slate-300 + #e879f9 underline · glass CTA pill · #menuBtn md:hidden
+The header has no fill of its own; on the page it floats over the scene and the progressive top blur. This catalog’s navbar is the same markup.
+Mobile drawer
+AuraGen
+Features
+Gallery
+Reviews
+FAQ
+Lorem Ipsum
+aside.mobile-menu · fixed top-0 right-0 bottom-0 w-[80%] max-w-sm · bg-slate-950/95 backdrop-blur · border-l border-white/10 · translateX(100%) → .open translateX(0) 0.3s ease-out
+Shown in its .open state, anchored inside the frame instead of the viewport.
+App sidebar
+AI Image Generator
+Generate
+Gallery
+Community
+Explore
+Recent Projects
+Cyberpunk City
+Fantasy Landscapes
+Portrait Studies
+Abstract Art
+Resources
+Documentation
+Settings
+Credits
+250 / 500
+Get More Credits
+aside.w-64 · rgba(30,30,30,.8) · items rounded-md px-2 py-1.5 text-sm · active rgba(60,60,60,.7) text-white · hover:bg-neutral-800/50 · section labels text-[11px] uppercase text-neutral-500
+Footer columns
+Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do eiusmod tempor.
+Product
+Features
+Pricing
+API
+Gallery
+Changelog
+Roadmap
+Company
+About
+Blog
+Careers
+Press
+Partners
+Reviews
+Resources
+Documentation
+Help Center
+FAQ
+Community
+Contact
+Status
+grid sm:grid-cols-2 lg:grid-cols-4 gap-8 · h3 text-sm font-semibold · links text-sm text-slate-400 hover:text-white · social tiles
+Components(08)
+Badges and chips
+Chips
+2024Year
+Lorem Ipsum
+Dolor SitTags
+Style Transfer
+Upscale
+Enhance
+Micro (masked 230deg)
+Aspect: 1:1
+Quality: High
+Style: Photorealistic
+App parameters
+rounded-full · year bg-white/5 ring-1 ring-white/15 text-xs text-white/80 · tags bg-white/5 ring-white/10 text-white/70 · micro text-[10px] border-white/10 · app border-neutral-700 bg-neutral-800/40 text-neutral-300
+Counter badge
+1/4
+text-xs rounded-full border-neutral-700 bg-black/60 backdrop-blur px-2 py-0.5 · absolute top-2 right-2
+Status and check rows
+Content Filter Active
+Commercial Rights
+Privacy Protected
+Status rows
+Consectetur adipiscing
+Sed do eiusmod
+Tempor incididunt
+Check list
+Ava Thompson
+@ava_builds
+Verified author
+status px-3 py-2 rounded-lg bg-white/5 border-white/10 + w-5 h-5 bg-green-500/20 circle · checks w-5 h-5 ring-indigo-300/20 bg-indigo-500/10 + #a5b4fc icon · author size-9 avatar + text-blue-400 badge
+Icon tiles
+Square
+Round
+Bullet
+FAQ toggle
+Help
+square w-10 h-10 rounded-lg bg-white/5 ring-white/10 (group-hover:bg-white/10) · round w-10 h-10 rounded-full ring-white/20 bg-slate-50/5 shadow-lg · bullet w-9 h-9 ring-white/15 · FAQ h-8 w-8 border-white/10 bg-white/10 · help h-9 w-9 + text-sky-300
+Components(09)
+Inputs and controls
+Prompt composer
+Upload Image
+Random Prompt
+Generate (4 credits)
+textarea rows=3 bg-transparent placeholder-neutral-500 · box rounded-lg border-neutral-700 bg-neutral-800/40 focus-within:ring-2 focus-within:ring-indigo-500/40 · toolbar border-t border-neutral-700/50
+Click into the textarea to see the indigo focus ring.
+Newsletter form
+Lorem Ipsum
+Consectetur adipiscing elit, sed do eiusmod tempor incididunt.
+Subscribe
+input flex-1 px-4 py-2 bg-white/5 border-white/10 rounded-lg text-sm placeholder-slate-500 focus:ring-2 focus:ring-indigo-500/40 · Subscribe bg-white text-slate-900 rounded-lg
+Settings panel
+Settings
+Model
+AuraGen
+Latest model, best quality
+AuraGen
+Fast generation
+Aspect Ratio
+1:1
+16:9
+9:16
+4:3
+3:4
+21:9
+Quality
+Standard
+2 credits
+High
+4 credits
+Ultra
+8 credits
+Style Preset
+Photorealistic
+Artistic
+Anime
+Digital Art
+3D Render
+Number of Images
+1
+2
+4
+8
+Advanced Settings
+aside.w-80 · rgba(30,30,30,.8) · labels text-xs text-neutral-400 · options rounded-md px-3 py-2 border-neutral-800/50 hover:bg-neutral-800/50 · selected rgba(60,60,60,.7) + border-neutral-600 text-white · grids grid-cols-3 / grid-cols-4 gap-2
+Option lists, segmented grids and options with trailing meta, each showing the page’s selected state.
+Credits meter
+Credits
+250 / 500
+Get More Credits
+h-1.5 bg-neutral-800 rounded-full · fill bg-gradient-to-r from-indigo-500 to-purple-600 · width 50%
+Components(10)
+Cards
+Feature cell grid
+Lorem Ipsum
+lorem ipsum dolor sit
+Dolor Sit Amet
+consectetur adipiscing
+Magna Aliqua
+sed do eiusmod tempor
+Tempor Elit
+ut enim ad minim
+Quis & Nostrud
+nisi ut aliquip
+rounded-2xl backdrop-blur · mask 90deg 20–80% · grid md:grid-cols-3 + md:grid-cols-2 · cells text-center p-8 hover:bg-white/10 · md:border-l border-white/10 · each cell masked 0deg / 180deg
+Feature cards
+Lorem Ipsum
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore.
+"futuristic city at sunset..."
+Dolor Sit Amet
+Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo.
+Style Transfer
+Upscale
+Enhance
+Magna Aliqua
+Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+Content Filter Active
+Commercial Rights
+Privacy Protected
+grid sm:grid-cols-3 gap-5 · glass card + dot grid + per-card mask (160deg / 90deg / 210deg) · round icon tile · h3 font-manrope · illustration well with prompt chip, before/after tiles or status rows
+Hover a card for the radial indigo glow.
+Info card
+2024
+Lorem Ipsum Dolor
+Consectetur adipiscing
+Sed do eiusmod
+Tempor incididunt
+Lorem Ipsum
+Dolor Sit
+bg-gradient-to-b from-[#ffffff]/10 to-[#000000]/10 · ring-[#ffffff]/10 · year chip · check list · tag chips
+Gallery cards
+Collect
+Lorem Ipsum
+Dolor sit amet
+Collect
+Dolor Sit Amet
+Consectetur elit
+Collect
+Magna Aliqua
+Sed do eiusmod
+bg-zinc-900 ring-white/10 rounded-2xl · img h-[224px] grayscale → group-hover:grayscale-0 (300ms) · Collect pill fades in top-right · caption Inter text-sm / text-xs
+Hover a card: colour returns and the Collect pill appears.
+Generated image card
+Download
+1/4
+aspect-square rounded-lg border-neutral-800/50 hover:border-neutral-700 · img grayscale(100%) · hover overlay from-black/80 with Download + like buttons · 1/4 counter badge
+Prompt card
+Prompt Used
+Futuristic cyberpunk cityscape at night, neon lights reflecting on wet streets, holographic
+advertisements, flying cars, detailed architecture, cinematic lighting, 8k, highly detailed
+Aspect: 1:1
+Quality: High
+Style: Photorealistic
+rounded-lg border-neutral-800/50 p-4 rgba(30,30,30,.5) · copy icon button · parameter chips
+Testimonial card
+Ava Thompson
+@ava_builds
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna.
+article w-[280px] sm:w-[360px] md:w-[420px] rounded-2xl border-zinc-900 bg-zinc-900/40 p-5 · avatar size-9 · name text-sm text-zinc-100 + blue-400 badge · handle text-xs text-zinc-400 · quote text-sm sm:text-base text-zinc-300
+Components(11)
+Content groups
+Hero lockup
+AuraGen Design System
+Slate-black depth, gradient-masked type and hairline glass panels over live ASCII rain and a blue beam.
+Lorem Ipsum
+Dolor Sit
+h1 display (Geist, mask 290deg) · subtitle · CTA row flex-wrap gap-3 mt-40 xl:mt-20 (shiny CTA + ghost pill)
+Feature bullets
+Lorem Ipsum
+Lorem ipsum dolor sit amet consectetur.
+Dolor Sit Amet
+Sed do eiusmod tempor incididunt labore.
+Magna Aliqua
+Ut enim ad minim veniam quis nostrud.
+Duis Aute
+Excepteur sint occaecat cupidatat.
+border-t border-white/10 pt-8 · mask 90deg 15–85% · grid sm:grid-cols-2 lg:grid-cols-4 gap-6 · bullet tile w-9 h-9 + title text-white/90 + body text-white/60
+FAQ panel
+Lorem — Ipsum & Dolor
+Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+Lorem ipsum dolor sit?
+Arcade AI is a powerful image generation platform that transforms your text descriptions into stunning visuals. Using advanced AI models, we create photorealistic, artistic, and stylized images in seconds.
+Consectetur adipiscing elit sed?
+Most images are generated in 5-15 seconds depending on quality settings. High-resolution outputs may take up to 30 seconds. We prioritize speed without compromising quality.
+Sed do eiusmod tempor?
+We support photorealistic, artistic, anime, digital art, 3D render, and many more styles. Each preset can be customized with additional parameters for complete creative control.
+Ut enim ad minim veniam quis?
+Yes! All images generated on paid plans come with full commercial usage rights. You own the rights to use, modify, and sell your generated images.
+Duis aute irure dolor?
+Credits are used to generate images. Standard quality uses 2 credits, high quality uses 4 credits, and ultra quality uses 8 credits per image. Credits refill monthly based on your plan.
+Excepteur sint occaecat cupidatat?
+Absolutely. Your prompts and generated images are completely private by default. We use industry-standard encryption and never train our models on your private content.
+Nulla pariatur sint?
+Yes! Pro and Enterprise plans include full API access with comprehensive documentation. Integrate AI image generation directly into your applications and workflows.
+Culpa qui officia?
+Our support team is available 24/7 via chat and email. We also provide comprehensive documentation, video tutorials, and an active community forum.
+Lorem ipsum dolor? Sit amet consectetur elit.
+Lorem Ipsum
+Dolor Sit Amet
+section glass panel (mask 200deg) · h1 sm:text-5xl + subtitle · grid md:grid-cols-2 gap-4 md:gap-6 of .faq-item · footer CTA bar
+Answers stay closed, as on the page: its toggle script looks for a [data-element-id] wrapper that the markup does not contain, so the + buttons do nothing.
+CTA panel
+Lorem ipsum dolor sit amet elit?
+Lorem ipsum dolor sit amet, consectetur adipiscing elit—sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+Lorem Ipsum
+Dolor Sit
+Lorem ipsum dolor
+Sed do eiusmod tempor.
+Ut enim ad minim veniam quis nostrud.
+Duis aute irure dolor.
+glass panel (mask 150deg) · grid md:grid-cols-[1.2fr_1fr] md:p-12 · h3 text-2xl + primary / outline pills · notes tile bg-white/5 border-white/10 with list-disc
+Footer
+Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do eiusmod tempor.
+Product
+Features
+Pricing
+API
+Gallery
+Changelog
+Roadmap
+Company
+About
+Blog
+Careers
+Press
+Partners
+Reviews
+Resources
+Documentation
+Help Center
+FAQ
+Community
+Contact
+Status
+Lorem Ipsum
+Consectetur adipiscing elit, sed do eiusmod tempor incididunt.
+Subscribe
+© 2025 Arcade AI. All rights reserved.
+Privacy Policy
+Terms of Service
+Cookie Policy
+footer border-t border-white/10 pt-16 pb-10 · mask 100deg 25–75% · brand column + three link columns · newsletter · bottom bar with legal links
+Components(12)
+Media and marquees
+Logo carousel
+Lorem ipsum dolor sit amet consectetur
+smoothCarousel 40s linear infinite (translateX 0 → -50%), paused on hover · mask to right 15–85% · logos mix-blend-screen bg-cover 100–150×40 · hover:scale-110 · eyebrow uppercase text-sm
+Testimonial marquee
+Lorem ipsum dolor
+Lorem Ipsum
+Ava Thompson
+@ava_builds
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna.
+Noah Patel
+@noah_ops
+Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris. Nisi ut aliquip ex ea commodo consequat.
+Maya Kim
+@mayak
+Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur sint.
+Ethan Garcia
+@egarcia
+Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est.
+Ava Thompson
+@ava_builds
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna.
+Noah Patel
+@noah_ops
+Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris. Nisi ut aliquip ex ea commodo consequat.
+Maya Kim
+@mayak
+Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur sint.
+Ethan Garcia
+@egarcia
+Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est.
+Priya Singh
+@priya_dev
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer posuere erat a ante venenatis.
+Leo Martin
+@leom
+Curabitur blandit tempus porttitor. Nullam quis risus eget urna mollis ornare vel eu leo.
+Sofia Alvarez
+@sofialabs
+Maecenas faucibus mollis interdum. Donec ullamcorper nulla non metus auctor fringilla, vitae elit.
+Jackson Lee
+@jacksonlee
+Vestibulum id ligula porta felis euismod semper. Cras mattis consectetur purus sit amet fermentum.
+Priya Singh
+@priya_dev
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer posuere erat a ante venenatis.
+Leo Martin
+@leom
+Curabitur blandit tempus porttitor. Nullam quis risus eget urna mollis ornare vel eu leo.
+Sofia Alvarez
+@sofialabs
+Maecenas faucibus mollis interdum. Donec ullamcorper nulla non metus auctor fringilla, vitae elit.
+Jackson Lee
+@jacksonlee
+Vestibulum id ligula porta felis euismod semper. Cras mattis consectetur purus sit amet fermentum.
+two rows · marquee-ltr / marquee-rtl 45s linear infinite on duplicated groups · side fades from-zinc-950 w-24 sm:w-40 · mask 90deg 10–90% · prefers-reduced-motion stops both
+Masonry gallery
+Collect
+Lorem ipsum dolor sit
+Consectetur adipiscing elit
+Collect
+Sit Amet Elit
+Sed do eiusmod
+Collect
+Tempor incididunt ut
+Labore et dolore magna
+Collect
+Ut Enim Minim
+Quis nostrud ex
+Collect
+Duis Aute
+Irure dolor in
+Collect
+Velit Esse
+Cillum dolore eu
+Collect
+Fugiat Nulla
+Excepteur sint
+Collect
+Culpa Qui
+Officia deserunt
+#masonry columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-4 · article.reveal mb-4 break-inside: avoid · same card as the gallery row with h-auto images
+Components(13)
+App workspace
+Generator window
+AI Image Generator
+Generate
+Gallery
+Community
+Explore
+Recent Projects
+Cyberpunk City
+Fantasy Landscapes
+Portrait Studies
+Abstract Art
+Resources
+Documentation
+Settings
+Credits
+250 / 500
+Get More Credits
+Generate
+History
+Download
+1/4
+Download
+2/4
+Download
+3/4
+Download
+4/4
+Prompt Used
+Futuristic cyberpunk cityscape at night, neon lights reflecting on wet streets, holographic
+advertisements, flying cars, detailed architecture, cinematic lighting, 8k, highly detailed
+Aspect: 1:1
+Quality: High
+Style: Photorealistic
+Upload Image
+Random Prompt
+Generate (4 credits)
+Settings
+Model
+AuraGen
+Latest model, best quality
+AuraGen
+Fast generation
+Aspect Ratio
+1:1
+16:9
+9:16
+4:3
+3:4
+21:9
+Quality
+Standard
+2 credits
+High
+4 credits
+Ultra
+8 credits
+Style Preset
+Photorealistic
+Artistic
+Anime
+Digital Art
+3D Render
+Number of Images
+1
+2
+4
+8
+Advanced Settings
+wrapper rotate-x-5 scale-100 · mask 180deg black 1% · window h-[700px] max-h-[95vh] max-w-7xl rounded-xl border-neutral-800 shadow-2xl backdrop-blur-xl · mask 180deg black 30% · title bar + sidebar w-64 + main + settings w-80
+The page’s full product mock, with its own fades. Below xl the window is opaque neutral-900; the fixed-width side panels squeeze and clip inside it on narrow screens, as on the page.

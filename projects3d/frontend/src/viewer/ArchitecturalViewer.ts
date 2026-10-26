@@ -5,6 +5,7 @@ import { matchingLayers, parseLayerName, layerLabel, isRepLayer, type SelectionM
 import { USAGE_CODES, DEFAULT_USAGES, type MarkedObject, type ObjectRecord, type ObjectSelection, type UsageCode } from '../types/model';
 import type { ProjectionMode, StandardView, ViewState } from '../types/view';
 import type { ViewerSnapshot } from '../types/scenes';
+import { exportScenePng, type ExportedImage, type ImageExportOptions } from './exportImage';
 
 type Renderable = THREE.Mesh | THREE.Line | THREE.Points;
 type ObjectMaterial = THREE.Material | THREE.Material[];
@@ -62,8 +63,8 @@ export class ArchitecturalViewer {
     private readonly onSelectionChange: (selection: ObjectSelection | null) => void = () => {},
     private readonly onViewStateChange: (state: ViewState) => void = () => {},
   ) {
-    this.scene.background = new THREE.Color('#202a2f');
-    this.scene.fog = new THREE.Fog('#202a2f', 55, 120);
+    this.scene.background = new THREE.Color('#020617');
+    this.scene.fog = new THREE.Fog('#020617', 55, 120);
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -192,6 +193,12 @@ export class ArchitecturalViewer {
 
   getLayers(): LayerInfo[] {
     return this.layers.map((layer) => ({ ...layer }));
+  }
+
+  exportImage(options: ImageExportOptions): Promise<ExportedImage> {
+    if (!this.content) return Promise.reject(new Error('Carregue o modelo antes de exportar.'));
+    return exportScenePng(this.scene, this.camera, this.content, this.renderer,
+      { width: this.container.clientWidth, height: this.container.clientHeight }, options);
   }
 
   captureState(): ViewerSnapshot {
@@ -507,7 +514,7 @@ export class ArchitecturalViewer {
         if (!muted) {
           muted = material.clone();
           if ('color' in muted && muted.color instanceof THREE.Color) {
-            muted.color.lerp(new THREE.Color('#b9c5c1'), 0.9);
+            muted.color.lerp(new THREE.Color('#94a3b8'), 0.9);
           }
           muted.opacity = Math.min(material.opacity, object.userData.isEdgeHelper ? 0.22 : 0.48);
           muted.transparent = true;

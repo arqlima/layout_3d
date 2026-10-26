@@ -4,7 +4,7 @@
 {% block content %}
 {% include "partials/_nav_bar.html" %}
 <main class="max-w-3xl mx-auto p-6 sm:p-10">
-  <a href="{% url 'projects3d:project-list' %}" class="sobretitulo">← Voltar para projetos</a>
+  <a href="{% url 'projects3d:project-list' %}" class="au-text-action">{% include "partials/_icon.html" with name="arrow-left" %} Voltar para projetos</a>
   <h1 class="font-serifa text-4xl mt-8 mb-3">{% if project %}Atualizar arquivos{% else %}Novo projeto{% endif %}</h1>
   <p class="text-preto/60 mb-8">Selecione a pasta preparada. Confira o conjunto abaixo e salve para criar uma cópia independente na plataforma.</p>
   <form id="folder-import-form" method="post" action="{% if project %}{% url 'projects3d:project-folder-update' project.pk %}{% else %}{% url 'projects3d:project-folder-import' %}{% endif %}" enctype="multipart/form-data" class="space-y-7">
@@ -40,7 +40,7 @@
     {% endif %}
     <p id="folder-progress" role="status" hidden class="text-sm">Enviando e copiando os arquivos… Mantenha esta página aberta.</p>
     <div class="flex flex-wrap items-center gap-4">
-      <button id="folder-submit" class="botao" type="submit" disabled>{% if project %}Salvar atualização{% else %}Salvar projeto{% endif %}</button>
+      <button id="folder-submit" class="botao" type="submit" disabled>{% include "partials/_icon.html" with name="folder" %} {% if project %}Salvar atualização{% else %}Salvar projeto{% endif %}</button>
       <a class="botao-linha" href="{% if project %}{% url 'projects3d:project-detail' project.pk %}{% else %}{% url 'projects3d:project-list' %}{% endif %}">Cancelar</a>
     </div>
   </form>

@@ -10,7 +10,7 @@
     <form method="post" action="{% url 'projects3d:project-delete' project.pk %}" class="flex flex-wrap justify-end gap-4">
       {% csrf_token %}
       <button type="button" class="botao-linha" onclick="this.closest('dialog').close()">Cancelar</button>
-      <button type="submit" class="botao-perigo">Sim, excluir</button>
+      <button type="submit" class="botao-perigo">{% include "partials/_icon.html" with name="trash" %} Sim, excluir</button>
     </form>
   </div>
 

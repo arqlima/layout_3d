@@ -12,9 +12,9 @@
   {% include "accounts/_painel_obras_login.html" %}
 
   <!-- Formulário -->
-  <main class="flex items-center justify-center p-6 sm:p-12">
+  <main class="au-auth-main flex items-center justify-center p-6 sm:p-12">
     <div class="w-full max-w-sm">
-      <p class="lg:hidden mb-10 text-sm font-medium tracking-[0.35em] uppercase text-center">
+      <p class="au-auth-wordmark lg:hidden mb-10 text-sm font-medium tracking-[0.35em] uppercase text-center">
         Rafael Castro <span class="font-light">Arquitetos</span>
       </p>
 
@@ -50,7 +50,7 @@
 
         <button type="submit"
                 class="botao w-full mt-3">
-          Entrar
+          {% include "partials/_icon.html" with name="log-in" %} Entrar
         </button>
       </form>
 

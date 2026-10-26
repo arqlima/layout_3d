@@ -1,6 +1,7 @@
 import { calculateSimulation, emptySimulation, parseSimulationNumber, SimulationStore, simulationLayerLabel, simulationUsageSections } from '../data/simulation';
 import { projectConfig } from '../data/config';
 import type { SimulationLayer, SimulationResult } from '../types/simulation';
+import { createIcon, iconMarkup } from './icons';
 
 const amount = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const percent = new Intl.NumberFormat('pt-BR', { style: 'percent', minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -30,11 +31,11 @@ export function mountSimulationPanel(host: HTMLElement, sourceRows: SimulationLa
       <div><dt>Média por ano</dt><dd data-summary="annualRatio" class="sim-blue"></dd></div>
     </dl><p class="sim-help">VGV% = VGV ÷ investimento. Média por ano = VGV% ÷ anos.</p></div>
     <aside class="sim-actions"><button class="sim-save" type="button">Salvar simulação</button><div class="sim-slots" role="group" aria-label="Simulações salvas"></div>
-      <button class="sim-clear" type="button">Limpar campos</button><button class="sim-print" type="button">Imprimir</button>
+      <button class="sim-clear" type="button">${iconMarkup('trash')} Limpar campos</button><button class="sim-print" type="button">${iconMarkup('printer')} Imprimir</button>
       <p class="sim-help">Sem posição selecionada, salva na próxima posição livre. Selecione um número para editar; clique nele novamente para voltar a uma nova simulação.</p>
     </aside></section><p class="sim-feedback" role="status" aria-live="polite"></p></div>
     <dialog class="sim-export-dialog"><h2>Exportar simulação</h2><p>Arquivo em formato A4.</p><label>Formato <select class="sim-export-format"><option value="pdf">PDF</option><option value="png">PNG</option></select></label>
-      <p class="sim-help">Em PNG, relatórios com mais de uma página são reunidos em um arquivo ZIP com imagens A4.</p><div><button class="sim-export-cancel" type="button">Cancelar</button><button class="sim-export-confirm" type="button">Gerar arquivo</button></div><p class="sim-export-status" role="status"></p></dialog>`;
+      <p class="sim-help">Em PNG, relatórios com mais de uma página são reunidos em um arquivo ZIP com imagens A4.</p><div><button class="sim-export-cancel" type="button">Cancelar</button><button class="sim-export-confirm" type="button">${iconMarkup('download')} Gerar arquivo</button></div><p class="sim-export-status" role="status"></p></dialog>`;
   host.querySelector<HTMLElement>('.sim-project')!.textContent = projectConfig.name;
   const warning = host.querySelector<HTMLElement>('.sim-area-warning')!;
   const missingAreas = rows.reduce((sum, row) => sum + row.missingAreas, 0);
@@ -60,7 +61,7 @@ export function mountSimulationPanel(host: HTMLElement, sourceRows: SimulationLa
       button.title = button.disabled ? `Simulação ${index + 1} vazia` : `Selecionar simulação ${index + 1}`;
     });
     host.querySelector<HTMLElement>('.sim-editing')!.textContent = store.active === null ? 'Nova simulação' : `Simulação ${store.active + 1}`;
-    save.textContent = store.active === null ? 'Salvar simulação' : `Salvar simulação ${store.active + 1}`;
+    save.replaceChildren(createIcon('save'), document.createTextNode(store.active === null ? 'Salvar simulação' : `Salvar simulação ${store.active + 1}`));
     save.disabled = result === null || (store.full && store.active === null);
     save.title = store.full && store.active === null ? 'As quatro posições estão preenchidas. Selecione uma para sobrescrever.' : 'Salvar os valores e as layers marcadas';
   };

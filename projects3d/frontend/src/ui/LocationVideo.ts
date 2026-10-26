@@ -1,4 +1,5 @@
 import { projectConfig } from '../data/config';
+import { createIcon } from './icons';
 
 function formatTime(seconds: number): string {
   if (!Number.isFinite(seconds)) return '--:--';
@@ -23,7 +24,7 @@ export function mountLocationVideo(panel: HTMLElement): void {
 
   const updatePlayback = () => {
     const playing = !video.paused && !video.ended;
-    icon.textContent = playing ? 'Ⅱ' : '▶';
+    icon.replaceChildren(createIcon(playing ? 'pause' : 'play'));
     action.textContent = playing ? 'Pausar' : 'Reproduzir';
     toggle.setAttribute('aria-label', `${action.textContent} vídeo`);
   };

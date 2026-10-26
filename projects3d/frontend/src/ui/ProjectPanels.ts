@@ -1,4 +1,5 @@
 import { projectConfig } from '../data/config';
+import { createIcon } from './icons';
 
 function element<K extends keyof HTMLElementTagNameMap>(tag: K, className: string, text?: string): HTMLElementTagNameMap[K] {
   const node = document.createElement(tag);
@@ -36,6 +37,7 @@ export function mountProjectPanels(mount: HTMLElement): void {
   for (const [text, url] of [['Editar cadastro', projectConfig.editUrl], ['Atualizar pasta', projectConfig.importUrl]]) {
     const link = element('a', '', text);
     link.href = url;
+    link.prepend(createIcon(url === projectConfig.editUrl ? 'edit' : 'folder'));
     actions.append(link);
   }
   cover.append(actions);

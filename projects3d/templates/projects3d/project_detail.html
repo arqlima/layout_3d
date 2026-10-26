@@ -4,11 +4,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#11191d">
+  <meta name="theme-color" content="#020617">
   <title>{{ project.name }} | Visualização arquitetônica</title>
   <link rel="stylesheet" href="{{ viewer_styles_url }}">
 </head>
-<body>
+<body class="au-viewer">
   <div id="viewer-notice" class="viewer-notice" role="status" hidden></div>
   <div id="app"></div>
   <noscript>Ative o JavaScript para visualizar o modelo 3D. <a href="{% url 'projects3d:project-list' %}">Voltar para projetos</a></noscript>

@@ -449,3 +449,70 @@ const legacy = new SimulationStore(storage, 'legacy-simulation', simRows);
 legacy.save(oldDraft);
 assert.deepEqual(new SimulationStore(storage, 'legacy-simulation', simRows).get(0), oldDraft, 'display changes keep saved drafts and original layer keys');
 console.log('Simulation organization tests passed: readable labels, usage sections, no VAGAS and saved draft preservation.');
+
+const { exportImageSize, exportScenePng } = await import(await moduleUrl(resolve(root, 'src/viewer/exportImage.ts')));
+assert.deepEqual(exportImageSize(1600, 900, 4096, 16384), { width: 4096, height: 2304 });
+assert.deepEqual(exportImageSize(900, 1600, 4096, 16384), { width: 2304, height: 4096 });
+assert.deepEqual(exportImageSize(1600, 900, 8192, 4096), { width: 4096, height: 2304 }, 'respects hardware limits');
+const squareExport = exportImageSize(1000, 1000, 8192, 16384);
+assert.ok(squareExport.width * squareExport.height <= 32_000_000, 'bounds capture memory for large square images');
+assert.throws(() => exportImageSize(0, 900, 4096, 16384));
+assert.throws(() => exportImageSize(1000, 900, NaN, 16384));
+const exportScene = new THREE.Scene();
+const exportModel = new THREE.Group();
+const exportMesh = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial({ transparent: true, opacity: .35 }));
+exportModel.add(exportMesh); exportScene.add(exportModel);
+const exportLight = new THREE.DirectionalLight(); exportScene.add(exportLight);
+const syntheticGround = new THREE.Mesh(new THREE.PlaneGeometry(), new THREE.ShadowMaterial()); exportScene.add(syntheticGround);
+const hiddenHelper = new THREE.Group(); hiddenHelper.visible = false; exportScene.add(hiddenHelper);
+const exportBackground = new THREE.Color('#020617'); const exportFog = new THREE.Fog('#020617', 50, 120);
+exportScene.background = exportBackground; exportScene.fog = exportFog;
+const sourceCamera = new THREE.PerspectiveCamera(45, 1600 / 900, .1, 500);
+sourceCamera.position.set(10, 10, 20); sourceCamera.lookAt(0, 0, 0);
+const sourceMatrix = sourceCamera.projectionMatrix.clone();
+const referenceRenderer = { outputColorSpace: THREE.SRGBColorSpace, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.5, shadowMap: { enabled: true, type: THREE.PCFSoftShadowMap }, setSize() { assert.fail('live renderer must not be resized'); } };
+let disposedExport = false, releasedExport = false, clearAlpha = null, renderedCamera = null, renderedSize = null;
+const fakeGl = { MAX_VIEWPORT_DIMS: 1, MAX_RENDERBUFFER_SIZE: 2, getParameter: name => name === 1 ? new Int32Array([16384, 16384]) : 16384 };
+const captureRenderer = {
+  capabilities: { maxTextureSize: 16384 }, shadowMap: {},
+  getContext: () => fakeGl, setPixelRatio(value) { assert.equal(value, 1); },
+  setSize(width, height) { renderedSize = [width, height]; },
+  setClearColor(_color, alpha) { clearAlpha = alpha; },
+  render(scene, camera) {
+    assert.equal(scene.background, null); assert.equal(scene.fog, null);
+    assert.equal(syntheticGround.visible, false, 'transparent output excludes artificial shadow ground');
+    assert.equal(exportLight.visible, true); assert.equal(exportModel.visible, true);
+    assert.equal(exportMesh.material.opacity, .35, 'native material transparency is preserved');
+    assert.notEqual(camera, sourceCamera); renderedCamera = camera;
+  },
+  domElement: { toBlob(callback, type) {
+    assert.equal(type, 'image/png');
+    assert.equal(exportScene.background, exportBackground, 'live scene is restored before asynchronous PNG encoding');
+    assert.equal(exportScene.fog, exportFog);
+    callback(new Blob(['image'], { type }));
+  } },
+  dispose() { disposedExport = true; }, forceContextLoss() { releasedExport = true; },
+};
+const capturedPng = await exportScenePng(exportScene, sourceCamera, exportModel, referenceRenderer, { width: 1600, height: 900 }, { longestEdge: 4096, transparent: true }, () => captureRenderer);
+assert.equal(capturedPng.blob.type, 'image/png'); assert.deepEqual(renderedSize, [4096, 2304]);
+assert.equal(clearAlpha, 0); assert.equal(disposedExport, true); assert.equal(releasedExport, true);
+assert.deepEqual(renderedCamera.position.toArray(), sourceCamera.position.toArray());
+assert.equal(sourceCamera.projectionMatrix.equals(sourceMatrix), true);
+assert.equal(syntheticGround.visible, true); assert.equal(hiddenHelper.visible, false);
+assert.equal(captureRenderer.toneMapping, referenceRenderer.toneMapping);
+assert.equal(captureRenderer.toneMappingExposure, referenceRenderer.toneMappingExposure);
+disposedExport = false; releasedExport = false;
+await assert.rejects(exportScenePng(exportScene, sourceCamera, exportModel, referenceRenderer, { width: 1600, height: 900 }, { longestEdge: 4096, transparent: true }, () => ({ ...captureRenderer, render() { throw new Error('GPU failure'); } })), /GPU failure/);
+assert.equal(exportScene.background, exportBackground); assert.equal(exportScene.fog, exportFog);
+assert.equal(syntheticGround.visible, true); assert.equal(hiddenHelper.visible, false);
+assert.equal(disposedExport, true); assert.equal(releasedExport, true);
+const orthoCaptureCamera = new THREE.OrthographicCamera(-10, 10, 5, -5, .1, 500);
+const opaqueRenderer = { ...captureRenderer, render(scene, camera) {
+  assert.equal(scene.background, exportBackground); assert.equal(scene.fog, exportFog);
+  assert.equal(camera.right - camera.left, 10 * 1600 / 900);
+} };
+await exportScenePng(exportScene, orthoCaptureCamera, exportModel, referenceRenderer, { width: 1600, height: 900 }, { longestEdge: 4096, transparent: false }, () => opaqueRenderer);
+assert.equal(clearAlpha, 1); assert.equal(orthoCaptureCamera.left, -10); assert.equal(orthoCaptureCamera.right, 10);
+await assert.rejects(exportScenePng(exportScene, sourceCamera, exportModel, referenceRenderer, { width: 1600, height: 900 }, { longestEdge: 4096, transparent: true }, () => ({ ...captureRenderer, domElement: { toBlob(callback) { callback(null); } } })), /PNG/);
+assert.equal(exportScene.background, exportBackground); assert.equal(syntheticGround.visible, true);
+console.log('PNG export tests passed: resolution, GPU limits, transparent background, camera cloning, native opacity, restoration and resource cleanup.');

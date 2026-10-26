@@ -1,0 +1,214 @@
+/* Adaptado da referência local AuraGen. Compartilhado entre Django e o viewer. */
+@font-face { font-family: Geist; src: url('./fonts/geist.woff2') format('woff2'); font-style: normal; font-weight: 300 700; font-display: swap; }
+@font-face { font-family: Manrope; src: url('./fonts/manrope.woff2') format('woff2'); font-style: normal; font-weight: 300 800; font-display: swap; }
+@font-face { font-family: Inter; src: url('./fonts/inter.woff2') format('woff2'); font-style: normal; font-weight: 100 900; font-display: swap; }
+:root {
+  --au-font-body: Geist, system-ui, sans-serif;
+  --au-font-heading: Manrope, Geist, sans-serif;
+  --au-font-action: Inter, Geist, sans-serif;
+  --au-page: #020617;
+  --au-panel: #0b1023;
+  --au-well: #0f172a;
+  --au-glass: rgb(255 255 255 / .05);
+  --au-hover: rgb(255 255 255 / .09);
+  --au-border: rgb(255 255 255 / .10);
+  --au-border-strong: rgb(255 255 255 / .20);
+  --au-text: #f4f4f5;
+  --au-secondary: #cbd5e1;
+  --au-muted: #94a3b8;
+  --au-accent: #e879f9;
+  --au-indigo: #8484ff;
+  --au-blue: #60a5fa;
+  --au-success: #4ade80;
+  --au-danger: #fb7185;
+  --au-warning: #fbbf24;
+  --au-radius: 16px;
+  font-family: var(--au-font-body); color: var(--au-text); background: var(--au-page); color-scheme: dark;
+}
+* { box-sizing: border-box; }
+::selection { background: rgb(217 70 239 / .30); color: #fff; }
+body { font-family: var(--au-font-body); color: var(--au-text); background-color: var(--au-page); -webkit-font-smoothing: antialiased; }
+.au-icon { display: inline-block; width: 18px; height: 18px; flex: 0 0 18px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; vertical-align: middle; }
+button, input, textarea, select { font: inherit; }
+button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
+:is(button,a,input,textarea,select):focus-visible { outline: 2px solid var(--au-indigo); outline-offset: 3px; }
+button:disabled { opacity: .42; cursor: not-allowed; }
+
+/* Acesso e gerenciamento. Os nomes das classes existentes continuam válidos. */
+.au-management { min-height: 100vh; margin: 0; background-image: radial-gradient(ellipse at 80% 0, #6366f115, transparent 45%), radial-gradient(ellipse at 0 100%, #9333ea10, transparent 40%); }
+.au-management h1, .au-management h2, .au-management h3, .au-management .font-serifa { font-family: Geist, sans-serif; font-weight: 500; letter-spacing: -.045em; line-height: 1.15; color: var(--au-text); }
+.au-management h1 { font-size: clamp(32px, 4vw, 46px); }
+.au-management h2 { letter-spacing: -.025em; }
+.au-management main { width: 100%; }
+.au-management :is(p,label,li) { line-height: 1.65; }
+.au-management .sobretitulo { display: block; color: var(--au-muted); font: 500 11px/1.6 var(--au-font-body); letter-spacing: .12em; text-transform: uppercase; }
+.au-management .rotulo { display: block; margin-bottom: 9px; color: var(--au-secondary); font: 500 12px/1.5 var(--au-font-body); letter-spacing: .01em; text-transform: none; }
+.au-management .campo { width: 100%; min-height: 44px; padding: 11px 14px; border: 1px solid var(--au-border); border-radius: 10px; background: var(--au-glass); color: var(--au-text); font: 400 14px/1.5 var(--au-font-body); transition: border-color .2s, box-shadow .2s; }
+.au-management textarea.campo { min-height: 105px; resize: vertical; }
+.au-management .campo:focus { border-color: var(--au-indigo); outline: none; box-shadow: 0 0 0 3px #6366f120; }
+.au-management .campo::placeholder { color: #64748b; }
+.au-management .campo.erro { border-color: var(--au-danger); }
+.au-management .campo.arquivo { padding: 8px; color: var(--au-muted); font-size: 12px; }
+.au-management .campo.arquivo::file-selector-button { margin-right: 12px; padding: 8px 13px; border: 1px solid var(--au-border-strong); border-radius: 7px; background: var(--au-glass); color: var(--au-secondary); cursor: pointer; }
+.au-management :is(.botao,.botao-linha,.botao-perigo,.au-text-action) { display: inline-flex; align-items: center; justify-content: center; gap: 9px; min-height: 42px; padding: 11px 21px; border: 1px solid transparent; border-radius: 999px; font: 500 13px/1.3 var(--au-font-action); letter-spacing: 0; text-transform: none; text-decoration: none; cursor: pointer; transition: background-color .18s, border-color .18s, box-shadow .18s; }
+.au-management .botao { color: #0f172a; background: #fff; border-color: #fff; box-shadow: 0 2px 9px #0002; }
+.au-management .botao:hover { background: #eef2ff; border-color: #c7d2fe; box-shadow: 0 0 25px #6366f126; }
+.au-management .botao-linha { color: var(--au-secondary); background: var(--au-glass); border-color: var(--au-border-strong); }
+.au-management .botao-linha:hover { color: #fff; background: var(--au-hover); }
+.au-management .botao-perigo { color: #fda4af; background: #f43f5e0d; border-color: #fb718540; }
+.au-management .botao-perigo:hover { background: #f43f5e1a; border-color: #fb718570; }
+.au-management .botao-sm, .au-management .au-text-action { min-height: 35px; padding: 8px 13px; font-size: 12px; }
+.au-management .au-text-action { color: var(--au-muted); background: transparent; }
+.au-management .au-text-action:hover { color: #fff; background: var(--au-glass); }
+.au-management .au-text-action.danger { color: var(--au-danger); }
+.au-management .au-nav { display: flex; align-items: center; justify-content: space-between; gap: 22px; min-height: 80px; padding: 18px clamp(22px, 4vw, 56px); border-bottom: 1px solid var(--au-border); background: #020617c9; backdrop-filter: blur(18px); }
+.au-management .au-wordmark { display: inline-flex; align-items: center; gap: 13px; font: 600 14px/1.3 var(--au-font-heading); letter-spacing: -.02em; color: #fff; text-decoration: none; }
+.au-wordmark > .au-icon { width: 26px; height: 26px; flex-basis: 26px; color: #c7d2fe; }
+.au-wordmark small { display: block; margin-top: 4px; font: 400 10px/1.2 var(--au-font-body); letter-spacing: .12em; text-transform: uppercase; color: var(--au-muted); }
+.au-account { display: flex; align-items: center; gap: 20px; color: var(--au-muted); font-size: 12px; }
+.au-management .au-project-card { overflow: hidden; padding: 22px; border: 1px solid var(--au-border); border-radius: var(--au-radius); background: linear-gradient(150deg, #ffffff08, #ffffff02); box-shadow: 0 8px 30px #00000016; transition: border-color .2s, box-shadow .2s, transform .2s; }
+.au-management .au-project-card:hover { border-color: var(--au-border-strong); box-shadow: 0 10px 32px #6366f112; transform: translateY(-2px); }
+.au-management .au-project-card img { border-radius: 10px; }
+.au-management .au-project-placeholder { display: grid; place-items: center; height: 176px; margin-bottom: 20px; border: 1px solid var(--au-border); border-radius: 10px; background: radial-gradient(ellipse at 50% 30%, #6366f120, #02061750); color: #a5b4fc; }
+.au-management .au-project-placeholder .au-icon { width: 44px; height: 44px; stroke-width: 1.25; opacity: .7; }
+.au-management .au-pagination { color: var(--au-muted); font: 400 12px/1.5 var(--au-font-action); }
+.au-management .au-pagination a { display: inline-flex; align-items: center; gap: 8px; padding: 8px 13px; border: 1px solid var(--au-border); border-radius: 999px; }
+.au-management .au-pagination a:hover { background: var(--au-glass); color: var(--au-text); }
+.au-management .au-project-card h2 { font-family: var(--au-font-heading); font-size: 21px; font-weight: 600; letter-spacing: -.035em; }
+.au-management .au-search { align-items: center; gap: 12px; }
+.au-management .au-search .au-text-action { margin-top: 25px; }
+.au-management .au-auth-visual { background: var(--au-page); }
+.au-management .au-auth-visual::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, #02061730, #02061780), linear-gradient(0deg, #020617e8, transparent 70%); }
+.au-management .au-auth-visual > .relative { z-index: 1; }
+.au-management .au-auth-visual h1 { max-width: 520px; font-family: Geist, sans-serif; font-size: clamp(35px, 3.6vw, 56px); line-height: 1.05; }
+.au-management .au-auth-visual em { color: #c7d2fe; font-style: normal; }
+.au-management .au-auth-main { background: radial-gradient(ellipse at 70% 0, #6366f112, transparent 65%); }
+.au-management .au-auth-main h2 { font-size: 38px; }
+.au-management .au-auth-wordmark { font: 600 15px/1.5 var(--au-font-heading); letter-spacing: -.01em; text-transform: none; }
+.au-management .au-auth-main .sobretitulo { color: #a5b4fc; }
+.au-management .au-auth-main a { text-decoration-color: #e879f970; }
+.au-management .au-auth-main a:hover { color: var(--au-accent); }
+.au-management .modal-box { border: 1px solid var(--au-border-strong); border-radius: 20px; background: #0b1023; color: var(--au-text); box-shadow: 0 30px 100px #0008; }
+.au-management .modal-backdrop { background: #020617a6; backdrop-filter: blur(5px); }
+.au-management #folder-preview { border-color: var(--au-border); border-radius: 14px; background: var(--au-glass); }
+.au-management :is(.alert-error,[role="alert"]) { border: 1px solid #fb718540; border-radius: 10px; background: #fb71850d; color: #fda4af; }
+.au-management :is(.text-error,.text-red-800) { color: #fda4af; }
+.au-management :is(.checkbox,input[type="checkbox"]) { accent-color: var(--au-indigo); border-color: var(--au-border-strong); border-radius: 4px; }
+
+/* Viewer: mesma fundação, com controles compactos de aplicativo. */
+.au-viewer { margin: 0; background: var(--au-page); color: var(--au-text); }
+.au-viewer .app-shell { background: var(--au-page); font-family: var(--au-font-body); }
+.au-viewer :is(h1,h2,h3,h4) { color: var(--au-text); font-family: var(--au-font-heading); letter-spacing: -.035em; }
+.au-viewer :is(h2,h3,h4) { font-weight: 600; }
+.au-viewer h1 { font-family: Geist, sans-serif; font-weight: 500; }
+.au-viewer :is(button,select) { font-family: var(--au-font-action); font-weight: 500; letter-spacing: 0; }
+.au-viewer .topbar { border-color: var(--au-border); background: #020617d9; backdrop-filter: blur(20px); }
+.au-viewer .brand strong { color: #f4f4f5; font-family: var(--au-font-heading); font-weight: 600; letter-spacing: -.025em; font-size: 15px; }
+.au-viewer .brand small { color: var(--au-muted); font-family: var(--au-font-body); font-weight: 400; letter-spacing: .12em; }
+.au-viewer .brand > .au-icon { width: 26px; height: 26px; flex-basis: 26px; color: #c7d2fe; }
+.au-viewer .brand:has(.brand-mark:not([hidden])) > .au-icon { display: none; }
+.au-viewer .section-tabs { gap: 5px; }
+.au-viewer .section-tab { display: inline-flex; align-items: center; gap: 7px; min-height: 39px; padding: 9px 14px; border: 1px solid transparent; border-radius: 999px; background: transparent; color: var(--au-secondary); font-size: 12px; font-weight: 500; }
+.au-viewer .section-tab .au-icon { width: 15px; height: 15px; flex-basis: 15px; color: var(--au-muted); }
+.au-viewer .section-tab:hover { background: var(--au-glass); border-color: var(--au-border); color: #fff; }
+.au-viewer .section-tab[aria-selected="true"] { border-color: #818cf840; background: #6366f119; color: #e0e7ff; box-shadow: inset 0 -1px 0 #e879f94d; }
+.au-viewer .section-tab[aria-selected="true"] .au-icon { color: #c7d2fe; }
+.au-viewer :is(.back-projects,.project-management a) { display: inline-flex; align-items: center; gap: 7px; color: var(--au-secondary); font-size: 11px; }
+.au-viewer .back-projects:hover { color: var(--au-accent); }
+.au-viewer .project-tag { border-color: var(--au-border); border-radius: 999px; background: var(--au-glass); color: var(--au-secondary); letter-spacing: .08em; font-weight: 500; }
+.au-viewer .status-dot { background: #a5b4fc; box-shadow: 0 0 0 3px #6366f11f; }
+.au-viewer .sidebar { background: #080d1d; border-color: var(--au-border); }
+.au-viewer :is(.sidebar-divider,.layer-section,.layer-row,.sidebar-footer,.controls-guide,.marked-summary) { border-color: var(--au-border); }
+.au-viewer .sidebar-divider { background: var(--au-border); }
+.au-viewer :is(.detail-label,.eyebrow,.usage-heading,.elevation-heading strong,.document-eyebrow) { color: var(--au-muted); font-family: var(--au-font-body); font-size: 10px; font-weight: 500; letter-spacing: .12em; }
+.au-viewer :is(.intro,.layer-summary,.layer-count,.sidebar-footer,.scene-arrow,.scene-card div:nth-child(2) span,.guide-row,.marked-total-note,.marked-data-note) { color: var(--au-muted); font-family: var(--au-font-body); }
+.au-viewer .scene-card strong { color: var(--au-text); font-family: var(--au-font-heading); font-weight: 600; }
+.au-viewer .scene-thumb { border: 1px solid var(--au-border); border-radius: 10px; background: linear-gradient(145deg, #6366f126, #0f172a); }
+.au-viewer .scene-thumb::after { background: #818cf8; }
+.au-viewer :is(.selection-modes button,.layer-actions button,.usage-button,.view-projection button,.elevation-heading button,.selection-hint button,.video-toggle,.sim-actions button,.sim-export-dialog button) { border: 1px solid var(--au-border); border-radius: 8px; background: var(--au-glass); color: var(--au-secondary); font-family: var(--au-font-action); font-weight: 500; letter-spacing: 0; transition: background-color .18s, border-color .18s; }
+.au-viewer :is(.selection-modes button,.layer-actions button,.usage-button,.elevation-heading button,.selection-hint button,.sim-actions button):hover:not(:disabled) { border-color: var(--au-border-strong); background: var(--au-hover); color: #fff; }
+.au-viewer :is(.selection-modes button,.usage-button,.view-projection button)[aria-pressed="true"] { border-color: #818cf85c; background: #6366f125; color: #c7d2fe; }
+.au-viewer .layer-list { scrollbar-color: #475569 transparent; }
+.au-viewer .layer-row { border-radius: 5px; }
+.au-viewer .layer-row:hover { background: var(--au-glass); }
+.au-viewer .layer-row input { accent-color: var(--au-indigo); }
+.au-viewer :is(.layer-name,.layer-opacity,.marked-totals,.hide-unchecked) { color: var(--au-secondary); font-family: var(--au-font-body); }
+.au-viewer .layer-row:has(input:not(:checked)) .layer-name { color: #64748b; }
+.au-viewer .hide-unchecked input { border-color: #475569; background: #1e293b; }
+.au-viewer .hide-unchecked input::before { background: #94a3b8; }
+.au-viewer .hide-unchecked input:checked { border-color: #a5b4fc; background: #6366f1; }
+.au-viewer .hide-unchecked input:checked::before { background: #fff; }
+.au-viewer .marked-grand-total { border-color: var(--au-border); color: var(--au-text); }
+.au-viewer .marked-efficiency { color: #c7d2fe; }
+.au-viewer :is(.view-label,.view-cube-panel,.elevation-filter,.usage-filter,.selection-hint,.viewer-toolbar) { border: 1px solid var(--au-border); border-radius: 12px; background: #0b1023e8; box-shadow: 0 10px 30px #0003; backdrop-filter: blur(16px); }
+.au-viewer .view-label { color: var(--au-secondary); font-family: var(--au-font-action); letter-spacing: .08em; }
+.au-viewer .view-label-square { border-color: var(--au-indigo); }
+.au-viewer .view-cube-face { border-color: #818cf85c; background: #18203d; color: #c7d2fe; }
+.au-viewer .view-cube-face:hover { background: #27345c; }
+.au-viewer :is(.view-cube-select,.sim-export-dialog select) { border-color: var(--au-border-strong); border-radius: 6px; background: #11182b; color: var(--au-secondary); }
+.au-viewer :is(.elevation-summary,.elevation-tick,.selection-details dt) { color: var(--au-muted); }
+.au-viewer .elevation-tick::before { background: #64748b; }
+.au-viewer .elevation-tick.is-in-range::before { background: #a5b4fc; }
+.au-viewer .selection-hint strong { color: var(--au-muted); }
+.au-viewer .selection-hint button { display: inline-flex; align-items: center; gap: 5px; }
+.au-viewer .elevation-rail { background: #334155; }
+.au-viewer .elevation-active { background: #818cf8; }
+.au-viewer .elevation-handle { background: #6366f1; border-color: #c7d2fe; color: #fff; }
+.au-viewer :is(.selection-hint span,.selection-details dd,.usage-total) { color: var(--au-text); }
+.au-viewer :is(.selection-details,.concept-thumbnails,.project-guidelines-table td,.project-guidelines-table th,.indicator-row) { border-color: var(--au-border); }
+.au-viewer .viewport-bottom { background: linear-gradient(transparent, #020617b3); }
+.au-viewer .scene-shortcut { border-radius: 7px; border-color: var(--au-border-strong); background: var(--au-glass); color: var(--au-secondary); font-family: var(--au-font-action); font-weight: 500; }
+.au-viewer .scene-shortcut:hover:not(:disabled) { background: var(--au-hover); border-color: #818cf880; }
+.au-viewer .scene-navigation { color: #e0e7ff; }
+.au-viewer .scene-update { background: #6366f11a; border-color: #6366f14d; color: #a5b4fc; }
+.au-viewer .scene-slot[aria-pressed="true"] { background: #fff; border-color: #fff; color: #0f172a; }
+.au-viewer :is(.scene-feedback,.viewer-notice,.concept-image-error) { border-color: var(--au-border-strong); border-radius: 9px; background: #0b1023f5; color: var(--au-secondary); }
+.au-viewer :is(.project-document-panel,.simulation-panel,.concept-panel,.concept-stage,.concept-thumbnails,.location-panel) { background: var(--au-page); }
+.au-viewer .project-cover-panel { background: radial-gradient(ellipse at 80% 10%, #312e8155, #020617 75%); }
+.au-viewer .project-management { border-color: var(--au-border); border-radius: 999px; background: #020617c9; backdrop-filter: blur(16px); padding: 12px 18px; }
+.au-viewer .project-management a:hover { color: var(--au-accent); }
+.au-viewer :is(.document-description,.project-description,.project-empty) { color: var(--au-secondary); }
+.au-viewer :is(.project-indicators,.project-empty,.project-guidelines-table) { border: 1px solid var(--au-border); border-radius: 14px; background: var(--au-glass); color: var(--au-secondary); }
+.au-viewer .indicator-row:nth-child(even), .au-viewer .project-guidelines-table th { background: var(--au-glass); color: var(--au-text); }
+.au-viewer .indicator-row dt { color: var(--au-secondary); }
+.au-viewer .indicator-row dd { color: #c7d2fe; }
+.au-viewer .concept-counter { border-radius: 999px; background: #020617b3; }
+.au-viewer .concept-thumbnail { border-radius: 8px; background: var(--au-glass); }
+.au-viewer .concept-thumbnail[aria-pressed="true"] { border-color: var(--au-indigo); box-shadow: 0 0 0 1px #818cf826; }
+.au-viewer .video-controls { border-color: var(--au-border); background: #0b1023; color: var(--au-secondary); }
+.au-viewer .video-toggle { display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 999px; }
+.au-viewer .video-timeline { accent-color: var(--au-indigo); }
+.au-viewer .sim-sheet { border-color: var(--au-border); border-radius: 20px; background: linear-gradient(145deg, #ffffff06, #ffffff02); box-shadow: 0 10px 40px #0002; }
+.au-viewer .sim-header h1 { color: var(--au-text); }
+.au-viewer :is(.sim-project,.sim-help,.sim-table th,.sim-fixed label span,.sim-editing) { color: var(--au-muted); }
+.au-viewer .sim-editing { border-color: var(--au-border); border-radius: 999px; }
+.au-viewer :is(.sim-grand-total,.sim-vgv,.sim-bottom,.sim-table td,.sim-table th) { border-color: var(--au-border); }
+.au-viewer .sim-table .sim-use-heading th { background: var(--au-glass); border-color: var(--au-border); color: #c7d2fe; }
+.au-viewer :is(.sim-layer,.sim-area) { color: #e4b46b; }
+.au-viewer .sim-layer input { accent-color: var(--au-indigo); }
+.au-viewer .sim-sheet input:not([type="checkbox"]) { border-color: #60a5fa30; border-radius: 8px; background: #60a5fa09; color: #93c5fd; font-family: var(--au-font-body); font-weight: 500; }
+.au-viewer .sim-sheet input[aria-invalid="true"] { border-color: var(--au-danger); background: #fb718514; }
+.au-viewer .sim-expense { color: var(--au-danger); }
+.au-viewer .sim-income { color: var(--au-success); }
+.au-viewer .sim-blue { color: #93c5fd; }
+.au-viewer .sim-excluded :is(.sim-layer,.sim-area) { color: #64748b; }
+.au-viewer .sim-actions :is(.sim-save,.sim-print) { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 999px; min-height: 40px; }
+.au-viewer .sim-actions .sim-save { background: #fff; border-color: #fff; color: #0f172a; }
+.au-viewer .sim-actions .sim-save:hover:not(:disabled) { background: #e0e7ff; color: #0f172a; }
+.au-viewer .sim-clear { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.au-viewer .sim-slot[aria-pressed="true"] { background: #6366f126; border-color: #818cf8; color: #c7d2fe; }
+.au-viewer .sim-feedback { color: #c7d2fe; }
+.au-viewer .sim-export-dialog { border-color: var(--au-border-strong); border-radius: 18px; background: var(--au-panel); color: var(--au-text); }
+.au-viewer .sim-export-dialog button { display: inline-flex; align-items: center; gap: 7px; padding: 9px 14px; border-radius: 999px; }
+.au-viewer .sim-export-dialog::backdrop { background: #020617b8; backdrop-filter: blur(5px); }
+.au-viewer :is(button,select,input,a):focus-visible { outline-color: var(--au-indigo); }
+@media (max-width: 650px) {
+  .au-management .au-nav { min-height: 70px; padding: 15px 20px; }
+  .au-account > span { display: none; }
+  .au-viewer .section-tab { min-height: 36px; padding: 8px 11px; font-size: 11px; }
+  .au-viewer .section-tab .au-icon { display: none; }
+  .au-viewer .brand strong { font-size: 13px; }
+  .au-viewer .project-management { border-radius: 14px; }
+  .au-viewer .sim-sheet { border-radius: 14px; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0s !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; } }

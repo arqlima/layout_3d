@@ -6,7 +6,9 @@ import type { ObjectRecord, AreaExclusions } from './types/model';
 import type { SelectionMode } from './data/layerSelection';
 import { summarizeSelection } from './data/selectionTotals';
 import { mountSceneToolbar } from './ui/SceneToolbar';
+import { mountImageExport } from './ui/ImageExport';
 import './styles/main.css';
+import '../../static/projects3d/design-system/auragen.css';
 
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('Elemento #app não encontrado.');
@@ -41,12 +43,14 @@ async function start(): Promise<void> {
   ui.fitButton.addEventListener('click', () => viewer.fitToContent());
   ui.homeButton.addEventListener('click', () => viewer.resetView());
   ui.clearSelectionButton.addEventListener('click', () => viewer.clearSelection());
+  const imageExport = mountImageExport(ui.exportButton, projectConfig.name, options => viewer.exportImage(options));
   if (import.meta.hot) import.meta.hot.dispose(() => viewer.dispose());
 
   viewer.setContent(createDemoScene());
   if (!projectConfig.modelUrl) {
     ui.setSceneInfo(projectConfig.name, 'Sem modelo cadastrado · cena demonstrativa', 'DEMONSTRAÇÃO');
     showNotice('Este projeto ainda não possui modelo. A cena exibida é demonstrativa.');
+    imageExport.setReady(true);
     return;
   }
   ui.setSceneInfo(projectConfig.name, 'Preparando a visualização', 'CARREGANDO MODELO');
@@ -103,6 +107,7 @@ async function start(): Promise<void> {
     ui.setSceneInfo(projectConfig.name, 'Falha no modelo · cena demonstrativa', 'DEMONSTRAÇÃO');
     showNotice('Não foi possível carregar o arquivo 3D deste projeto. A cena exibida é demonstrativa.');
   }
+  imageExport.setReady(true);
 }
 
 ui.onMassingVisibilityChange((visible) => {
