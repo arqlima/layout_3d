@@ -121,6 +121,27 @@ o CSV ou o vídeo pelo cadastro, não é necessário recompilar.
 
 ## Validar
 
+A aba **Simulação** usa as áreas integrais do modelo e do CSV, agrupadas por
+layer, sem o grupo REP. Custos e preços de venda são preenchidos por m²; terreno
+e outorga são valores totais em reais. As layers podem ser incluídas ou excluídas
+separadamente no investimento e no VGV. O VGV considera as layers PRIV.
+VGV% = VGV / investimento; média por ano = VGV% / período em anos.
+
+**Salvar simulação** preenche as quatro posições em ordem quando nenhuma está
+selecionada. Selecionar uma posição e salvar sobrescreve somente essa posição;
+clicar novamente na posição ativa retorna ao modo de nova simulação. **Limpar
+campos** preserva os salvamentos. As simulações ficam neste navegador, separadas
+por projeto e pelas áreas da versão do modelo. **Imprimir** permite escolher PDF
+ou PNG em A4 a 300 dpi; PNGs de várias páginas são entregues em ZIP. O PDF é vetorial.
+
+No visualizador, a barra inferior contém Enquadrar, Vista inicial, dez posições
+de cenas e Atualizar. Clique em um número vazio para salvar a visualização atual;
+clique em uma posição já salva para restaurá-la. Atualizar sobrescreve somente a
+cena ativa com a câmera, projeção, layers, cotas, seleção e filtros atuais.
+As cenas ficam salvas neste navegador, separadas por projeto e arquivo de modelo.
+Se o navegador impedir a gravação, a barra informa que a cena vale apenas para
+a sessão atual.
+
 ```powershell
 .venv/Scripts/python.exe manage.py check
 .venv/Scripts/python.exe manage.py test
@@ -130,7 +151,8 @@ o CSV ou o vídeo pelo cadastro, não é necessário recompilar.
 ### Sele??o por Nome, Uso ou Grupo
 
 No Estudo de massa, os bot?es acima da cena atual definem como agrupar a lista
-lateral e a sele??o ao clicar no 3D. **Nome** seleciona a layer clicada;
+lateral e a seleção ao clicar no 3D. **Nome** destaca individualmente o objeto clicado
+e esmaece os demais, inclusive os da mesma layer; os checkboxes continuam filtrando layers.
 **Uso** seleciona todas as layers com o mesmo uso; **Grupo** seleciona todas as
 layers do mesmo grupo. As marca??es s?o compartilhadas entre os tr?s modos;
 um checkbox parcialmente marcado indica que apenas parte das layers daquela

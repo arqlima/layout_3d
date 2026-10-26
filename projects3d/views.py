@@ -3,7 +3,11 @@ from projects3d.forms import ProjectCreateForm, ProjectUpdateForm
 from projects3d.models import Project
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import JsonResponse
+from django.http import JsonResponse, FileResponse
+from django.middleware.csrf import get_token
+from django.views import View
+import io
+import json
 from django.core.exceptions import ValidationError
 from django.templatetags.static import static
 from projects3d.object_data import read_object_csv
@@ -14,6 +18,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.views.generic import FormView
 from projects3d.forms import ProjectFolderForm
 from projects3d.folder_import import save_folder
+from projects3d.viewer_assets import viewer_asset_url
 
 logger = logging.getLogger(__name__)
 
@@ -43,11 +48,15 @@ class ProjectDetailView(LoginRequiredMixin,DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         project = self.object
+        context['viewer_script_url'] = viewer_asset_url('viewer.js')
+        context['viewer_styles_url'] = viewer_asset_url('assets/entry.css')
         context['viewer_config'] = {
             'name': project.name,
             'description': project.description,
             'modelUrl': project.model_file.url if project.model_file else None,
             'objectDataUrl': reverse('projects3d:project-object-data', args=[project.pk]),
+            'simulationExportUrl': reverse('projects3d:project-simulation-export', args=[project.pk]),
+            'csrfToken': get_token(self.request),
             'videoUrl': project.location_video.url if project.location_video else None,
             'rhinoLibraryUrl': static('projects3d/viewer/vendor/rhino3dm/'),
             'listUrl': reverse('projects3d:project-list'),
@@ -64,6 +73,25 @@ class ProjectDetailView(LoginRequiredMixin,DetailView):
 
 class ProjectOverviewView(ProjectDetailView):
     pass
+
+
+class ProjectSimulationExportView(LoginRequiredMixin, View):
+    def post(self, request, pk):
+        project = get_object_or_404(Project, pk=pk)
+        from projects3d.simulation_export import export_simulation
+        try:
+            if len(request.body) > 1_000_000:
+                raise ValueError('A simulação excede o tamanho permitido para exportação.')
+            payload = json.loads(request.body)
+            if not isinstance(payload, dict):
+                raise ValueError('Dados da simulação inválidos.')
+            content, content_type, extension = export_simulation(project.name, payload, payload.get('format', 'pdf'))
+        except (ValueError, UnicodeError, ArithmeticError) as error:
+            return JsonResponse({'error': str(error)}, status=422)
+        response = FileResponse(io.BytesIO(content), content_type=content_type, as_attachment=True,
+                                filename=f'simulacao-{project.pk}.{extension}')
+        response['Cache-Control'] = 'private, no-store'
+        return response
 
 
 class ProjectFolderImportView(LoginRequiredMixin, FormView):

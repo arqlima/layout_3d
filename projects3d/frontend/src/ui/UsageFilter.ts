@@ -1,4 +1,4 @@
-import { USAGE_CODES, type UsageCode, type UsageTotal } from '../types/model';
+import { USAGE_CODES, DEFAULT_USAGES, type UsageCode, type UsageTotal } from '../types/model';
 
 const labels: Record<UsageCode, string> = {
   COM: 'Comum',
@@ -10,6 +10,7 @@ const labels: Record<UsageCode, string> = {
 
 export interface UsageFilter {
   setTotals(totals: Record<UsageCode, UsageTotal>): void;
+  setActive(usages: ReadonlySet<UsageCode>): void;
 }
 
 /** Botões independentes: usos desligados continuam na cena como contexto esmaecido. */
@@ -17,7 +18,7 @@ export function mountUsageFilter(
   host: HTMLElement,
   onChange: (active: ReadonlySet<UsageCode>) => void,
 ): UsageFilter {
-  const active = new Set<UsageCode>(USAGE_CODES);
+  const active = new Set<UsageCode>(DEFAULT_USAGES);
   const countFormat = new Intl.NumberFormat('pt-BR');
   const areaFormat = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const heading = document.createElement('div');
@@ -61,7 +62,7 @@ export function mountUsageFilter(
     button.className = 'usage-button';
     button.textContent = labels[code];
     button.title = `${labels[code]} (${code})`;
-    button.setAttribute('aria-pressed', 'true');
+    button.setAttribute('aria-pressed', String(active.has(code)));
     button.addEventListener('click', () => {
       if (active.has(code)) active.delete(code);
       else active.add(code);
@@ -74,6 +75,11 @@ export function mountUsageFilter(
   host.replaceChildren(heading, buttons, summary);
   host.hidden = false;
   return {
+    setActive(usages) {
+      active.clear();
+      for (const code of usages) active.add(code);
+      render();
+    },
     setTotals(value) {
       totals = value;
       render();

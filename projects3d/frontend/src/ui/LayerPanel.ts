@@ -1,26 +1,38 @@
 import type { LayerInfo } from '../types/layers';
 import { layerKey, layerLabel, type SelectionMode } from '../data/layerSelection';
+import type { AreaExclusions } from '../types/model';
 
 export interface LayerPanelActions {
   onModeChange(mode: SelectionMode): void;
   onHideUncheckedChange(hide: boolean): void;
   onToggleMany(indices: number[], checked: boolean): void;
+  onAreaExclusionsChange(exclusions: AreaExclusions): void;
+}
+
+export interface LayerPanel {
+  update(layers: LayerInfo[]): void;
+  restore(mode: SelectionMode, hide: boolean, exclusions: AreaExclusions): void;
 }
 
 export function mountLayerPanel(
   mount: HTMLElement, initial: LayerInfo[],
   onToggle: (index: number, checked: boolean) => void,
   onSetAll: (checked: boolean) => void, actions: LayerPanelActions,
-): (layers: LayerInfo[]) => void {
+): LayerPanel {
   const modes = mount.querySelector<HTMLElement>('#selection-modes')!;
   const list = mount.querySelector<HTMLElement>('#layer-list')!;
   const summary = mount.querySelector<HTMLElement>('#layer-summary')!;
   const hide = mount.querySelector<HTMLInputElement>('#hide-unchecked')!;
+  const excludeUncovered = mount.querySelector<HTMLInputElement>('#exclude-uncovered')!;
+  const excludeParking = mount.querySelector<HTMLInputElement>('#exclude-parking')!;
   let layers = initial.map(layer => ({ ...layer }));
   let mode: SelectionMode = 'name';
   modes.hidden = layers.length === 0;
 
   const render = () => {
+    mount.querySelector<HTMLElement>('#marked-summary')!.hidden = mode === 'name';
+    mount.querySelector<HTMLElement>('#marked-efficiency')!.hidden = mode !== 'group';
+    mount.querySelector<HTMLElement>('#area-exclusions')!.hidden = mode === 'name';
     list.replaceChildren();
     const groups = new Map<string, LayerInfo[]>();
     for (const layer of layers) {
@@ -86,6 +98,22 @@ export function mountLayerPanel(
   mount.querySelector<HTMLButtonElement>('#show-layers')!.onclick = () => setAll(true);
   mount.querySelector<HTMLButtonElement>('#hide-layers')!.onclick = () => setAll(false);
   hide.onchange = () => actions.onHideUncheckedChange(hide.checked);
+  const changeExclusions = () => actions.onAreaExclusionsChange({
+    excludeUncovered: excludeUncovered.checked,
+    excludeParking: excludeParking.checked,
+  });
+  excludeUncovered.onchange = changeExclusions;
+  excludeParking.onchange = changeExclusions;
   render();
-  return updated => { layers = updated.map(layer => ({ ...layer })); render(); };
+  return {
+    update(updated) { layers = updated.map(layer => ({ ...layer })); render(); },
+    restore(savedMode, hidden, exclusions) {
+      mode = savedMode;
+      hide.checked = hidden;
+      excludeUncovered.checked = exclusions.excludeUncovered;
+      excludeParking.checked = exclusions.excludeParking;
+      for (const button of modes.querySelectorAll<HTMLButtonElement>('button')) button.setAttribute('aria-pressed', String(button.dataset.mode === mode));
+      render();
+    },
+  };
 }

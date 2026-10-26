@@ -1,9 +1,10 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import type { LayerInfo } from '../types/layers';
-import { matchingLayers, parseLayerName, layerLabel, type SelectionMode } from '../data/layerSelection';
-import { USAGE_CODES, type ObjectRecord, type ObjectSelection, type UsageCode } from '../types/model';
+import { matchingLayers, parseLayerName, layerLabel, isRepLayer, type SelectionMode } from '../data/layerSelection';
+import { USAGE_CODES, DEFAULT_USAGES, type MarkedObject, type ObjectRecord, type ObjectSelection, type UsageCode } from '../types/model';
 import type { ProjectionMode, StandardView, ViewState } from '../types/view';
+import type { ViewerSnapshot } from '../types/scenes';
 
 type Renderable = THREE.Mesh | THREE.Line | THREE.Points;
 type ObjectMaterial = THREE.Material | THREE.Material[];
@@ -18,6 +19,7 @@ interface SelectionEntry {
   layerIndex: number | null;
   baseVisible: boolean;
   originalVisible: boolean;
+  highlighted: boolean;
 }
 
 interface ElevationEntry {
@@ -51,7 +53,7 @@ export class ArchitecturalViewer {
   private selectedObject: Renderable | null = null;
   private selectionMode: SelectionMode = 'name';
   private hideUnchecked = false;
-  private activeUsages = new Set<UsageCode>(USAGE_CODES);
+  private activeUsages = new Set<UsageCode>(DEFAULT_USAGES);
   private pointerStart: { id: number; x: number; y: number } | null = null;
   private frameId = 0;
 
@@ -102,7 +104,7 @@ export class ArchitecturalViewer {
     this.clearSelectionEntries();
     if (this.content) this.scene.remove(this.content);
     this.content = content;
-    this.activeUsages = new Set(USAGE_CODES);
+    this.activeUsages = new Set(DEFAULT_USAGES);
     this.readLayers(content);
     this.prepareSelection(content, objectData);
     this.prepareElevationFilter(content, objectData);
@@ -192,6 +194,74 @@ export class ArchitecturalViewer {
     return this.layers.map((layer) => ({ ...layer }));
   }
 
+  captureState(): ViewerSnapshot {
+    const index = this.selectionEntries.findIndex(entry => entry.object === this.selectedObject);
+    return {
+      camera: {
+        projection: this.projectionMode,
+        position: this.camera.position.toArray(),
+        up: this.camera.up.toArray(),
+        target: this.controls.target.toArray(),
+        zoom: this.camera.zoom,
+        near: this.camera.near,
+        far: this.camera.far,
+        orthographicHeight: this.orthographicCamera.top - this.orthographicCamera.bottom,
+        maxDistance: this.controls.maxDistance,
+        label: this.viewLabel,
+      },
+      layers: this.layers.map(({ name, visible }) => ({ name, visible })),
+      elevation: [Number.isFinite(this.elevationBase) ? this.elevationBase : null, Number.isFinite(this.elevationTop) ? this.elevationTop : null],
+      selectionMode: this.selectionMode,
+      activeUsages: [...this.activeUsages],
+      hideUnchecked: this.hideUnchecked,
+      selected: index < 0 ? null : { id: this.selectionEntries[index].objectId, index },
+    };
+  }
+
+  restoreState(state: ViewerSnapshot): void {
+    if (state.layers.length !== this.layers.length || state.layers.some((layer, index) => layer.name !== this.layers[index].name)) {
+      throw new Error('A cena salva pertence a uma versão diferente das layers deste modelo.');
+    }
+    this.selectedObject = null;
+    state.layers.forEach((layer, index) => { this.layers[index].visible = layer.visible; });
+    this.selectionMode = state.selectionMode;
+    this.activeUsages = new Set(state.activeUsages);
+    this.hideUnchecked = state.hideUnchecked;
+    this.elevationBase = state.elevation[0] ?? -Infinity;
+    this.elevationTop = state.elevation[1] ?? Infinity;
+    this.applyVisibilityFilters();
+    if (state.selected) {
+      const entry = state.selected.id
+        ? this.selectionEntries.find(entry => !entry.object.userData.isEdgeHelper && entry.objectId === state.selected!.id)
+        : this.selectionEntries[state.selected.index];
+      if (entry && !entry.object.userData.isEdgeHelper && this.isVisible(entry.object)) this.selectedObject = entry.object;
+    }
+    this.applyAppearance();
+
+    // Recreate controls to discard residual damping from the preceding view.
+    this.controls.dispose();
+    this.projectionMode = state.camera.projection;
+    this.viewLabel = state.camera.label;
+    this.camera = this.projectionMode === 'perspective' ? this.perspectiveCamera : this.orthographicCamera;
+    this.camera.position.fromArray(state.camera.position);
+    this.camera.up.fromArray(state.camera.up);
+    this.camera.zoom = state.camera.zoom;
+    this.camera.near = state.camera.near;
+    this.camera.far = state.camera.far;
+    const halfHeight = state.camera.orthographicHeight / 2;
+    this.orthographicCamera.top = halfHeight;
+    this.orthographicCamera.bottom = -halfHeight;
+    this.controls = this.createControls(this.camera);
+    this.controls.target.fromArray(state.camera.target);
+    this.controls.maxDistance = state.camera.maxDistance;
+    this.resize();
+    this.controls.update();
+    this.controls.saveState();
+    this.lastViewState = '';
+    this.emitViewState();
+    this.notifySelection();
+  }
+
   getElevationLevels(): number[] {
     return [...this.elevationLevels];
   }
@@ -207,6 +277,18 @@ export class ArchitecturalViewer {
   }
 
   setActiveUsages(usages: ReadonlySet<UsageCode>): void {
+    if (this.selectionMode === 'group') return;
+    if (this.selectionMode === 'use') {
+      for (const layer of this.layers) {
+        const use = USAGE_CODES.find(code => code === parseLayerName(layer.name).use);
+        if (use) layer.visible = usages.has(use);
+      }
+    }
+    if (usages.has('REP') !== this.activeUsages.has('REP')) {
+      for (const layer of this.layers) {
+        if (parseLayerName(layer.name).use === 'REP') layer.visible = usages.has('REP');
+      }
+    }
     this.activeUsages = new Set(usages);
     this.selectedObject = null;
     this.applyAppearance();
@@ -222,7 +304,12 @@ export class ArchitecturalViewer {
 
   setSelectionMode(mode: SelectionMode): void {
     this.selectionMode = mode;
-    this.clearSelection();
+    this.selectedObject = null;
+    // Group selection must not retain a usage mask from another mode.
+    this.activeUsages = new Set(DEFAULT_USAGES);
+    if (this.layers.some(layer => layer.visible && parseLayerName(layer.name).use === 'REP')) this.activeUsages.add('REP');
+    this.applyAppearance();
+    this.onSelectionChange(null);
   }
 
   setHideUnchecked(hide: boolean): void {
@@ -235,10 +322,17 @@ export class ArchitecturalViewer {
   }
 
   setLayersChecked(indices: number[], checked: boolean): void {
-    for (const index of indices) {
+    const targets = new Set(indices.flatMap(index => matchingLayers(this.layers, index, this.selectionMode).map(layer => layer.index)));
+    for (const index of targets) {
       const layer = this.layers[index];
       if (layer) layer.visible = checked;
+      if (layer && checked) {
+        const use = USAGE_CODES.find(code => code === parseLayerName(layer.name).use);
+        if (use) this.activeUsages.add(use);
+      }
     }
+    if (this.layers.some(layer => layer.visible && parseLayerName(layer.name).use === 'REP')) this.activeUsages.add('REP');
+    else this.activeUsages.delete('REP');
     this.selectedObject = null;
     this.applyAppearance();
     this.onSelectionChange(null);
@@ -246,6 +340,22 @@ export class ArchitecturalViewer {
 
   setAllLayersVisible(visible: boolean): void {
     this.setLayersChecked(this.layers.map(layer => layer.index), visible);
+  }
+
+  getActiveUsages(): ReadonlySet<UsageCode> {
+    return new Set(this.activeUsages);
+  }
+
+  getMarkedObjects(): Map<string, MarkedObject> {
+    const objects = new Map<string, MarkedObject>();
+    for (const entry of this.selectionEntries) {
+      if (entry.object.userData.isEdgeHelper || !entry.highlighted || !this.isVisible(entry.object)) continue;
+      objects.set(entry.objectId?.toLowerCase() ?? entry.object.uuid, {
+        use: entry.use,
+        layerName: entry.layerIndex === null ? entry.object.name : this.layers[entry.layerIndex].name,
+      });
+    }
+    return objects;
   }
 
   clearSelection(): void {
@@ -425,6 +535,7 @@ export class ArchitecturalViewer {
         layerIndex,
         baseVisible: object.visible,
         originalVisible: object.visible,
+        highlighted: false,
       });
     });
   }
@@ -465,34 +576,54 @@ export class ArchitecturalViewer {
 
   private select(object: Renderable): void {
     if (this.selectedObject === object) return;
-    this.selectedObject = object;
     const selected = this.selectionEntries.find((entry) => entry.object === object);
-    const id = selected?.objectId;
     const layerIndex = selected?.layerIndex ?? null;
     const layer = layerIndex === null ? undefined : this.layers[layerIndex];
+    // A grouped mode never falls back to selecting an individual object.
+    if (this.selectionMode !== 'name') {
+      if (!layer) return;
+      const category = parseLayerName(layer.name);
+      if (this.selectionMode === 'group' && category.group === 'Sem grupo') return;
+      if (this.selectionMode === 'use' && category.use === 'Sem uso') return;
+    }
+    this.selectedObject = object;
     if (layer) {
       const matches = new Set(matchingLayers(this.layers, layer.index, this.selectionMode).map(item => item.index));
       for (const item of this.layers) item.visible = matches.has(item.index);
+      this.activeUsages = new Set(DEFAULT_USAGES);
+      if (this.layers.some(item => item.visible && parseLayerName(item.name).use === 'REP')) this.activeUsages.add('REP');
+      else this.activeUsages.delete('REP');
     }
     this.applyAppearance();
+    this.notifySelection();
+  }
+
+  private notifySelection(): void {
+    const object = this.selectedObject;
+    if (!object) { this.onSelectionChange(null); return; }
+    const selected = this.selectionEntries.find(entry => entry.object === object);
+    const layer = selected?.layerIndex == null ? undefined : this.layers[selected.layerIndex];
     const layerName = layer ? layerLabel(layer, this.selectionMode) : undefined;
     this.onSelectionChange({
-      id: id ?? null,
+      id: this.selectionMode === 'name' ? selected?.objectId ?? null : null,
       name: layerName || object.name?.trim() || object.userData.attributes?.name?.trim() || 'Geometria selecionada',
+      mode: this.selectionMode,
     });
   }
 
   private applyAppearance(): void {
     const selected = this.selectedObject;
     const selectedId = selected ? this.selectionEntries.find((entry) => entry.object === selected)?.objectId : null;
-    const allUsages = this.activeUsages.size === USAGE_CODES.length;
+    const allUsages = DEFAULT_USAGES.every(code => this.activeUsages.has(code));
     for (const entry of this.selectionEntries) {
       const checked = entry.layerIndex === null || this.layers[entry.layerIndex]?.visible !== false;
-      const highlighted = checked && (allUsages || (entry.use !== null && this.activeUsages.has(entry.use)))
-        && (entry.layerIndex !== null || !selected
+      const highlighted = checked && (entry.use === null ? allUsages : this.activeUsages.has(entry.use))
+        && (this.selectionMode !== 'name' || !selected
           || (selectedId ? entry.objectId === selectedId : entry.object === selected || entry.object.parent === selected));
-      entry.object.visible = entry.baseVisible && (!this.hideUnchecked || highlighted);
-      entry.object.material = highlighted ? entry.original : entry.muted;
+      entry.highlighted = highlighted;
+      const rep = entry.use === 'REP' || (entry.layerIndex !== null && isRepLayer(this.layers[entry.layerIndex].name));
+      entry.object.visible = entry.baseVisible && (!(this.hideUnchecked || rep) || highlighted);
+      entry.object.material = highlighted || rep ? entry.original : entry.muted;
       entry.object.castShadow = highlighted && entry.castShadow;
     }
   }
@@ -541,7 +672,7 @@ export class ArchitecturalViewer {
       color: `#${(['r', 'g', 'b'] as const).map((channel) =>
         Math.round(THREE.MathUtils.clamp(layer.color?.[channel] ?? 128, 0, 255)).toString(16).padStart(2, '0'),
       ).join('')}`,
-      visible: layer.visible !== false,
+      visible: layer.visible !== false && !isRepLayer(layer.name ?? ''),
       objectCount: 0,
       opacityMin: 1,
       opacityMax: 0,

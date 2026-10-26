@@ -97,10 +97,27 @@ class ProjectViewerTests(TestCase):
         self.project.save()
         response = self.client.get(reverse('projects3d:project-viewer', args=[self.project.pk]))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'viewer/viewer.js')
+        self.assertContains(response, response.context['viewer_script_url'])
         self.assertIsNone(response.context['viewer_config']['modelUrl'])
         self.assertIsNone(response.context['viewer_config']['videoUrl'])
         self.assertNotContains(response, '</script><script>alert(1)</script>')
+
+    def test_viewer_asset_urls_follow_build_manifest_without_query_strings(self):
+        url = reverse('projects3d:project-detail', args=[self.project.pk])
+        def manifest(version):
+            return json.dumps({'src/entry.ts': {
+                'file': f'viewer-{version}.js', 'css': [f'assets/entry-{version}.css'],
+            }})
+        with patch('projects3d.viewer_assets.Path.read_text', return_value=manifest('old')):
+            before = self.client.get(url)
+        with patch('projects3d.viewer_assets.Path.read_text', return_value=manifest('new')):
+            after = self.client.get(url)
+        for key in ('viewer_script_url', 'viewer_styles_url'):
+            self.assertNotIn('?', after.context[key])
+            self.assertNotEqual(before.context[key], after.context[key])
+            self.assertContains(after, after.context[key])
+        self.assertTrue(after.context['viewer_script_url'].endswith('/viewer-new.js'))
+        self.assertTrue(after.context['viewer_styles_url'].endswith('/entry-new.css'))
 
     def test_data_endpoint_uses_only_requested_project(self):
         first = Project.objects.create(name='Com dados', object_data_file=csv_upload(), csv_columns=COLUMNS)
@@ -255,7 +272,7 @@ class FolderImportTests(TestCase):
         self.assertEqual(config['summary'][0]['value'], '120,5')
         self.assertEqual([image['position'] for image in config['images']], [1, 2])
         self.assertEqual(config['listUrl'], reverse('projects3d:project-list'))
-        self.assertContains(response, 'viewer/viewer.js')
+        self.assertContains(response, response.context['viewer_script_url'])
 
     def test_source_files_are_ignored_even_when_sent_by_client(self):
         payload = folder_payload(False)

@@ -1,8 +1,11 @@
 import type { ArchitecturalViewer } from './viewer/ArchitecturalViewer';
 import { createApp } from './ui/App';
-import { loadObjectData } from './data/objectData';
+import { loadProjectModel } from './data/projectModel';
 import { projectConfig } from './data/config';
-import { USAGE_CODES, type ObjectRecord, type UsageCode, type UsageTotal } from './types/model';
+import type { ObjectRecord, AreaExclusions } from './types/model';
+import type { SelectionMode } from './data/layerSelection';
+import { summarizeSelection } from './data/selectionTotals';
+import { mountSceneToolbar } from './ui/SceneToolbar';
 import './styles/main.css';
 
 const app = document.querySelector<HTMLDivElement>('#app');
@@ -23,6 +26,8 @@ async function start(): Promise<void> {
     import('./viewer/ArchitecturalViewer'), import('./viewer/demoScene'),
   ]);
   let objectData = new Map<string, ObjectRecord>();
+  let selectionMode: SelectionMode = 'name';
+  let areaExclusions: AreaExclusions = { excludeUncovered: false, excludeParking: false };
   let refreshTotals = () => {};
   const viewer = new ArchitecturalViewer(ui.viewport, (selection) => {
     const record = selection?.id ? objectData.get(selection.id.toLowerCase()) : undefined;
@@ -46,31 +51,18 @@ async function start(): Promise<void> {
   }
   ui.setSceneInfo(projectConfig.name, 'Preparando a visualização', 'CARREGANDO MODELO');
   try {
-    const { loadModel } = await import('./viewer/loadModel');
-    const [model, records] = await Promise.all([
-      loadModel(projectConfig.modelUrl, projectConfig.rhinoLibraryUrl),
-      loadObjectData().catch((error: unknown) => {
-        console.warn('Dados por ID indisponíveis.', error);
-        showNotice('O modelo será exibido, mas a tabela de objetos não pôde ser carregada.');
-        return new Map<string, ObjectRecord>();
-      }),
-    ]);
+    const { model, records, dataError } = await loadProjectModel();
+    if (dataError) showNotice('O modelo será exibido, mas a tabela de objetos não pôde ser carregada.');
     model.name = projectConfig.name;
     objectData = records;
     viewer.setContent(model, records);
     ui.setSceneInfo(projectConfig.name, 'Modelo do projeto', 'MODELO DO PROJETO');
     let usageFilter: ReturnType<typeof ui.setUsageFilter> | null = null;
     const updateUsageTotals = () => {
-      if (!usageFilter) return;
-      const totals = Object.fromEntries(USAGE_CODES.map((code) => [code, { count: 0, areaM2: 0 }])) as Record<UsageCode, UsageTotal>;
-      for (const id of viewer.getVisibleObjectIds()) {
-        const record = records.get(id);
-        const code = record?.use?.toUpperCase() as UsageCode | undefined;
-        if (!code || !USAGE_CODES.includes(code)) continue;
-        totals[code].count++;
-        if (code !== 'VAGAS' && record?.areaM2 != null) totals[code].areaM2 += record.areaM2;
-      }
-      usageFilter.setTotals(totals);
+      const totals = summarizeSelection(viewer.getMarkedObjects(), records, selectionMode === 'name' ? {} : areaExclusions);
+      ui.setSelectionTotals(totals);
+      usageFilter?.setActive(viewer.getActiveUsages());
+      usageFilter?.setTotals(totals.byUse);
     };
     refreshTotals = updateUsageTotals;
     ui.setLayers(
@@ -78,7 +70,8 @@ async function start(): Promise<void> {
       (index, visible) => { viewer.setLayerVisible(index, visible); updateUsageTotals(); },
       (visible) => { viewer.setAllLayersVisible(visible); updateUsageTotals(); },
       {
-        onModeChange: mode => viewer.setSelectionMode(mode),
+        onModeChange: mode => { selectionMode = mode; viewer.setSelectionMode(mode); updateUsageTotals(); },
+        onAreaExclusionsChange: exclusions => { areaExclusions = exclusions; updateUsageTotals(); },
         onHideUncheckedChange: hide => { viewer.setHideUnchecked(hide); updateUsageTotals(); },
         onToggleMany: (indices, checked) => { viewer.setLayersChecked(indices, checked); updateUsageTotals(); },
       },
@@ -93,8 +86,18 @@ async function start(): Promise<void> {
         showNotice('Nenhum ID da tabela corresponde aos objetos visíveis do modelo. Confira o CSV e o arquivo 3D.');
       }
       usageFilter = ui.setUsageFilter((active) => { viewer.setActiveUsages(active); updateUsageTotals(); });
-      updateUsageTotals();
     }
+    updateUsageTotals();
+    mountSceneToolbar(ui.sceneToolbar, `layout3d:scenes:v1:${JSON.stringify([projectConfig.objectDataUrl, projectConfig.modelUrl])}`,
+      () => ({ version: 1, viewer: viewer.captureState(), areaExclusions: { ...areaExclusions } }),
+      scene => {
+        viewer.restoreState(scene.viewer);
+        selectionMode = scene.viewer.selectionMode;
+        areaExclusions = { ...scene.areaExclusions };
+        ui.restoreSceneControls(scene);
+        updateUsageTotals();
+      },
+    );
   } catch (error: unknown) {
     console.warn('Não foi possível carregar o modelo.', error);
     ui.setSceneInfo(projectConfig.name, 'Falha no modelo · cena demonstrativa', 'DEMONSTRAÇÃO');
@@ -109,9 +112,29 @@ ui.onMassingVisibilityChange((visible) => {
     started = true;
     start().catch((error: unknown) => {
       console.error(error);
-      showNotice('Não foi possível iniciar o visualizador 3D. Verifique se o navegador oferece suporte a WebGL.');
+      const detail = error instanceof Error ? error.message : 'Erro inesperado';
+      showNotice(`Não foi possível iniciar o visualizador 3D: ${detail}`);
     });
   } else {
     activeViewer?.setActive(visible);
   }
+});
+
+let simulationStarted = false;
+ui.onSimulationVisibilityChange(visible => {
+  if (!visible || simulationStarted) return;
+  simulationStarted = true;
+  ui.simulationPanel.textContent = 'Carregando as áreas do modelo…';
+  (async () => {
+    const [{ mountSimulationPanel }, { collectSimulationLayers }, { model, records, dataError }] = await Promise.all([
+      import('./ui/SimulationPanel'), import('./data/simulation'), loadProjectModel(),
+    ]);
+    if (dataError || records.size === 0) throw new Error('Cadastre uma tabela CSV com as áreas dos objetos para usar a simulação.');
+    const rows = collectSimulationLayers(model, records);
+    if (!rows.length) throw new Error('Nenhuma layer de área disponível fora do grupo REP. Confira o modelo e o CSV.');
+    mountSimulationPanel(ui.simulationPanel, rows);
+  })().catch(error => {
+    simulationStarted = false;
+    ui.simulationPanel.textContent = error instanceof Error ? error.message : 'Não foi possível preparar a simulação.';
+  });
 });

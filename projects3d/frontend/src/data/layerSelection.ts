@@ -20,6 +20,11 @@ export function layerKey(layer: LayerInfo, mode: SelectionMode): string {
   return parseLayerName(layer.name)[mode];
 }
 
+export function isRepLayer(name: string): boolean {
+  const parsed = parseLayerName(name);
+  return parsed.group === 'REP' || parsed.use === 'REP' || name.trim().toUpperCase() === 'REP';
+}
+
 export function layerLabel(layer: LayerInfo, mode: SelectionMode): string {
   if (mode === 'name') return layer.name;
   const key = layerKey(layer, mode);

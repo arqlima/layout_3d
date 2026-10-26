@@ -6,13 +6,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#11191d">
   <title>{{ project.name }} | Visualização arquitetônica</title>
-  <link rel="stylesheet" href="{% static 'projects3d/viewer/assets/entry.css' %}">
+  <link rel="stylesheet" href="{{ viewer_styles_url }}">
 </head>
 <body>
   <div id="viewer-notice" class="viewer-notice" role="status" hidden></div>
   <div id="app"></div>
   <noscript>Ative o JavaScript para visualizar o modelo 3D. <a href="{% url 'projects3d:project-list' %}">Voltar para projetos</a></noscript>
   {{ viewer_config|json_script:"viewer-config" }}
-  <script type="module" src="{% static 'projects3d/viewer/viewer.js' %}"></script>
+  <script type="module" src="{{ viewer_script_url }}"></script>
 </body>
 </html>

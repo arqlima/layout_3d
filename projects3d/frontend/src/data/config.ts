@@ -3,6 +3,8 @@ export interface ViewerConfig {
   description: string;
   modelUrl: string | null;
   objectDataUrl: string;
+  simulationExportUrl: string;
+  csrfToken: string;
   videoUrl: string | null;
   rhinoLibraryUrl: string;
   listUrl: string;

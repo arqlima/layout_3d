@@ -1,0 +1,70 @@
+{
+  "_three.core-fyhtt142.js": {
+    "file": "chunks/three.core-fyhtt142.js",
+    "name": "three.core"
+  },
+  "src/data/simulation.ts": {
+    "file": "chunks/simulation-Cvh9LTc-.js",
+    "name": "simulation",
+    "src": "src/data/simulation.ts",
+    "isDynamicEntry": true,
+    "imports": [
+      "src/entry.ts",
+      "_three.core-fyhtt142.js"
+    ]
+  },
+  "src/entry.ts": {
+    "file": "viewer-VHIIMi2x.js",
+    "name": "entry",
+    "src": "src/entry.ts",
+    "isEntry": true,
+    "dynamicImports": [
+      "src/viewer/loadModel.ts",
+      "src/viewer/ArchitecturalViewer.ts",
+      "src/viewer/demoScene.ts",
+      "src/ui/SimulationPanel.ts",
+      "src/data/simulation.ts"
+    ],
+    "css": [
+      "assets/entry-B0PVl403.css"
+    ]
+  },
+  "src/ui/SimulationPanel.ts": {
+    "file": "chunks/SimulationPanel-xQubNJDi.js",
+    "name": "SimulationPanel",
+    "src": "src/ui/SimulationPanel.ts",
+    "isDynamicEntry": true,
+    "imports": [
+      "src/entry.ts",
+      "src/data/simulation.ts"
+    ]
+  },
+  "src/viewer/ArchitecturalViewer.ts": {
+    "file": "chunks/ArchitecturalViewer-BkNohEp7.js",
+    "name": "ArchitecturalViewer",
+    "src": "src/viewer/ArchitecturalViewer.ts",
+    "isDynamicEntry": true,
+    "imports": [
+      "src/entry.ts",
+      "_three.core-fyhtt142.js"
+    ]
+  },
+  "src/viewer/demoScene.ts": {
+    "file": "chunks/demoScene-BdR2ZO8C.js",
+    "name": "demoScene",
+    "src": "src/viewer/demoScene.ts",
+    "isDynamicEntry": true,
+    "imports": [
+      "_three.core-fyhtt142.js"
+    ]
+  },
+  "src/viewer/loadModel.ts": {
+    "file": "chunks/loadModel-CE8N2Wrm.js",
+    "name": "loadModel",
+    "src": "src/viewer/loadModel.ts",
+    "isDynamicEntry": true,
+    "imports": [
+      "_three.core-fyhtt142.js"
+    ]
+  }
+}

@@ -1,17 +1,21 @@
 type Limit = 'top' | 'base';
 const scaleObservers = new WeakMap<HTMLElement, ResizeObserver>();
 
+export interface ElevationFilter {
+  setRange(base: number | null, top: number | null): void;
+}
+
 /** Controle vertical com limites independentes para topo e base. */
 export function mountElevationFilter(
   host: HTMLElement,
   levels: number[],
   onChange: (base: number, top: number) => void,
-): void {
+): ElevationFilter {
   scaleObservers.get(host)?.disconnect();
   scaleObservers.delete(host);
   host.replaceChildren();
   host.hidden = levels.length < 2;
-  if (levels.length < 2) return;
+  if (levels.length < 2) return { setRange() {} };
 
   const format = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const min = levels[0];
@@ -166,4 +170,12 @@ export function mountElevationFilter(
   scaleObservers.set(host, observer);
   updateTickLabels();
   render(false);
+  return {
+    setRange(base, top) {
+      const nearest = (value: number) => levels.reduce((best, level, index) => Math.abs(level - value) < Math.abs(levels[best] - value) ? index : best, 0);
+      baseIndex = base === null ? 0 : nearest(base);
+      topIndex = top === null ? levels.length - 1 : Math.max(baseIndex, nearest(top));
+      render(false);
+    },
+  };
 }

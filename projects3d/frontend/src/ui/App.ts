@@ -1,7 +1,9 @@
 import type { LayerInfo } from '../types/layers';
-import { mountLayerPanel, type LayerPanelActions } from './LayerPanel';
-import type { ObjectRecord, ObjectSelection } from '../types/model';
-import { mountElevationFilter } from './ElevationFilter';
+import { mountLayerPanel, type LayerPanelActions, type LayerPanel } from './LayerPanel';
+import type { ObjectRecord, ObjectSelection, SelectionTotals } from '../types/model';
+import { mountSelectionSummary } from './SelectionSummary';
+import { mountElevationFilter, type ElevationFilter } from './ElevationFilter';
+import type { SavedScene } from '../types/scenes';
 import { mountUsageFilter, type UsageFilter } from './UsageFilter';
 import { createViewCube } from './ViewCube';
 import type { ProjectionMode, StandardView, ViewState } from '../types/view';
@@ -15,12 +17,17 @@ export interface AppElements {
   fitButton: HTMLButtonElement;
   homeButton: HTMLButtonElement;
   clearSelectionButton: HTMLButtonElement;
+  sceneToolbar: HTMLElement;
+  simulationPanel: HTMLElement;
+  onSimulationVisibilityChange(callback: (visible: boolean) => void): void;
   onMassingVisibilityChange(callback: (visible: boolean) => void): void;
   setBrand(name: string, markUrl: string): void;
   setSceneInfo(title: string, subtitle: string, status: string): void;
   setSelection(selection: ObjectSelection | null, record?: ObjectRecord): void;
   setLayers(layers: LayerInfo[], onToggle: (index: number, visible: boolean) => void, onSetAll: (visible: boolean) => void, actions: LayerPanelActions): void;
   updateLayers(layers: LayerInfo[]): void;
+  setSelectionTotals(totals: SelectionTotals): void;
+  restoreSceneControls(scene: SavedScene): void;
   setElevationFilter(levels: number[], onChange: (base: number, top: number) => void): void;
   setUsageFilter(onChange: (active: ReadonlySet<UsageCode>) => void): UsageFilter;
   setViewActions(onView: (view: StandardView) => void, onProjection: (mode: ProjectionMode) => void): void;
@@ -41,6 +48,7 @@ export function createApp(mount: HTMLElement): AppElements {
           <button id="tab-guidelines" class="section-tab" type="button" role="tab" aria-selected="false" aria-controls="guidelines-panel" tabindex="-1">Diretrizes</button>
           <button id="tab-massing" class="section-tab" type="button" role="tab" aria-selected="false" aria-controls="massing-panel" tabindex="-1">Estudo de massa</button>
           <button id="tab-concept" class="section-tab" type="button" role="tab" aria-selected="false" aria-controls="concept-panel" tabindex="-1">Conceito</button>
+          <button id="tab-simulation" class="section-tab" type="button" role="tab" aria-selected="false" aria-controls="simulation-panel" tabindex="-1">Simulação</button>
         </nav>
         <div class="topbar-right"><a id="back-projects" class="back-projects">← Projetos</a><span class="project-tag"><span class="status-dot"></span> <span id="scene-status">PROJETO</span></span></div>
       </header>
@@ -48,6 +56,7 @@ export function createApp(mount: HTMLElement): AppElements {
       <section id="cover-panel" class="project-cover-panel" role="tabpanel" aria-labelledby="tab-cover" tabindex="0"></section>
       <section id="guidelines-panel" class="project-document-panel" role="tabpanel" aria-labelledby="tab-guidelines" tabindex="0" hidden></section>
       <section id="concept-panel" class="project-document-panel" role="tabpanel" aria-labelledby="tab-concept" tabindex="0" hidden></section>
+      <section id="simulation-panel" class="simulation-panel" role="tabpanel" aria-labelledby="tab-simulation" tabindex="0" hidden></section>
       <main id="massing-panel" class="workspace" role="tabpanel" aria-labelledby="tab-massing" tabindex="0" hidden>
         <aside class="sidebar" aria-label="Informações do estudo">
           <div class="sidebar-inner">
@@ -65,6 +74,11 @@ export function createApp(mount: HTMLElement): AppElements {
               <div class="layer-heading"><span class="detail-label">LAYERS DO MODELO</span><span id="layer-summary" class="layer-summary"></span></div>
               <div class="layer-actions"><button id="show-layers" type="button">Marcar todos</button><button id="hide-layers" type="button">Marcar nenhum</button></div>
               <div id="layer-list" class="layer-list"></div>
+              <div id="area-exclusions" class="area-exclusions" role="group" aria-label="Exclusões do cálculo de áreas" hidden>
+                <label class="hide-unchecked"><input id="exclude-uncovered" type="checkbox" role="switch" /> Excluir áreas descobertas</label>
+                <label class="hide-unchecked"><input id="exclude-parking" type="checkbox" role="switch" /> Excluir estacionamento</label>
+              </div>
+              <section id="marked-summary" class="marked-summary" aria-label="Resumo dos objetos marcados" hidden></section>
               <label class="hide-unchecked"><input id="hide-unchecked" type="checkbox" role="switch" /> Ocultar desmarcados</label>
             </section>
             <div class="sidebar-spacer"></div>
@@ -93,7 +107,13 @@ export function createApp(mount: HTMLElement): AppElements {
             </dl>
           </div>
           <div class="viewport-bottom">
-            <div class="actions"><button id="fit-view" type="button" class="action-button action-outline" title="Enquadrar toda a cena"><span aria-hidden="true">⛶</span> Enquadrar</button><button id="home-view" type="button" class="action-button action-solid" title="Voltar à vista inicial"><span aria-hidden="true">⌂</span> Vista inicial</button></div>
+            <div id="scene-toolbar" class="viewer-toolbar" role="toolbar" aria-label="Vistas e cenas salvas">
+              <button id="fit-view" type="button" class="scene-shortcut scene-navigation" title="Enquadrar toda a cena" aria-label="Enquadrar toda a cena"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4H4v4m12-4h4v4M4 16v4h4m12-4v4h-4" /></svg></button>
+              <button id="home-view" type="button" class="scene-shortcut scene-navigation" title="Vista inicial" aria-label="Vista inicial"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 11 9-8 9 8M6 9v12h12V9M10 21v-7h4v7" /></svg></button>
+              <div class="scene-slots" role="group" aria-label="Cenas de 1 a 10"></div>
+              <button id="update-scene" type="button" class="scene-shortcut scene-update" title="Selecione uma cena para atualizar" aria-label="Selecione uma cena para atualizar" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M5 8a8 8 0 0 1 13-3l2 2M4 17l2 2a8 8 0 0 0 13-3" /></svg></button>
+              <span class="scene-feedback" role="status" aria-live="polite"></span>
+            </div>
           </div>
         </section>
       </main>
@@ -123,6 +143,7 @@ export function createApp(mount: HTMLElement): AppElements {
   mountLocationVideo(locationPanel);
   const tabs = [...mount.querySelectorAll<HTMLButtonElement>('.section-tab')];
   let onMassingVisibility = (_visible: boolean) => {};
+  let onSimulationVisibility = (_visible: boolean) => {};
   const activateTab = (tab: HTMLButtonElement) => {
     mount.querySelector<HTMLElement>('.app-shell')!.classList.toggle('is-cover', tab.id === 'tab-cover');
     for (const item of tabs) {
@@ -133,6 +154,7 @@ export function createApp(mount: HTMLElement): AppElements {
     }
     if (tab.id !== 'tab-location') locationVideo.pause();
     onMassingVisibility(tab.id === 'tab-massing');
+    onSimulationVisibility(tab.id === 'tab-simulation');
   };
   const requested = new URLSearchParams(location.search).get('section');
   const initialTab = tabs.find(tab => tab.id === `tab-${requested}`) ?? tabs[0];
@@ -181,12 +203,20 @@ export function createApp(mount: HTMLElement): AppElements {
   if (!viewport || !fitButton || !homeButton || !clearSelectionButton || !brand || !brandName || !brandMark || !selectionHint || !selectionName || !selectionArea || !selectionUse || !selectionElevation || !elevationFilter || !usageFilter || !viewCubePanel || !viewName || !viewProjection || !sceneTitle || !sceneSubtitle || !sceneStatus || !sidebar || !layerSection || !layerList || !layerSummary || !showLayers || !hideLayers) throw new Error('Interface incompleta.');
   const metric = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const viewCube = createViewCube(viewCubePanel);
-  let updateLayerPanel = (_layers: LayerInfo[]) => {};
+  let layerPanel: LayerPanel | null = null;
+  let elevationControl: ElevationFilter | null = null;
+  const updateSelectionSummary = mountSelectionSummary(mount.querySelector<HTMLElement>('#marked-summary')!);
   return {
     viewport,
     fitButton,
     homeButton,
     clearSelectionButton,
+    sceneToolbar: mount.querySelector<HTMLElement>('#scene-toolbar')!,
+    simulationPanel: mount.querySelector<HTMLElement>('#simulation-panel')!,
+    onSimulationVisibilityChange(callback) {
+      onSimulationVisibility = callback;
+      callback(!mount.querySelector<HTMLElement>('#simulation-panel')!.hidden);
+    },
     onMassingVisibilityChange(callback) {
       onMassingVisibility = callback;
       callback(!massingPanel.hidden);
@@ -207,7 +237,7 @@ export function createApp(mount: HTMLElement): AppElements {
       viewProjection.textContent = state.projection === 'perspective' ? '3D' : 'ORTO';
     },
     setElevationFilter(levels, onChange) {
-      mountElevationFilter(elevationFilter, levels, onChange);
+      elevationControl = mountElevationFilter(elevationFilter, levels, onChange);
     },
     setUsageFilter(onChange) {
       return mountUsageFilter(usageFilter, onChange);
@@ -219,7 +249,7 @@ export function createApp(mount: HTMLElement): AppElements {
         : record?.areaM2 == null ? 'Não informada' : `${metric.format(record.areaM2)} m²`;
       selectionUse.textContent = record?.use || 'Não informado';
       selectionElevation.textContent = record?.elevationM == null ? 'Não informada' : `${metric.format(record.elevationM)} m`;
-      selectionHint.hidden = selection === null;
+      selectionHint.hidden = selection === null || (selection.mode !== undefined && selection.mode !== 'name');
     },
     setSceneInfo(title, subtitle, status) {
       sceneTitle.textContent = title;
@@ -229,8 +259,20 @@ export function createApp(mount: HTMLElement): AppElements {
     setLayers(layers, onToggle, onSetAll, actions) {
       layerSection.hidden = layers.length === 0;
       sidebar.classList.toggle('has-layers', layers.length > 0);
-      updateLayerPanel = mountLayerPanel(mount, layers, onToggle, onSetAll, actions);
+      layerPanel = mountLayerPanel(mount, layers, onToggle, onSetAll, {
+        ...actions,
+        onModeChange(mode) {
+          usageFilter.hidden = mode !== 'name' || !usageFilter.childElementCount;
+          actions.onModeChange(mode);
+        },
+      });
     },
-    updateLayers(layers) { updateLayerPanel(layers); },
+    updateLayers(layers) { layerPanel?.update(layers); },
+    setSelectionTotals(totals) { updateSelectionSummary(totals); },
+    restoreSceneControls(scene) {
+      layerPanel?.restore(scene.viewer.selectionMode, scene.viewer.hideUnchecked, scene.areaExclusions);
+      elevationControl?.setRange(...scene.viewer.elevation);
+      usageFilter.hidden = scene.viewer.selectionMode !== 'name' || !usageFilter.childElementCount;
+    },
   };
 }
