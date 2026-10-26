@@ -1,0 +1,18 @@
+<div>
+  <label for="{{ form.object_data_file.id_for_label }}" class="rotulo">{{ form.object_data_file.label }}</label>
+  {{ form.object_data_file }}
+  <p class="mt-2 text-xs text-preto/50">Opcional. CSV UTF-8 separado por ponto e vírgula, com o GUID original de cada objeto Rhino, área, uso e cota. Usos: COM, EST, PRIV e VAGAS.</p>
+  {% for error in form.object_data_file.errors %}<p class="mt-1 text-error text-xs">{{ error }}</p>{% endfor %}
+</div>
+<div>
+  <label for="{{ form.csv_columns.id_for_label }}" class="rotulo">{{ form.csv_columns.label }}</label>
+  {{ form.csv_columns }}
+  <p class="mt-2 text-xs text-preto/50">Associe id, area, use e elevation aos cabeçalhos do seu CSV. areaFallback é opcional; remova essa entrada se a coluna não existir.</p>
+  {% for error in form.csv_columns.errors %}<p class="mt-1 text-error text-xs">{{ error }}</p>{% endfor %}
+</div>
+<div>
+  <label for="{{ form.location_video.id_for_label }}" class="rotulo">{{ form.location_video.label }}</label>
+  {{ form.location_video }}
+  <p class="mt-2 text-xs text-preto/50">Opcional. Exibido na aba Localização, com reprodução e linha do tempo.</p>
+  {% for error in form.location_video.errors %}<p class="mt-1 text-error text-xs">{{ error }}</p>{% endfor %}
+</div>

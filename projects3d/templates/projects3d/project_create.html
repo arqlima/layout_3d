@@ -36,11 +36,13 @@
     <div>
       <label for="{{ form.model_file.id_for_label }}" class="rotulo">{{ form.model_file.label }}</label>
       <input type="file" name="{{ form.model_file.html_name }}" id="{{ form.model_file.id_for_label }}"
-             accept=".glb,.gltf,.3dm" required
+             accept=".glb,.gltf,.3dm"
              class="campo arquivo {% if form.model_file.errors %}erro{% endif %}">
-      <p class="mt-2 text-xs text-preto/50">Arquivo .glb exportado do Rhino</p>
+      <p class="mt-2 text-xs text-preto/50">Modelo Rhino .3dm ou .glb/.gltf. Sem arquivo, será exibida uma cena demonstrativa.</p>
       {% for error in form.model_file.errors %}<p class="mt-1 text-error text-xs">{{ error }}</p>{% endfor %}
     </div>
+
+    {% include "projects3d/_viewer_fields.html" %}
 
     <div class="flex flex-wrap gap-4 pt-3">
       <button type="submit" class="botao">Salvar</button>

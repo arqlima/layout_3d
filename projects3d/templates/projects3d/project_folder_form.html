@@ -1,0 +1,51 @@
+{% extends "base_1.html" %}
+{% load static %}
+{% block title %}{% if project %}Atualizar arquivos{% else %}Novo projeto{% endif %} | Projetos{% endblock %}
+{% block content %}
+{% include "partials/_nav_bar.html" %}
+<main class="max-w-3xl mx-auto p-6 sm:p-10">
+  <a href="{% url 'projects3d:project-list' %}" class="sobretitulo">← Voltar para projetos</a>
+  <h1 class="font-serifa text-4xl mt-8 mb-3">{% if project %}Atualizar arquivos{% else %}Novo projeto{% endif %}</h1>
+  <p class="text-preto/60 mb-8">Selecione a pasta preparada. Confira o conjunto abaixo e salve para criar uma cópia independente na plataforma.</p>
+  <form id="folder-import-form" method="post" action="{% if project %}{% url 'projects3d:project-folder-update' project.pk %}{% else %}{% url 'projects3d:project-folder-import' %}{% endif %}" enctype="multipart/form-data" class="space-y-7">
+    {% csrf_token %}
+    {% if form.errors %}
+    <div role="alert" class="border border-red-700 p-4 text-red-800">
+      <p class="font-medium">A importação não foi concluída. Corrija o problema e selecione novamente a pasta.</p>
+      {{ form.non_field_errors }}
+      {% for field in form %}{% for error in field.errors %}<p>{{ field.label }}: {{ error }}</p>{% endfor %}{% endfor %}
+    </div>
+    {% endif %}
+    <div><label for="{{ form.name.id_for_label }}" class="rotulo">{{ form.name.label }}</label>{{ form.name }}</div>
+    <div><label for="{{ form.description.id_for_label }}" class="rotulo">{{ form.description.label }}</label>{{ form.description }}</div>
+    <div>
+      <label for="{{ form.folder_files.id_for_label }}" class="rotulo">Pasta do projeto</label>
+      {{ form.folder_files }}
+      {{ form.folder_paths }}{{ form.source_folder }}
+      <p class="mt-2 text-sm text-preto/60">Obrigatórios: <strong>massa.3dm</strong> e <strong>objetos.csv</strong>. Opcionais: resumo.txt ou resumo.csv, diretrizes.csv, localizacao.mp4, capa e imagens numeradas. A pasta fontes/ será ignorada.</p>
+    </div>
+    <section id="folder-preview" hidden class="border border-preto/20 p-5 space-y-4" aria-live="polite">
+      <h2 class="font-serifa text-2xl">Conferência da pasta</h2>
+      <p id="folder-description" class="text-sm text-preto/60"></p>
+      <ul id="folder-file-list" class="space-y-2 text-sm"></ul>
+      <p id="folder-error" role="alert" class="text-red-800"></p>
+      <img id="folder-cover-preview" alt="Prévia da capa selecionada" hidden class="w-full max-h-64 object-contain">
+      <p class="text-xs text-preto/60">O conteúdo das tabelas e as imagens também serão validados antes de salvar. A pasta original não será alterada.</p>
+    </section>
+    {% if project %}
+    <label class="flex items-start gap-3 text-sm">
+      {{ form.confirm_replace }}
+      <span>Substituir o conjunto atual pelos arquivos desta pasta. Arquivos opcionais ausentes serão removidos do projeto. A substituição só será aplicada se toda a importação for concluída.</span>
+    </label>
+    {% endif %}
+    <p id="folder-progress" role="status" hidden class="text-sm">Enviando e copiando os arquivos… Mantenha esta página aberta.</p>
+    <div class="flex flex-wrap items-center gap-4">
+      <button id="folder-submit" class="botao" type="submit" disabled>{% if project %}Salvar atualização{% else %}Salvar projeto{% endif %}</button>
+      <a class="botao-linha" href="{% if project %}{% url 'projects3d:project-detail' project.pk %}{% else %}{% url 'projects3d:project-list' %}{% endif %}">Cancelar</a>
+    </div>
+  </form>
+  {% if not project %}<p class="mt-8 text-sm text-preto/60">Prefere enviar os arquivos separadamente? <a class="underline" href="{% url 'projects3d:project-create' %}?individual=1">Usar cadastro individual</a></p>{% endif %}
+  <noscript><p class="mt-6">Ative o JavaScript para selecionar e conferir uma pasta. O cadastro individual continua disponível.</p></noscript>
+</main>
+<script src="{% static 'projects3d/js/folder-import.js' %}" defer></script>
+{% endblock %}

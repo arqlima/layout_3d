@@ -5,6 +5,7 @@
   <div class="modal-box rounded-none bg-areia p-8 sm:p-10">
     <p class="sobretitulo">Projeto</p>
     <h3 class="font-serifa text-3xl mt-3 mb-8">Editar projeto</h3>
+    <p class="mb-6 text-sm"><a class="underline" href="{% url 'projects3d:project-folder-update' project.pk %}">Atualizar o conjunto completo por pasta →</a></p>
 
     <form method="post" action="{% url 'projects3d:project-update' project.pk %}" enctype="multipart/form-data" class="space-y-7">
       {% csrf_token %}
@@ -44,6 +45,8 @@
         <p class="mt-2 text-xs text-preto/50">Deixe vazio para manter o arquivo atual</p>
         {% for error in form.model_file.errors %}<p class="mt-1 text-error text-xs">{{ error }}</p>{% endfor %}
       </div>
+
+      {% include "projects3d/_viewer_fields.html" %}
 
       <div class="flex flex-wrap justify-end gap-4 pt-3">
         <button type="button" class="botao-linha" onclick="this.closest('dialog').close()">Cancelar</button>

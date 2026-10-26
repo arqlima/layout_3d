@@ -30,11 +30,12 @@
   <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
     {% for project in projects %}
       <article class="flex flex-col bg-white/60 border border-preto/10 p-6 transition-colors hover:border-verde/40">
+        {% if project.cover_image %}<a href="{% url 'projects3d:project-detail' project.pk %}"><img src="{{ project.cover_image.url }}" alt="Capa de {{ project.name }}" loading="lazy" class="w-full h-44 object-cover mb-5"></a>{% endif %}
         <h2 class="font-serifa text-2xl">{{ project.name }}</h2>
         <p class="mt-3 flex-1 text-sm text-preto/60">{{ project.description|default:"Sem descrição."|truncatewords:20 }}</p>
 
         <div class="flex flex-wrap items-center gap-4 mt-6 pt-5 border-t border-preto/10">
-          <a href="{% url 'projects3d:project-detail' project.pk %}" class="botao botao-sm">Ver 3D</a>
+          <a href="{% url 'projects3d:project-detail' project.pk %}" class="botao botao-sm">Abrir projeto</a>
 
           <button type="button" class="text-xs tracking-[0.25em] uppercase cursor-pointer hover:text-verde"
                   hx-get="{% url 'projects3d:project-update' project.pk %}"

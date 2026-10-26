@@ -8,3 +8,8 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Frontend build dependencies and private project uploads
+node_modules/
+media/
+projects3d/frontend/public/
