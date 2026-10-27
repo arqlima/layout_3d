@@ -38,6 +38,8 @@ async function start(): Promise<void> {
     refreshTotals();
   }, (state) => ui.setViewState(state));
   activeViewer = viewer;
+  ui.onSolarSettingsChange(settings => viewer.setSolarSettings(settings));
+  ui.onSolarVisibilityChange(visible => viewer.setSelectionEnabled(!visible));
   viewer.setActive(massingVisible);
   ui.setViewActions((view) => viewer.setStandardView(view), (mode) => viewer.setProjectionMode(mode));
   ui.fitButton.addEventListener('click', () => viewer.fitToContent());

@@ -45,6 +45,8 @@ def read_object_csv(file, columns):
     if missing:
         raise ValidationError(f'Colunas ausentes no CSV: {", ".join(sorted(missing))}.')
     indexes = {key: header.index(value) for key, value in columns.items()}
+    if 'Piso_a_Piso' in header:
+        indexes['floorToFloor'] = header.index('Piso_a_Piso')
     records = []
     ids = set()
     for line, row in enumerate(rows[1:], start=2):
@@ -79,5 +81,6 @@ def read_object_csv(file, columns):
             'areaM2': decimal(get('area') or get('areaFallback')),
             'use': get('use') or None,
             'elevationM': decimal(get('elevation')),
+            'floorToFloorM': decimal(get('floorToFloor')),
         })
     return records

@@ -4,6 +4,7 @@ export interface ObjectRecord {
   areaM2: number | null;
   use: string | null;
   elevationM: number | null;
+  floorToFloorM?: number | null;
 }
 
 export interface ObjectSelection {

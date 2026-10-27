@@ -9,11 +9,22 @@ function element<K extends keyof HTMLElementTagNameMap>(tag: K, className: strin
 }
 
 const numberFormat = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 2 });
-export function formatIndicator(value: string): string {
+const decimalFormat = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const efficiencyFormat = new Intl.NumberFormat('pt-BR', { style: 'percent', minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const occupancyFormat = new Intl.NumberFormat('pt-BR', { style: 'percent', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+export function formatIndicator(value: string, label = ''): string {
   if (!value.trim()) return 'Não informado';
   if (/^[+-]?\d+(?:[.,]\d+)?$/.test(value.trim())) {
     const number = Number(value.trim().replace(',', '.'));
-    if (Number.isFinite(number)) return numberFormat.format(number);
+    if (Number.isFinite(number)) {
+      const indicator = label.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+      if (indicator === 'eficiencia') return efficiencyFormat.format(number);
+      if (indicator === 'taxa de ocupacao') return occupancyFormat.format(number);
+      if (indicator === 'indice de elevacao') return decimalFormat.format(number);
+      if (/\barea\b|\bestacionamento\b|m²/.test(indicator)) return `${decimalFormat.format(number)} m²`;
+      return numberFormat.format(number);
+    }
   }
   return value;
 }
@@ -50,7 +61,7 @@ export function mountProjectPanels(mount: HTMLElement): void {
     const list = element('dl', 'project-indicators');
     for (const item of projectConfig.summary) {
       const row = element('div', 'indicator-row');
-      row.append(element('dt', '', item.label), element('dd', '', formatIndicator(item.value)));
+      row.append(element('dt', '', item.label), element('dd', '', formatIndicator(item.value, item.label)));
       list.append(row);
     }
     document.append(list);

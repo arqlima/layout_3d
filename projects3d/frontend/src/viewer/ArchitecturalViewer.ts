@@ -6,6 +6,7 @@ import { USAGE_CODES, DEFAULT_USAGES, type MarkedObject, type ObjectRecord, type
 import type { ProjectionMode, StandardView, ViewState } from '../types/view';
 import type { ViewerSnapshot } from '../types/scenes';
 import { exportScenePng, type ExportedImage, type ImageExportOptions } from './exportImage';
+import { solarDirection, type SolarSettings } from '../data/solar';
 
 type Renderable = THREE.Mesh | THREE.Line | THREE.Points;
 type ObjectMaterial = THREE.Material | THREE.Material[];
@@ -17,6 +18,7 @@ interface SelectionEntry {
   objectId: string | null;
   use: UsageCode | null;
   castShadow: boolean;
+  receiveShadow: boolean;
   layerIndex: number | null;
   baseVisible: boolean;
   originalVisible: boolean;
@@ -30,6 +32,16 @@ interface ElevationEntry {
 }
 
 export class ArchitecturalViewer {
+  private readonly sun = new THREE.DirectionalLight('#fff5e4', 3.4);
+  private readonly shadowDepthMaterial = new THREE.MeshDepthMaterial({
+    polygonOffset: true,
+    polygonOffsetFactor: 3,
+    polygonOffsetUnits: 4,
+  });
+  private readonly shadowGround = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000),
+    new THREE.ShadowMaterial({ color: '#000000', opacity: 0.24 }));
+  private solarSettings: SolarSettings | null = null;
+  private readonly solarMaterials = new Map<THREE.Material, THREE.MeshStandardMaterial>();
   private readonly scene = new THREE.Scene();
   private readonly perspectiveCamera = new THREE.PerspectiveCamera(45, 1, 0.1, 500);
   private readonly orthographicCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 500);
@@ -52,6 +64,7 @@ export class ArchitecturalViewer {
   private readonly selectionEntries: SelectionEntry[] = [];
   private readonly mutedMaterials = new Set<THREE.Material>();
   private selectedObject: Renderable | null = null;
+  private selectionEnabled = true;
   private selectionMode: SelectionMode = 'name';
   private hideUnchecked = false;
   private activeUsages = new Set<UsageCode>(DEFAULT_USAGES);
@@ -69,7 +82,7 @@ export class ArchitecturalViewer {
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.shadowMap.type = THREE.PCFShadowMap;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.5;
@@ -107,10 +120,12 @@ export class ArchitecturalViewer {
     this.content = content;
     this.activeUsages = new Set(DEFAULT_USAGES);
     this.readLayers(content);
+    this.prepareModelShadows(content);
     this.prepareSelection(content, objectData);
     this.prepareElevationFilter(content, objectData);
     this.applyVisibilityFilters();
     this.scene.add(content);
+    this.setSolarSettings(this.solarSettings);
     this.fitToContent();
     this.controls.saveState();
   }
@@ -161,6 +176,68 @@ export class ArchitecturalViewer {
       this.scene.fog.near = Math.max(50, sphere.radius * 4);
       this.scene.fog.far = Math.max(120, sphere.radius * 10);
     }
+  }
+
+  setSolarSettings(settings: SolarSettings | null): void {
+    this.solarSettings = settings;
+    this.renderer.toneMappingExposure = settings?.exposure ?? 1.5;
+    const direction = settings ? solarDirection(settings) : null;
+    this.sun.intensity = settings ? (direction!.y > 0 ? 3.4 * settings.sunIntensity / 100 : 0) : 3.4;
+    this.sun.shadow.intensity = settings ? settings.shadowIntensity / 100 : 1;
+    this.shadowGround.material.opacity = settings ? settings.shadowIntensity / 100 : 0.24;
+    const bounds = this.content ? new THREE.Box3().setFromObject(this.content) : new THREE.Box3();
+    const sphere = bounds.isEmpty() ? new THREE.Sphere(new THREE.Vector3(), 30)
+      : bounds.getBoundingSphere(new THREE.Sphere());
+    const modelRadius = Math.max(10, sphere.radius);
+    const sunDirection = direction ? new THREE.Vector3(direction.x, direction.y, direction.z)
+      : new THREE.Vector3(-12, 22, 14);
+    sunDirection.normalize();
+    this.sun.target.position.copy(sphere.center);
+    this.sun.position.copy(sphere.center).addScaledVector(sunDirection, modelRadius * 3);
+    if (this.sun.target.parent !== this.scene) this.scene.add(this.sun.target);
+    this.configureSunShadow(modelRadius * 1.1);
+    this.shadowGround.scale.setScalar(Math.max(1, modelRadius * 6 / 2000));
+    this.applyAppearance();
+  }
+
+  private prepareModelShadows(model: THREE.Object3D): void {
+    model.traverse((object) => {
+      if (!(object instanceof THREE.Mesh)) return;
+      const materials = Array.isArray(object.material) ? object.material : [object.material];
+      object.receiveShadow = true;
+      object.castShadow = materials.some(material => !material.transparent && material.opacity > 0.99);
+      object.customDepthMaterial ??= this.shadowDepthMaterial;
+    });
+  }
+
+  private configureSunShadow(size: number): void {
+    const camera = this.sun.shadow.camera;
+    camera.left = camera.bottom = -size;
+    camera.right = camera.top = size;
+    const distance = this.sun.position.distanceTo(this.sun.target.position);
+    camera.near = Math.max(0.1, distance - size * 1.1);
+    camera.far = Math.max(camera.near + 1, distance + size * 1.1);
+    const worldTexel = (size * 2) / this.sun.shadow.mapSize.x;
+    // Models use metres; keep normal bias within 2–15 cm and depth bias within 5 cm.
+    this.sun.shadow.normalBias = THREE.MathUtils.clamp(worldTexel * 0.75, 0.02, 0.15);
+    this.sun.shadow.bias = -Math.min(0.05, worldTexel * 0.25) / (camera.far - camera.near);
+    camera.updateProjectionMatrix();
+    this.sun.shadow.needsUpdate = true;
+  }
+
+  private solarMaterial(material: THREE.Material): THREE.Material {
+    if (!(material instanceof THREE.MeshBasicMaterial)) return material;
+    let converted = this.solarMaterials.get(material);
+    if (!converted) {
+      converted = new THREE.MeshStandardMaterial({ color: material.color, map: material.map,
+        alphaMap: material.alphaMap, opacity: material.opacity, transparent: material.transparent,
+        alphaTest: material.alphaTest, side: material.side, depthWrite: material.depthWrite,
+        depthTest: material.depthTest, vertexColors: material.vertexColors,
+        polygonOffset: material.polygonOffset, polygonOffsetFactor: material.polygonOffsetFactor,
+        polygonOffsetUnits: material.polygonOffsetUnits, roughness: 0.85, metalness: 0 });
+      this.solarMaterials.set(material, converted);
+    }
+    return converted;
   }
 
   resetView(): void {
@@ -241,7 +318,7 @@ export class ArchitecturalViewer {
       const entry = state.selected.id
         ? this.selectionEntries.find(entry => !entry.object.userData.isEdgeHelper && entry.objectId === state.selected!.id)
         : this.selectionEntries[state.selected.index];
-      if (entry && !entry.object.userData.isEdgeHelper && this.isVisible(entry.object)) this.selectedObject = entry.object;
+      if (this.selectionEnabled !== false && entry && !entry.object.userData.isEdgeHelper && this.isVisible(entry.object)) this.selectedObject = entry.object;
     }
     this.applyAppearance();
 
@@ -372,6 +449,12 @@ export class ArchitecturalViewer {
     this.onSelectionChange(null);
   }
 
+  setSelectionEnabled(enabled: boolean): void {
+    this.selectionEnabled = enabled;
+    this.pointerStart = null;
+    if (!enabled) this.clearSelection();
+  }
+
   dispose(): void {
     cancelAnimationFrame(this.frameId);
     this.resizeObserver.disconnect();
@@ -392,6 +475,8 @@ export class ArchitecturalViewer {
     });
     geometries.forEach((geometry) => geometry.dispose());
     materials.forEach((material) => material.dispose());
+    this.shadowDepthMaterial.dispose();
+    this.sun.shadow.dispose();
     this.renderer.dispose();
     this.renderer.domElement.remove();
   }
@@ -451,7 +536,8 @@ export class ArchitecturalViewer {
     const key = `${cubeTransform}|${this.projectionMode}|${this.viewLabel}`;
     if (key === this.lastViewState) return;
     this.lastViewState = key;
-    this.onViewStateChange({ cubeTransform, projection: this.projectionMode, label: this.viewLabel });
+    this.onViewStateChange({ cubeTransform, projection: this.projectionMode, label: this.viewLabel,
+      groundProjection: [rotation[0], rotation[8], rotation[1], rotation[9]] });
   }
 
   private prepareElevationFilter(content: THREE.Object3D, objectData?: Map<string, ObjectRecord>): void {
@@ -539,6 +625,7 @@ export class ArchitecturalViewer {
         objectId,
         use,
         castShadow: object.castShadow,
+        receiveShadow: object.receiveShadow,
         layerIndex,
         baseVisible: object.visible,
         originalVisible: object.visible,
@@ -548,6 +635,8 @@ export class ArchitecturalViewer {
   }
 
   private clearSelectionEntries(): void {
+    this.solarMaterials.forEach(material => material.dispose());
+    this.solarMaterials.clear();
     this.selectionEntries.length = 0;
     this.mutedMaterials.forEach((material) => material.dispose());
     this.mutedMaterials.clear();
@@ -582,6 +671,7 @@ export class ArchitecturalViewer {
   }
 
   private select(object: Renderable): void {
+    if (this.selectionEnabled === false) return;
     if (this.selectedObject === object) return;
     const selected = this.selectionEntries.find((entry) => entry.object === object);
     const layerIndex = selected?.layerIndex ?? null;
@@ -631,17 +721,25 @@ export class ArchitecturalViewer {
       const rep = entry.use === 'REP' || (entry.layerIndex !== null && isRepLayer(this.layers[entry.layerIndex].name));
       entry.object.visible = entry.baseVisible && (!(this.hideUnchecked || rep) || highlighted);
       entry.object.material = highlighted || rep ? entry.original : entry.muted;
+      const solarMesh = this.solarSettings && entry.object instanceof THREE.Mesh;
       entry.object.castShadow = highlighted && entry.castShadow;
+      entry.object.receiveShadow = entry.receiveShadow;
+      if (solarMesh) {
+        entry.object.material = Array.isArray(entry.object.material)
+          ? entry.object.material.map(material => this.solarMaterial(material))
+          : this.solarMaterial(entry.object.material);
+      }
     }
   }
 
   private readonly onPointerDown = (event: PointerEvent): void => {
-    if (event.button === 0) this.pointerStart = { id: event.pointerId, x: event.clientX, y: event.clientY };
+    if (this.selectionEnabled && event.button === 0) this.pointerStart = { id: event.pointerId, x: event.clientX, y: event.clientY };
   };
 
   private readonly onPointerUp = (event: PointerEvent): void => {
     const start = this.pointerStart;
     this.pointerStart = null;
+    if (!this.selectionEnabled) return;
     if (!start || event.button !== 0 || start.id !== event.pointerId) return;
     if (Math.hypot(event.clientX - start.x, event.clientY - start.y) > 5 || !this.content) return;
 
@@ -730,21 +828,16 @@ export class ArchitecturalViewer {
   private addEnvironment(): void {
     this.scene.add(new THREE.HemisphereLight('#f7fbff', '#9ba6a0', 2.4));
 
-    const sun = new THREE.DirectionalLight('#fff5e4', 3.4);
+    const sun = this.sun;
     sun.position.set(-12, 22, 14);
     sun.castShadow = true;
-    sun.shadow.mapSize.set(2048, 2048);
-    sun.shadow.camera.left = -30;
-    sun.shadow.camera.right = 30;
-    sun.shadow.camera.top = 30;
-    sun.shadow.camera.bottom = -30;
-    sun.shadow.normalBias = 0.03;
-    this.scene.add(sun);
+    const resolution = Math.min(4096, this.renderer.capabilities.maxTextureSize);
+    sun.shadow.mapSize.set(resolution, resolution);
+    sun.shadow.radius = 1.5;
+    this.scene.add(sun, sun.target);
+    this.configureSunShadow(30);
 
-    const ground = new THREE.Mesh(
-      new THREE.PlaneGeometry(2000, 2000),
-      new THREE.ShadowMaterial({ color: '#000000', opacity: 0.24 }),
-    );
+    const ground = this.shadowGround;
     ground.rotation.x = -Math.PI / 2;
     ground.position.y = -0.02;
     ground.receiveShadow = true;

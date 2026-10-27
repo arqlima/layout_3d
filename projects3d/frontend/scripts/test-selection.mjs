@@ -516,3 +516,16 @@ assert.equal(clearAlpha, 1); assert.equal(orthoCaptureCamera.left, -10); assert.
 await assert.rejects(exportScenePng(exportScene, sourceCamera, exportModel, referenceRenderer, { width: 1600, height: 900 }, { longestEdge: 4096, transparent: true }, () => ({ ...captureRenderer, domElement: { toBlob(callback) { callback(null); } } })), /PNG/);
 assert.equal(exportScene.background, exportBackground); assert.equal(syntheticGround.visible, true);
 console.log('PNG export tests passed: resolution, GPU limits, transparent background, camera cloning, native opacity, restoration and resource cleanup.');
+
+viewer.setSelectionMode('name');
+viewer.select(meshes[0]);
+const solarLayers = viewer.getLayers();
+viewer.setSelectionEnabled(false);
+assert.equal(viewer.selectedObject, null, 'Entering solar study clears the object selection');
+viewer.select(meshes[1]);
+assert.equal(viewer.selectedObject, null, 'Solar study ignores object selection');
+assert.deepEqual(viewer.getLayers(), solarLayers, 'Disabled selection preserves layer filters');
+viewer.setSelectionEnabled(true);
+viewer.select(meshes[1]);
+assert.equal(viewer.selectedObject, meshes[1], 'Returning to massing enables object selection');
+console.log('Solar interaction tests passed: clearing, blocked selection, preserved filters and re-enabling.');

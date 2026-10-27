@@ -33,10 +33,27 @@ def csv_upload(rows=None):
 
 
 class ObjectDataTests(SimpleTestCase):
+    def test_floor_to_floor_from_csv(self):
+        for value, expected in [('3,06', 3.06), ('3.5', 3.5), ('0', 0), ('', None)]:
+            with self.subTest(value=value):
+                file = SimpleUploadedFile('objects.csv', (
+                    f'Id;Area;Uso;Cota;Piso_a_Piso\n{OBJECT_ID};12;PRIV;5;{value}\n'
+                ).encode())
+                self.assertEqual(read_object_csv(file, COLUMNS)[0]['floorToFloorM'], expected)
+
+    def test_floor_to_floor_rejects_invalid_numbers(self):
+        for value in ('NaN', 'Infinity', 'invalid'):
+            file = SimpleUploadedFile('objects.csv', (
+                f'Id;Area;Uso;Cota;Piso_a_Piso\n{OBJECT_ID};12;PRIV;5;{value}\n'
+            ).encode())
+            with self.subTest(value=value), self.assertRaises(ValidationError):
+                read_object_csv(file, COLUMNS)
+
     def test_csv_normalizes_guid_and_brazilian_numbers(self):
         file = csv_upload(f'{OBJECT_ID.upper()};"12,50";PRIV;-1.25\n')
         self.assertEqual(read_object_csv(file, COLUMNS), [{
             'id': OBJECT_ID, 'areaM2': 12.5, 'use': 'PRIV', 'elevationM': -1.25,
+            'floorToFloorM': None,
         }])
         self.assertEqual(file.tell(), 0)
 

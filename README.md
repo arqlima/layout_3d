@@ -128,6 +128,16 @@ o CSV ou o vídeo pelo cadastro, não é necessário recompilar.
 
 ## Validar
 
+No modo **Nome**, a legenda do objeto selecionado mostra também **Piso a piso**,
+extraído da coluna opcional `Piso_a_Piso` do CSV, em metros com duas casas decimais.
+Quando a coluna ou o valor estiver ausente, a legenda mostra **Não informado**.
+
+Na aba **Diretrizes**, eficiência e taxa de ocupação usam os valores fracionários
+do resumo (por exemplo, `0.605` → `60,5%` e `0.22` → `22,00%`). O índice de
+elevação e as áreas têm duas casas decimais; áreas incluem a unidade m².
+Para validar esses formatos, execute `node scripts/test-indicators.mjs` em
+`projects3d/frontend`.
+
 No Estudo de massa, **Imprimir** acima da barra de cenas exporta somente o modelo
 3D para PNG, na câmera e nos filtros atuais. O fundo transparente vem ativado;
 desative-o para incluir a cor de fundo da vista. As opções de 4K, 6K e 8K indicam
@@ -182,6 +192,18 @@ continuam na lista Nome e aparecem em **Sem uso** e **Sem grupo** nos outros mod
 desmarcados ficam esmaecidos; ligue **Ocultar desmarcados** para remov?-los da
 vista, inclusive suas arestas. Desligar o interruptor restaura o esmaecimento.
 O filtro de cotas continua sendo respeitado.
+
+A aba **Estudo solar** configura exposição, sombras, intensidade do sol,
+coordenadas, fuso, data e horário. O **Estudo de massa** usa essa mesma iluminação,
+inclusive o norte escolhido, ao alternar entre as abas. O controle de norte
+aparece somente no Estudo solar, abaixo do cubo de vistas: arraste a seta para
+girar ou use as setas do teclado (Shift ajusta de 10 em 10 graus; Home retorna
+a 0°). A seta acompanha a câmera; o ângulo exibido é relativo ao norte original
+do modelo (+Y do Rhino). As configurações permanecem durante a sessão da página.
+No Estudo solar, cliques no modelo não selecionam objetos; a navegação da câmera
+continua disponível. A seleção volta a funcionar no Estudo de massa.
+Testes adicionais: `node scripts/test-solar.mjs` e `node scripts/test-north.mjs`
+em `projects3d/frontend`.
 
 Para testar a sele??o sem precisar de um contexto WebGL, use Node.js 22.13+
 e execute `pnpm test` em `projects3d/frontend`.

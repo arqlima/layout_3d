@@ -12,6 +12,9 @@ import { mountLocationVideo } from './LocationVideo';
 import { projectConfig } from '../data/config';
 import { mountProjectPanels } from './ProjectPanels';
 import { iconMarkup } from './icons';
+import { mountSolarPanel } from './SolarPanel';
+import type { SolarSettings } from '../data/solar';
+import { mountNorthControl } from './NorthControl';
 
 export interface AppElements {
   viewport: HTMLDivElement;
@@ -23,6 +26,8 @@ export interface AppElements {
   simulationPanel: HTMLElement;
   onSimulationVisibilityChange(callback: (visible: boolean) => void): void;
   onMassingVisibilityChange(callback: (visible: boolean) => void): void;
+  onSolarSettingsChange(callback: (settings: SolarSettings) => void): void;
+  onSolarVisibilityChange(callback: (visible: boolean) => void): void;
   setBrand(name: string, markUrl: string): void;
   setSceneInfo(title: string, subtitle: string, status: string): void;
   setSelection(selection: ObjectSelection | null, record?: ObjectRecord): void;
@@ -48,6 +53,7 @@ export function createApp(mount: HTMLElement): AppElements {
         <nav class="section-tabs" aria-label="Seções do projeto" role="tablist">
           <button id="tab-cover" class="section-tab" type="button" role="tab" aria-selected="true" aria-controls="cover-panel">${iconMarkup('home')} Capa</button>
           <button id="tab-location" class="section-tab" type="button" role="tab" aria-selected="false" aria-controls="location-panel" tabindex="-1">${iconMarkup('map-pin')} Localização</button>
+          <button id="tab-solar" class="section-tab" type="button" role="tab" aria-selected="false" aria-controls="massing-panel" tabindex="-1"><span aria-hidden="true">☀</span> Estudo solar</button>
           <button id="tab-guidelines" class="section-tab" type="button" role="tab" aria-selected="false" aria-controls="guidelines-panel" tabindex="-1">${iconMarkup('file-text')} Diretrizes</button>
           <button id="tab-massing" class="section-tab" type="button" role="tab" aria-selected="false" aria-controls="massing-panel" tabindex="-1">${iconMarkup('box')} Estudo de massa</button>
           <button id="tab-concept" class="section-tab" type="button" role="tab" aria-selected="false" aria-controls="concept-panel" tabindex="-1">${iconMarkup('image')} Conceito</button>
@@ -61,6 +67,7 @@ export function createApp(mount: HTMLElement): AppElements {
       <section id="concept-panel" class="project-document-panel" role="tabpanel" aria-labelledby="tab-concept" tabindex="0" hidden></section>
       <section id="simulation-panel" class="simulation-panel" role="tabpanel" aria-labelledby="tab-simulation" tabindex="0" hidden></section>
       <main id="massing-panel" class="workspace" role="tabpanel" aria-labelledby="tab-massing" tabindex="0" hidden>
+        <aside id="solar-sidebar" class="sidebar solar-sidebar" aria-label="Configurações do estudo solar" hidden></aside>
         <aside class="sidebar" aria-label="Informações do estudo">
           <div class="sidebar-inner">
             <div id="selection-modes" class="selection-modes" role="group" aria-label="Selecionar objetos por" hidden><button type="button" data-mode="name" aria-pressed="true">Nome</button><button type="button" data-mode="use" aria-pressed="false">Uso</button><button type="button" data-mode="group" aria-pressed="false">Grupo</button></div>
@@ -99,6 +106,7 @@ export function createApp(mount: HTMLElement): AppElements {
           <div id="viewport" class="viewport"></div>
           <div class="viewport-top"><span class="view-label"><span class="view-label-square"></span> <span id="view-name">PERSPECTIVA</span> <span class="view-label-separator">/</span> <span id="view-projection">3D</span></span></div>
           <nav id="view-cube-panel" class="view-cube-panel" aria-label="Orientação e projeção da vista"></nav>
+          <aside id="north-control" class="north-control" aria-label="Ajustar norte do projeto" hidden></aside>
           <aside id="elevation-filter" class="elevation-filter" aria-label="Filtro por cota" hidden></aside>
           <section id="usage-filter" class="usage-filter" aria-label="Filtro por uso" hidden></section>
           <div class="selection-hint" id="selection-hint" role="status" hidden>
@@ -107,6 +115,7 @@ export function createApp(mount: HTMLElement): AppElements {
               <div><dt>Área</dt><dd id="selection-area"></dd></div>
               <div><dt>Uso</dt><dd id="selection-use"></dd></div>
               <div><dt>Cota</dt><dd id="selection-elevation"></dd></div>
+              <div><dt>Piso a piso</dt><dd id="selection-floor-to-floor"></dd></div>
             </dl>
           </div>
           <div class="viewport-bottom">
@@ -145,9 +154,19 @@ export function createApp(mount: HTMLElement): AppElements {
   if (!massingPanel || !locationPanel || !locationVideo) throw new Error('Abas incompletas.');
   mountLocationVideo(locationPanel);
   const tabs = [...mount.querySelectorAll<HTMLButtonElement>('.section-tab')];
+  const solarSidebar = mount.querySelector<HTMLElement>('#solar-sidebar')!;
+  const solarPanel = mountSolarPanel(solarSidebar);
+  let solarActive = false;
+  const northHost = mount.querySelector<HTMLElement>('#north-control')!;
+  const northControl = mountNorthControl(northHost, angle => solarPanel.setNorthAngle(angle));
+  let onSolarSettings = (_settings: SolarSettings) => {};
+  let onSolarVisibility = (_visible: boolean) => {};
+  solarPanel.onChange(settings => onSolarSettings(settings));
   let onMassingVisibility = (_visible: boolean) => {};
   let onSimulationVisibility = (_visible: boolean) => {};
   const activateTab = (tab: HTMLButtonElement) => {
+    solarActive = tab.id === 'tab-solar';
+    const viewerVisible = solarActive || tab.id === 'tab-massing';
     mount.querySelector<HTMLElement>('.app-shell')!.classList.toggle('is-cover', tab.id === 'tab-cover');
     for (const item of tabs) {
       const active = item === tab;
@@ -155,8 +174,16 @@ export function createApp(mount: HTMLElement): AppElements {
       item.tabIndex = active ? 0 : -1;
       mount.querySelector<HTMLElement>(`#${item.getAttribute('aria-controls')}`)!.hidden = !active;
     }
+    massingPanel.hidden = !viewerVisible;
+    massingPanel.setAttribute('aria-labelledby', solarActive ? 'tab-solar' : 'tab-massing');
+    massingPanel.classList.toggle('is-solar', solarActive);
+    solarSidebar.hidden = !solarActive;
+    northHost.hidden = !solarActive;
+    mount.querySelector<HTMLElement>('.sidebar:not(.solar-sidebar)')!.hidden = solarActive;
     if (tab.id !== 'tab-location') locationVideo.pause();
-    onMassingVisibility(tab.id === 'tab-massing');
+    onMassingVisibility(viewerVisible);
+    onSolarVisibility(solarActive);
+    onSolarSettings(solarPanel.settings());
     onSimulationVisibility(tab.id === 'tab-simulation');
   };
   const requested = new URLSearchParams(location.search).get('section');
@@ -189,6 +216,7 @@ export function createApp(mount: HTMLElement): AppElements {
   const selectionArea = mount.querySelector<HTMLElement>('#selection-area');
   const selectionUse = mount.querySelector<HTMLElement>('#selection-use');
   const selectionElevation = mount.querySelector<HTMLElement>('#selection-elevation');
+  const selectionFloorToFloor = mount.querySelector<HTMLElement>('#selection-floor-to-floor');
   const elevationFilter = mount.querySelector<HTMLElement>('#elevation-filter');
   const usageFilter = mount.querySelector<HTMLElement>('#usage-filter');
   const viewCubePanel = mount.querySelector<HTMLElement>('#view-cube-panel');
@@ -197,13 +225,13 @@ export function createApp(mount: HTMLElement): AppElements {
   const sceneTitle = mount.querySelector<HTMLElement>('#scene-title');
   const sceneSubtitle = mount.querySelector<HTMLElement>('#scene-subtitle');
   const sceneStatus = mount.querySelector<HTMLElement>('#scene-status');
-  const sidebar = mount.querySelector<HTMLElement>('.sidebar');
+  const sidebar = mount.querySelector<HTMLElement>('.sidebar:not(.solar-sidebar)');
   const layerSection = mount.querySelector<HTMLElement>('#layer-section');
   const layerList = mount.querySelector<HTMLElement>('#layer-list');
   const layerSummary = mount.querySelector<HTMLElement>('#layer-summary');
   const showLayers = mount.querySelector<HTMLButtonElement>('#show-layers');
   const hideLayers = mount.querySelector<HTMLButtonElement>('#hide-layers');
-  if (!viewport || !fitButton || !homeButton || !clearSelectionButton || !brand || !brandName || !brandMark || !selectionHint || !selectionName || !selectionArea || !selectionUse || !selectionElevation || !elevationFilter || !usageFilter || !viewCubePanel || !viewName || !viewProjection || !sceneTitle || !sceneSubtitle || !sceneStatus || !sidebar || !layerSection || !layerList || !layerSummary || !showLayers || !hideLayers) throw new Error('Interface incompleta.');
+  if (!viewport || !fitButton || !homeButton || !clearSelectionButton || !brand || !brandName || !brandMark || !selectionHint || !selectionName || !selectionArea || !selectionUse || !selectionElevation || !selectionFloorToFloor || !elevationFilter || !usageFilter || !viewCubePanel || !viewName || !viewProjection || !sceneTitle || !sceneSubtitle || !sceneStatus || !sidebar || !layerSection || !layerList || !layerSummary || !showLayers || !hideLayers) throw new Error('Interface incompleta.');
   const metric = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const viewCube = createViewCube(viewCubePanel);
   let layerPanel: LayerPanel | null = null;
@@ -225,6 +253,14 @@ export function createApp(mount: HTMLElement): AppElements {
       onMassingVisibility = callback;
       callback(!massingPanel.hidden);
     },
+    onSolarSettingsChange(callback) {
+      onSolarSettings = callback;
+      callback(solarPanel.settings());
+    },
+    onSolarVisibilityChange(callback) {
+      onSolarVisibility = callback;
+      callback(solarActive);
+    },
     setBrand(name, markUrl) {
       brandName.textContent = name;
       brand.setAttribute('aria-label', name);
@@ -237,6 +273,7 @@ export function createApp(mount: HTMLElement): AppElements {
     },
     setViewState(state) {
       viewCube.update(state);
+      northControl.update(state);
       viewName.textContent = state.label;
       viewProjection.textContent = state.projection === 'perspective' ? '3D' : 'ORTO';
     },
@@ -253,6 +290,7 @@ export function createApp(mount: HTMLElement): AppElements {
         : record?.areaM2 == null ? 'Não informada' : `${metric.format(record.areaM2)} m²`;
       selectionUse.textContent = record?.use || 'Não informado';
       selectionElevation.textContent = record?.elevationM == null ? 'Não informada' : `${metric.format(record.elevationM)} m`;
+      selectionFloorToFloor.textContent = record?.floorToFloorM == null ? 'Não informado' : `${metric.format(record.floorToFloorM)} m`;
       selectionHint.hidden = selection === null || (selection.mode !== undefined && selection.mode !== 'name');
     },
     setSceneInfo(title, subtitle, status) {
