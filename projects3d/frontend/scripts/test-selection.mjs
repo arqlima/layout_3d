@@ -99,6 +99,78 @@ console.log('Selection tests passed: parsing, modes, checkboxes, fading, visibil
 
 const { summarizeSelection } = await import(await moduleUrl(resolve(root, 'src/data/selectionTotals.ts')));
 const { DEFAULT_USAGES } = await import(await moduleUrl(resolve(root, 'src/types/model.ts')));
+const uncoveredModel = new THREE.Group();
+uncoveredModel.userData.layers = ['00-DESC-PRIV', '00-desc-VAGAS', '00-COB-PRIV', '00-COB-EST', '00-DESC-EST'].map(name => ({ name }));
+const uncoveredMeshes = uncoveredModel.userData.layers.map((_, layerIndex) => {
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial());
+  mesh.userData.attributes = { layerIndex };
+  mesh.userData.objectId = `uncovered-${layerIndex}`;
+  const edges = new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry), new THREE.LineBasicMaterial());
+  edges.userData.isEdgeHelper = true;
+  mesh.add(edges);
+  uncoveredModel.add(mesh);
+  return mesh;
+});
+const uncoveredViewer = Object.create(ArchitecturalViewer.prototype);
+Object.assign(uncoveredViewer, {
+  content: uncoveredModel, layers: [], originalVisibility: new Map(), selectionEntries: [], mutedMaterials: new Set(),
+  elevationEntries: [], selectedObject: null, activeUsages: new Set(DEFAULT_USAGES),
+  selectionMode: 'group', hideUnchecked: false, onSelectionChange: () => {}, elevationBase: -Infinity, elevationTop: Infinity,
+});
+const uncoveredRecords = new Map(uncoveredMeshes.map((_, index) => [`uncovered-${index}`, {
+  id: `uncovered-${index}`, areaM2: 100, use: index === 1 ? 'VAGAS' : index >= 3 ? 'EST' : 'PRIV', elevationM: 0,
+}]));
+uncoveredViewer.readLayers(uncoveredModel);
+uncoveredViewer.prepareSelection(uncoveredModel, uncoveredRecords);
+uncoveredViewer.applyVisibilityFilters();
+const exclusions = { excludeUncovered: true };
+const excludedTotals = summarizeSelection(uncoveredViewer.getMarkedObjects(), uncoveredRecords, exclusions);
+uncoveredViewer.setAreaExclusions(exclusions);
+const uncoveredEntry = uncoveredViewer.selectionEntries.find(entry => entry.object === uncoveredMeshes[0]);
+assert.equal(uncoveredMeshes[0].visible, true, 'excluded areas remain as faded context when hide-unchecked is off');
+assert.equal(uncoveredMeshes[0].material, uncoveredEntry.muted, 'excluded areas use the unmarked appearance');
+uncoveredViewer.setHideUnchecked(true);
+assert.deepEqual(uncoveredMeshes.map(mesh => mesh.visible), [false, false, true, true, false], 'hide-unchecked hides excluded uncovered geometry');
+assert.equal(uncoveredViewer.isVisible(uncoveredMeshes[0].children[0]), false, 'uncovered edges disappear too');
+assert.deepEqual(summarizeSelection(uncoveredViewer.getMarkedObjects(), uncoveredRecords, exclusions), excludedTotals, 'visual exclusion preserves the existing area calculation and parking-space count');
+uncoveredViewer.setHideUnchecked(false);
+assert.equal(uncoveredMeshes[0].visible, true, 'showing unmarked context reveals excluded areas faded');
+assert.equal(uncoveredMeshes[0].material, uncoveredEntry.muted);
+assert.equal(uncoveredViewer.isVisible(uncoveredMeshes[0].children[0]), true, 'edges follow the restored context');
+uncoveredViewer.setHideUnchecked(true);
+uncoveredViewer.setSelectionMode('use');
+assert.equal(uncoveredMeshes[0].visible, false, 'exclusion also applies in use mode');
+uncoveredViewer.setSelectionMode('name');
+assert.equal(uncoveredMeshes[0].visible, true, 'individual mode ignores exclusions like its calculation');
+uncoveredViewer.setSelectionMode('group');
+assert.equal(uncoveredMeshes[0].visible, false, 'returning to group mode reapplies exclusion');
+uncoveredViewer.setAreaExclusions({ excludeUncovered: false, excludeParking: true });
+assert.deepEqual(uncoveredMeshes.map(mesh => mesh.visible), [true, true, true, false, false], 'parking exclusion independently hides EST layers');
+const parkingEntry = uncoveredViewer.selectionEntries.find(entry => entry.object === uncoveredMeshes[3]);
+uncoveredViewer.setHideUnchecked(false);
+assert.equal(uncoveredMeshes[3].visible, true);
+assert.equal(uncoveredMeshes[3].material, parkingEntry.muted, 'excluded parking follows the unmarked appearance');
+uncoveredViewer.setAreaExclusions({ excludeUncovered: true, excludeParking: true });
+const combinedTotals = summarizeSelection(uncoveredViewer.getMarkedObjects(), uncoveredRecords, { excludeUncovered: true, excludeParking: true });
+uncoveredViewer.setHideUnchecked(true);
+assert.deepEqual(uncoveredMeshes.map(mesh => mesh.visible), [false, false, true, false, false], 'both switches combine, including uncovered parking');
+assert.deepEqual(summarizeSelection(uncoveredViewer.getMarkedObjects(), uncoveredRecords, { excludeUncovered: true, excludeParking: true }), combinedTotals, 'hiding excluded context preserves totals and space count');
+uncoveredViewer.setAreaExclusions({ excludeUncovered: false, excludeParking: false });
+assert.deepEqual(uncoveredMeshes.map(mesh => mesh.visible), [true, true, true, true, true], 'turning off exclusions restores geometry');
+assert.equal(uncoveredMeshes[0].material, uncoveredEntry.original);
+assert.equal(uncoveredMeshes[3].material, parkingEntry.original);
+uncoveredViewer.elevationEntries = [{ object: uncoveredMeshes[0], originalVisible: true, elevation: 10 }];
+uncoveredViewer.setElevationRange(0, 5);
+uncoveredViewer.setAreaExclusions({ excludeUncovered: true, excludeParking: true });
+uncoveredViewer.setAreaExclusions({ excludeUncovered: false, excludeParking: false });
+assert.equal(uncoveredMeshes[0].visible, false, 'restoration respects the elevation filter');
+uncoveredViewer.setElevationRange(0, 15);
+uncoveredViewer.setAllLayersVisible(false);
+uncoveredViewer.setHideUnchecked(true);
+uncoveredViewer.setAreaExclusions({ excludeUncovered: true, excludeParking: true });
+uncoveredViewer.setAreaExclusions({ excludeUncovered: false, excludeParking: false });
+assert.equal(uncoveredMeshes[0].visible, false, 'restoration respects hidden unchecked layers');
+console.log('Visual area exclusion tests passed: DESC, EST, overlaps, fading, hide-unchecked, edges, totals, modes and restoration.');
 assert.equal(DEFAULT_USAGES.includes('REP'), false);
 const summaryModel = new THREE.Group();
 summaryModel.userData.layers = ['00-res-PRIV', '00-circ-COM', '00-est-EST', '00-vagas-VAGAS', 'REP-context-COM', '01-res-PRIV', '00-rep-REP'].map(name => ({ name }));

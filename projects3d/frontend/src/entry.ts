@@ -79,7 +79,11 @@ async function start(): Promise<void> {
       (visible) => { viewer.setAllLayersVisible(visible); updateUsageTotals(); },
       {
         onModeChange: mode => { selectionMode = mode; viewer.setSelectionMode(mode); updateUsageTotals(); },
-        onAreaExclusionsChange: exclusions => { areaExclusions = exclusions; updateUsageTotals(); },
+        onAreaExclusionsChange: exclusions => {
+          areaExclusions = exclusions;
+          viewer.setAreaExclusions(exclusions);
+          updateUsageTotals();
+        },
         onHideUncheckedChange: hide => { viewer.setHideUnchecked(hide); updateUsageTotals(); },
         onToggleMany: (indices, checked) => { viewer.setLayersChecked(indices, checked); updateUsageTotals(); },
       },
@@ -102,6 +106,7 @@ async function start(): Promise<void> {
         viewer.restoreState(scene.viewer);
         selectionMode = scene.viewer.selectionMode;
         areaExclusions = { ...scene.areaExclusions };
+        viewer.setAreaExclusions(areaExclusions);
         ui.restoreSceneControls(scene);
         updateUsageTotals();
       },

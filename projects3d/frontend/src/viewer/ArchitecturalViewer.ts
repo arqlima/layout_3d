@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import type { LayerInfo } from '../types/layers';
 import { matchingLayers, parseLayerName, layerLabel, isRepLayer, type SelectionMode } from '../data/layerSelection';
-import { USAGE_CODES, DEFAULT_USAGES, type MarkedObject, type ObjectRecord, type ObjectSelection, type UsageCode } from '../types/model';
+import { USAGE_CODES, DEFAULT_USAGES, type AreaExclusions, type MarkedObject, type ObjectRecord, type ObjectSelection, type UsageCode } from '../types/model';
 import type { ProjectionMode, StandardView, ViewState } from '../types/view';
 import type { ViewerSnapshot } from '../types/scenes';
 import { exportScenePng, type ExportedImage, type ImageExportOptions } from './exportImage';
@@ -67,6 +67,8 @@ export class ArchitecturalViewer {
   private selectionEnabled = true;
   private selectionMode: SelectionMode = 'name';
   private hideUnchecked = false;
+  private excludeUncovered = false;
+  private excludeParking = false;
   private activeUsages = new Set<UsageCode>(DEFAULT_USAGES);
   private pointerStart: { id: number; x: number; y: number } | null = null;
   private frameId = 0;
@@ -407,6 +409,12 @@ export class ArchitecturalViewer {
     this.applyAppearance();
   }
 
+  setAreaExclusions(exclusions: Partial<AreaExclusions>): void {
+    this.excludeUncovered = exclusions.excludeUncovered === true;
+    this.excludeParking = exclusions.excludeParking === true;
+    this.applyAppearance();
+  }
+
   setLayerVisible(index: number, visible: boolean): void {
     this.setLayersChecked([index], visible);
   }
@@ -439,7 +447,9 @@ export class ArchitecturalViewer {
   getMarkedObjects(): Map<string, MarkedObject> {
     const objects = new Map<string, MarkedObject>();
     for (const entry of this.selectionEntries) {
-      if (entry.object.userData.isEdgeHelper || !entry.highlighted || !this.isVisible(entry.object)) continue;
+      // Visual area exclusions must preserve the existing totals and parking-space counts.
+      if (entry.object.userData.isEdgeHelper || !entry.highlighted || !entry.baseVisible
+        || (entry.object.parent && !this.isVisible(entry.object.parent))) continue;
       objects.set(entry.objectId?.toLowerCase() ?? entry.object.uuid, {
         use: entry.use,
         layerName: entry.layerIndex === null ? entry.object.name : this.layers[entry.layerIndex].name,
@@ -725,10 +735,14 @@ export class ArchitecturalViewer {
           || (selectedId ? entry.objectId === selectedId : entry.object === selected || entry.object.parent === selected));
       entry.highlighted = highlighted;
       const rep = entry.use === 'REP' || (entry.layerIndex !== null && isRepLayer(this.layers[entry.layerIndex].name));
-      entry.object.visible = entry.baseVisible && (!(this.hideUnchecked || rep) || highlighted);
-      entry.object.material = highlighted || rep ? entry.original : entry.muted;
+      const layerName = (entry.layerIndex === null ? entry.object.name : this.layers[entry.layerIndex].name).toUpperCase();
+      const excluded = this.selectionMode !== 'name' && ((this.excludeUncovered && layerName.includes('DESC'))
+        || (this.excludeParking && layerName.includes('EST')));
+      const visuallyHighlighted = highlighted && !excluded;
+      entry.object.visible = entry.baseVisible && (!(this.hideUnchecked || rep) || visuallyHighlighted);
+      entry.object.material = visuallyHighlighted || (rep && !excluded) ? entry.original : entry.muted;
       const solarMesh = this.solarSettings && entry.object instanceof THREE.Mesh;
-      entry.object.castShadow = highlighted && entry.castShadow;
+      entry.object.castShadow = visuallyHighlighted && entry.castShadow;
       entry.object.receiveShadow = entry.receiveShadow;
       if (solarMesh) {
         entry.object.material = Array.isArray(entry.object.material)

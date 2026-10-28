@@ -99,6 +99,16 @@ identificada na interface. Sem CSV, a navegação e os filtros geométricos cont
 funcionando. Modelos grandes são processados no navegador; o carregamento 3DM
 depende das malhas salvas pelo Rhino.
 
+Nos modos de seleção por grupo e uso, **Excluir áreas descobertas** (`DESC`) e
+**Excluir estacionamento** (`EST`) também alteram a aparência das layers excluídas:
+com **Ocultar desmarcados** ativo, suas geometrias e arestas ficam ocultas;
+desativado, aparecem esmaecidas. Desativar as exclusões restaura a aparência
+conforme os filtros de layers e cotas. A contagem de vagas mantém a regra
+existente, e cenas salvas restauram as duas opções.
+
+A lista de layers exibe apenas layers com itens; layers vazias também não entram
+nos grupos exibidos nem no contador de layers marcadas.
+
 ## Alterar o visualizador
 
 A identidade visual segue a referência local `novo_estilo/genlabs-design-system`:

@@ -25,11 +25,11 @@ export function mountLayerPanel(
   const hide = mount.querySelector<HTMLInputElement>('#hide-unchecked')!;
   const excludeUncovered = mount.querySelector<HTMLInputElement>('#exclude-uncovered')!;
   const excludeParking = mount.querySelector<HTMLInputElement>('#exclude-parking')!;
-  let layers = initial.map(layer => ({ ...layer }));
+  let layers = initial.filter(layer => layer.objectCount > 0).map(layer => ({ ...layer }));
   let mode: SelectionMode = 'name';
-  modes.hidden = layers.length === 0;
 
   const render = () => {
+    modes.hidden = layers.length === 0;
     mount.querySelector<HTMLElement>('#marked-summary')!.hidden = mode === 'name';
     mount.querySelector<HTMLElement>('#marked-efficiency')!.hidden = mode !== 'group';
     mount.querySelector<HTMLElement>('#area-exclusions')!.hidden = mode === 'name';
@@ -106,7 +106,7 @@ export function mountLayerPanel(
   excludeParking.onchange = changeExclusions;
   render();
   return {
-    update(updated) { layers = updated.map(layer => ({ ...layer })); render(); },
+    update(updated) { layers = updated.filter(layer => layer.objectCount > 0).map(layer => ({ ...layer })); render(); },
     restore(savedMode, hidden, exclusions) {
       mode = savedMode;
       hide.checked = hidden;

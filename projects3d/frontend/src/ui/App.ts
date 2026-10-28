@@ -303,8 +303,9 @@ export function createApp(mount: HTMLElement): AppElements {
       sceneStatus.textContent = status;
     },
     setLayers(layers, onToggle, onSetAll, actions) {
-      layerSection.hidden = layers.length === 0;
-      sidebar.classList.toggle('has-layers', layers.length > 0);
+      const hasLayers = layers.some(layer => layer.objectCount > 0);
+      layerSection.hidden = !hasLayers;
+      sidebar.classList.toggle('has-layers', hasLayers);
       layerPanel = mountLayerPanel(mount, layers, onToggle, onSetAll, {
         ...actions,
         onModeChange(mode) {
