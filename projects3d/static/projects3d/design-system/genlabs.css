@@ -124,7 +124,11 @@ body.au-management, body.au-viewer { color: var(--au-text); background: var(--au
 .au-viewer .concept-thumbnail:hover { border-color: #a1a1aa; }
 .au-viewer .concept-thumbnail[aria-pressed="true"] { border-color: #f97316; box-shadow: 0 0 0 1px #f9731626; }
 .au-viewer .video-controls { background: #fff; }
-.au-viewer .sim-sheet { background: #fff; border-radius: 24px; box-shadow: var(--gl-shadow); }
+.au-viewer .sim-sheet { background: #fff; color: var(--au-text); border-radius: 24px; box-shadow: var(--gl-shadow); }
+/* Override the original dark sheet colors in both presentation themes. */
+.au-viewer :is(.sim-fixed label,.sim-subtotal,.sim-grand-total,.sim-summary dt) { color: var(--au-text); font-weight: 600; }
+.au-viewer :is(.sim-project,.sim-help,.sim-table th,.sim-fixed label span,.sim-editing) { color: var(--au-secondary); }
+.au-viewer .sim-sheet input::placeholder { color: var(--au-secondary); opacity: 1; }
 .au-viewer .sim-table .sim-use-heading th { background: #f4f4f5; color: #18181b; }
 .au-viewer :is(.sim-layer,.sim-area) { color: #52525b; }
 .au-viewer .sim-sheet input:not([type="checkbox"]) { background: #fafafa; border-color: #d4d4d8; color: #18181b; }

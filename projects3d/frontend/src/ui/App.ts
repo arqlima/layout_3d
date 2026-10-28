@@ -41,6 +41,7 @@ export interface AppElements {
   setUsageFilter(onChange: (active: ReadonlySet<UsageCode>) => void): UsageFilter;
   setViewActions(onView: (view: StandardView) => void, onProjection: (mode: ProjectionMode) => void): void;
   setViewState(state: ViewState): void;
+  setInitialNorthAngle(angle: number): void;
 }
 
 export function createApp(mount: HTMLElement): AppElements {
@@ -241,6 +242,7 @@ export function createApp(mount: HTMLElement): AppElements {
   let elevationControl: ElevationFilter | null = null;
   const updateSelectionSummary = mountSelectionSummary(mount.querySelector<HTMLElement>('#marked-summary')!);
   return {
+    setInitialNorthAngle(angle) { northControl.setInitialAngle(angle); },
     onBackgroundChange(callback) { presentationSettings.onBackgroundChange(callback); },
     viewport,
     fitButton,

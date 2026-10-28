@@ -373,6 +373,10 @@ h1 em { color: #9bbcad; }
 .north-control { position: absolute; z-index: 3; top: 154px; right: 25px; width: 125px; padding: 12px 8px; border: 1px solid #4a625f; border-radius: 6px; background: #172126e8; color: #dce9e2; text-align: center; }
 .north-control[hidden] { display: none; }
 .north-control .detail-label { font-size: 8px; letter-spacing: .08em; }
+.north-reset { position: absolute; top: 7px; right: 7px; display: grid; place-items: center; width: 24px; height: 24px; padding: 4px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--au-secondary, #dce9e2); cursor: pointer; }
+.north-reset:hover { background: var(--au-hover, #ffffff18); border-color: var(--au-border-strong, #ffffff40); }
+.north-reset:focus-visible { outline: 2px solid var(--au-indigo, #f5c56a); outline-offset: 2px; }
+.north-reset svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .north-dial { width: 96px; height: 96px; margin: 8px auto 3px; cursor: grab; touch-action: none; user-select: none; border-radius: 50%; }
 .north-dial:active { cursor: grabbing; }
 .north-dial:focus-visible { outline: 2px solid #f5c56a; outline-offset: 3px; }

@@ -25,6 +25,7 @@ export function collectSimulationLayers(model: THREE.Object3D, records: Readonly
     rows.set(index, { key: `${index}:${layer.name}`, name: layer.name, group: parsed.group, use: parsed.use, areaM2: 0, missingAreas: 0 });
   });
   const seen = new Set<string>();
+  const populatedLayers = new Set<number>();
   model.traverse(object => {
     if (!(object instanceof THREE.Mesh || object instanceof THREE.Line || object instanceof THREE.Points) || object.userData.isEdgeHelper) return;
     let node: THREE.Object3D | null = object;
@@ -36,6 +37,7 @@ export function collectSimulationLayers(model: THREE.Object3D, records: Readonly
       node = node.parent;
     }
     if (!Number.isInteger(layerIndex) || !source[layerIndex!]?.name) return;
+    populatedLayers.add(layerIndex!);
     const name = source[layerIndex!]!.name!;
     const parsed = parseLayerName(name);
     if (isRepLayer(name) || parsed.use === 'VAGAS') return;
@@ -53,7 +55,8 @@ export function collectSimulationLayers(model: THREE.Object3D, records: Readonly
     else row.missingAreas++;
     rows.set(layerIndex!, row);
   });
-  return [...rows.values()].sort((a, b) => a.group.localeCompare(b.group, 'pt-BR', { numeric: true }) || a.name.localeCompare(b.name, 'pt-BR'));
+  return [...rows.entries()].filter(([index]) => populatedLayers.has(index)).map(([, row]) => row)
+    .sort((a, b) => a.group.localeCompare(b.group, 'pt-BR', { numeric: true }) || a.name.localeCompare(b.name, 'pt-BR'));
 }
 
 export function emptySimulation(rows: SimulationLayer[]): SimulationDraft {

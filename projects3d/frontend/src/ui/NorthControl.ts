@@ -4,6 +4,9 @@ import type { ViewState } from '../types/view';
 export function mountNorthControl(host: HTMLElement, onChange: (angle: number) => void) {
   host.innerHTML = `
     <span class="detail-label">NORTE</span>
+    <button class="north-reset" type="button" title="Restaurar norte inicial" aria-label="Restaurar norte inicial">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10a9 9 0 1 1 2.6 8.4M3 4v6h6" /></svg>
+    </button>
     <div class="north-dial" role="slider" tabindex="0" aria-label="Direção do norte do projeto"
       aria-valuemin="0" aria-valuemax="359" aria-valuenow="0"
       title="Arraste para girar o norte. Use as setas do teclado para ajustar.">
@@ -19,7 +22,9 @@ export function mountNorthControl(host: HTMLElement, onChange: (angle: number) =
   const dial = host.querySelector<HTMLElement>('.north-dial')!;
   const arrow = host.querySelector<SVGGElement>('.north-arrow')!;
   const value = host.querySelector<HTMLOutputElement>('.north-value')!;
+  const reset = host.querySelector<HTMLButtonElement>('.north-reset')!;
   let angle = 0;
+  let initialAngle = 0;
   let projection: GroundProjection = [1, 0, 0, -1];
   let pointer: number | null = null;
   const render = () => {
@@ -33,6 +38,7 @@ export function mountNorthControl(host: HTMLElement, onChange: (angle: number) =
     render();
     onChange(angle);
   };
+  reset.addEventListener('click', () => change(initialAngle));
   const fromPointer = (event: PointerEvent) => {
     const rect = dial.getBoundingClientRect();
     const x = event.clientX - rect.left - rect.width / 2;
@@ -60,7 +66,7 @@ export function mountNorthControl(host: HTMLElement, onChange: (angle: number) =
     const step = event.shiftKey ? 10 : 1;
     if (event.key === 'ArrowRight' || event.key === 'ArrowUp') change(angle + step);
     else if (event.key === 'ArrowLeft' || event.key === 'ArrowDown') change(angle - step);
-    else if (event.key === 'Home') change(0);
+    else if (event.key === 'Home') change(initialAngle);
     else if (event.key === 'End') change(359);
     else return;
     event.preventDefault();
@@ -68,6 +74,7 @@ export function mountNorthControl(host: HTMLElement, onChange: (angle: number) =
   });
   render();
   return {
+    setInitialAngle(next: number) { initialAngle = normalizeNorthAngle(next); change(initialAngle); },
     update(state: ViewState) { if (state.groundProjection) projection = state.groundProjection; render(); },
   };
 }

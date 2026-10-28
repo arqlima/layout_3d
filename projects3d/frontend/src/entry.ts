@@ -25,8 +25,9 @@ function showNotice(message: string): void {
 }
 
 async function start(): Promise<void> {
-  const [{ ArchitecturalViewer }, { createDemoScene }] = await Promise.all([
+  const [{ ArchitecturalViewer }, { createDemoScene }, { readModelNorth }] = await Promise.all([
     import('./viewer/ArchitecturalViewer'), import('./viewer/demoScene'),
+    import('./data/modelNorth'),
   ]);
   let objectData = new Map<string, ObjectRecord>();
   let selectionMode: SelectionMode = 'name';
@@ -64,6 +65,7 @@ async function start(): Promise<void> {
     model.name = projectConfig.name;
     objectData = records;
     viewer.setContent(model, records);
+    ui.setInitialNorthAngle(readModelNorth(model));
     ui.setSceneInfo(projectConfig.name, 'Modelo do projeto', 'MODELO DO PROJETO');
     let usageFilter: ReturnType<typeof ui.setUsageFilter> | null = null;
     const updateUsageTotals = () => {

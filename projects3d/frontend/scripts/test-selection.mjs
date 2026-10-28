@@ -477,6 +477,17 @@ assert.deepEqual(blockedStore.get(0), scene, 'blocked persistence still permits 
 console.log('Scene tests passed: cameras, projections, layers, elevation, individual selection, updating, persistence, isolation and invalid storage.');
 
 const { collectSimulationLayers, calculateSimulation, emptySimulation, parseSimulationNumber, SimulationStore, simulationLayerLabel, simulationUsageSections } = await import(await moduleUrl(resolve(root, 'src/data/simulation.ts')));
+const sparseSimulationModel = new THREE.Group();
+sparseSimulationModel.userData.layers = [{ name: 'CALCULO' }, { name: '00-vazia-PRIV' }, { name: '01-existente-PRIV' }];
+const zeroAreaMesh = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial());
+zeroAreaMesh.userData.attributes = { layerIndex: 2 };
+zeroAreaMesh.userData.objectId = 'zero-area';
+sparseSimulationModel.add(zeroAreaMesh);
+const sparseSimulationRows = collectSimulationLayers(sparseSimulationModel, new Map([
+  ['zero-area', { id: 'zero-area', areaM2: 0, use: 'PRIV' }],
+]));
+assert.deepEqual(sparseSimulationRows.map(row => row.name), ['01-existente-PRIV'], 'simulation omits empty layers and groups, including CALCULO, but keeps real objects with zero area');
+assert.equal(collectSimulationLayers(new THREE.Group(), new Map()).length, 0);
 const simulationLayers = collectSimulationLayers(summaryModel, records);
 assert.equal(simulationLayers.some(row => row.group === 'REP' || row.use === 'REP'), false);
 assert.equal(simulationLayers.find(row => row.use === 'VAGAS').areaM2, 0, 'parking-space layers appear without duplicating parking floor area');

@@ -108,6 +108,9 @@ existente, e cenas salvas restauram as duas opções.
 
 A lista de layers exibe apenas layers com itens; layers vazias também não entram
 nos grupos exibidos nem no contador de layers marcadas.
+Na Simulação, layers sem geometrias também são omitidas, inclusive `CALCULO`
+quando vazia. Layers com objetos continuam disponíveis mesmo com área zero ou
+sem área informada.
 
 ## Alterar o visualizador
 
@@ -217,9 +220,13 @@ A aba **Estudo solar** configura exposição, sombras, intensidade do sol,
 coordenadas, fuso, data e horário. O **Estudo de massa** usa essa mesma iluminação,
 inclusive o norte escolhido, ao alternar entre as abas. O controle de norte
 aparece somente no Estudo solar, abaixo do cubo de vistas: arraste a seta para
-girar ou use as setas do teclado (Shift ajusta de 10 em 10 graus; Home retorna
-a 0°). A seta acompanha a câmera; o ângulo exibido é relativo ao norte original
-do modelo (+Y do Rhino). As configurações permanecem durante a sessão da página.
+girar ou use as setas do teclado (Shift ajusta de 10 em 10 graus). O norte inicial
+vem da primeira linha válida da layer `REP-NORTE-VEC`, no sentido do ponto inicial
+ao final, considerando as transformações do modelo. Sem layer ou vetor horizontal
+válido, usa +Y do projeto Rhino. O botão de reset no canto superior direito do
+indicador e a tecla Home restauram esse norte inicial e atualizam a iluminação.
+A seta acompanha a câmera; o ângulo exibido é relativo a +Y do Rhino.
+As configurações permanecem durante a sessão da página.
 No Estudo solar, cliques no modelo não selecionam objetos; a navegação da câmera
 continua disponível. A seleção volta a funcionar no Estudo de massa.
 Testes adicionais: `node scripts/test-solar.mjs` e `node scripts/test-north.mjs`
