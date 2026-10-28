@@ -122,6 +122,9 @@ export function createApp(mount: HTMLElement): AppElements {
             </dl>
           </div>
           <div class="viewport-bottom">
+            <button id="measure-distance" class="measurement-button" type="button" aria-pressed="false" title="Medir distância entre dois vértices" aria-label="Régua: medir distância">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 16 13-13 5 5L8 21Z M7 12l2 2 M10 9l2 2 M13 6l2 2"/></svg><span>Régua</span>
+            </button>
             <div id="scene-toolbar" class="viewer-toolbar" role="toolbar" aria-label="Vistas e cenas salvas">
               <button id="fit-view" type="button" class="scene-shortcut scene-navigation" title="Enquadrar toda a cena" aria-label="Enquadrar toda a cena">${iconMarkup('maximize')}</button>
               <button id="home-view" type="button" class="scene-shortcut scene-navigation" title="Vista inicial" aria-label="Vista inicial">${iconMarkup('home')}</button>

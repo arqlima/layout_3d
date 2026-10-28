@@ -520,3 +520,21 @@ h1 em { color: #9bbcad; }
   .concept-thumbnails { padding: 10px; gap: 8px; }
   .concept-thumbnail { flex-basis: 88px; height: 62px; }
 }
+.viewer-panel .viewport-bottom { gap: 12px; }
+.measurement-button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; flex: 0 0 auto; min-height: 36px; padding: 0 12px; border: 1px solid var(--au-border, #d4d4d8); border-radius: 999px; color: var(--au-text, #27272a); background: var(--au-surface, #fff); cursor: pointer; pointer-events: auto; font: 500 11px/1.2 Inter, sans-serif; }
+.measurement-button svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.measurement-button[aria-pressed="true"] { color: #fff; background: #c2410c; border-color: #c2410c; }
+.measurement-button:focus-visible { outline: 2px solid #ea580c; outline-offset: 3px; }
+.is-solar .measurement-button { display: none; }
+.is-measuring { cursor: crosshair; }
+.measurement-overlay { position: absolute; inset: 0; z-index: 1; overflow: hidden; pointer-events: none; }
+.measurement-overlay[hidden], .measurement-label[hidden] { display: none; }
+.measurement-overlay svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.measurement-overlay line { stroke: #ff6b00; stroke-width: 2; stroke-dasharray: 6 3; }
+.measurement-overlay circle { fill: #fff; stroke: #c2410c; stroke-width: 2; }
+.measurement-overlay circle:last-child { fill: #ff6b00; r: 6px; }
+.measurement-label, .measurement-hint { position: absolute; border: 1px solid #fed7aa; border-radius: 6px; color: #9a3412; background: #fff7ed; padding: 6px 9px; font: 600 12px/1.4 Inter, sans-serif; box-shadow: 0 2px 8px #0002; }
+.measurement-label { transform: translate(-50%, calc(-100% - 10px)); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.measurement-hint { top: 72px; left: 33px; max-width: calc(100% - 190px); }
+@media (min-width: 1400px) { .viewer-panel .usage-filter { right: 650px; } }
+@media (max-width: 650px) { .measurement-button { padding: 0 9px; } .measurement-button span { display: none; } .measurement-hint { left: 13px; font-size: 10px; } }

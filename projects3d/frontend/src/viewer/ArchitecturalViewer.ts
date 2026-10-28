@@ -7,6 +7,7 @@ import type { ProjectionMode, StandardView, ViewState } from '../types/view';
 import type { ViewerSnapshot } from '../types/scenes';
 import { exportScenePng, type ExportedImage, type ImageExportOptions } from './exportImage';
 import { solarDirection, type SolarSettings } from '../data/solar';
+import { MeasurementTool, metersPerUnit } from './measurement';
 
 type Renderable = THREE.Mesh | THREE.Line | THREE.Points;
 type ObjectMaterial = THREE.Material | THREE.Material[];
@@ -72,6 +73,7 @@ export class ArchitecturalViewer {
   private activeUsages = new Set<UsageCode>(DEFAULT_USAGES);
   private pointerStart: { id: number; x: number; y: number } | null = null;
   private frameId = 0;
+  private measurement: MeasurementTool | null = null;
 
   constructor(
     private readonly container: HTMLElement,
@@ -108,6 +110,7 @@ export class ArchitecturalViewer {
 
   setActive(active: boolean): void {
     cancelAnimationFrame(this.frameId);
+    if (!active) this.measurement?.setEnabled(false);
     if (active) {
       this.resize();
       this.render();
@@ -122,6 +125,7 @@ export class ArchitecturalViewer {
 
   /** Ponto de entrada para uma cena convertida a partir de um modelo Rhino. */
   setContent(content: THREE.Object3D, objectData?: Map<string, ObjectRecord>): void {
+    this.measurement?.setEnabled(false);
     this.clearSelection();
     this.clearSelectionEntries();
     if (this.content) this.scene.remove(this.content);
@@ -468,10 +472,22 @@ export class ArchitecturalViewer {
   setSelectionEnabled(enabled: boolean): void {
     this.selectionEnabled = enabled;
     this.pointerStart = null;
-    if (!enabled) this.clearSelection();
+    if (!enabled) {
+      this.clearSelection();
+      this.measurement?.setEnabled(false);
+    }
+  }
+
+  mountMeasurement(button: HTMLButtonElement): void {
+    this.measurement?.dispose();
+    this.measurement = new MeasurementTool(this.renderer.domElement, button,
+      () => this.camera,
+      () => this.selectionEntries.map(entry => entry.object).filter(object => !object.userData.isEdgeHelper),
+      () => metersPerUnit(this.content?.userData.settings));
   }
 
   dispose(): void {
+    this.measurement?.dispose();
     cancelAnimationFrame(this.frameId);
     this.resizeObserver.disconnect();
     this.controls.dispose();
@@ -759,6 +775,7 @@ export class ArchitecturalViewer {
   private readonly onPointerUp = (event: PointerEvent): void => {
     const start = this.pointerStart;
     this.pointerStart = null;
+    if (this.measurement?.enabled) return;
     if (!this.selectionEnabled) return;
     if (!start || event.button !== 0 || start.id !== event.pointerId) return;
     if (Math.hypot(event.clientX - start.x, event.clientY - start.y) > 5 || !this.content) return;
@@ -842,6 +859,7 @@ export class ArchitecturalViewer {
     this.frameId = requestAnimationFrame(this.render);
     this.controls.update();
     this.emitViewState();
+    this.measurement?.update();
     this.renderer.render(this.scene, this.camera);
   };
 
