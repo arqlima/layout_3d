@@ -1,6 +1,6 @@
 <nav class="au-nav">
   <a href="{% url 'projects3d:project-list' %}" class="au-wordmark">
-    {% include "partials/_icon.html" with name="box" %}
+    <svg class="au-icon" viewBox="0 0 250 224" aria-hidden="true" focusable="false"><path fill="currentColor" stroke="none" d="M109 10C116-3 134-3 141 10L246 195C254 209 246 224 230 224H20C4 224-4 209 4 195Z"/></svg>
     <span>Rafael Castro <small>Arquitetos</small></span>
   </a>
   {% if user.is_authenticated %}

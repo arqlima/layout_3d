@@ -15,6 +15,7 @@ import { iconMarkup } from './icons';
 import { mountSolarPanel } from './SolarPanel';
 import type { SolarSettings } from '../data/solar';
 import { mountNorthControl } from './NorthControl';
+import { mountPresentationSettings } from './PresentationSettings';
 
 export interface AppElements {
   viewport: HTMLDivElement;
@@ -28,6 +29,7 @@ export interface AppElements {
   onMassingVisibilityChange(callback: (visible: boolean) => void): void;
   onSolarSettingsChange(callback: (settings: SolarSettings) => void): void;
   onSolarVisibilityChange(callback: (visible: boolean) => void): void;
+  onBackgroundChange(callback: (color: string) => void): void;
   setBrand(name: string, markUrl: string): void;
   setSceneInfo(title: string, subtitle: string, status: string): void;
   setSelection(selection: ObjectSelection | null, record?: ObjectRecord): void;
@@ -46,9 +48,9 @@ export function createApp(mount: HTMLElement): AppElements {
     <div class="app-shell">
       <header class="topbar">
         <div class="brand" aria-label="Visualização arquitetônica">
-          ${iconMarkup('box')}
+          <svg class="au-icon" viewBox="0 0 250 224" aria-hidden="true" focusable="false"><path fill="currentColor" stroke="none" d="M109 10C116-3 134-3 141 10L246 195C254 209 246 224 230 224H20C4 224-4 209 4 195Z"/></svg>
           <img id="brand-mark" class="brand-mark" alt="" width="46" height="46" hidden />
-          <div><strong id="brand-name">Visualização arquitetônica</strong><small>VISUALIZAÇÃO ARQUITETÔNICA</small></div>
+          <div><strong id="brand-name">Visualização arquitetônica</strong><small>ESTUDO DE VIABILIDADE</small></div>
         </div>
         <nav class="section-tabs" aria-label="Seções do projeto" role="tablist">
           <button id="tab-cover" class="section-tab" type="button" role="tab" aria-selected="true" aria-controls="cover-panel">${iconMarkup('home')} Capa</button>
@@ -104,7 +106,7 @@ export function createApp(mount: HTMLElement): AppElements {
 
         <section class="viewer-panel" aria-label="Visualizador 3D">
           <div id="viewport" class="viewport"></div>
-          <div class="viewport-top"><span class="view-label"><span class="view-label-square"></span> <span id="view-name">PERSPECTIVA</span> <span class="view-label-separator">/</span> <span id="view-projection">3D</span></span></div>
+          <div class="viewport-top"><div class="view-heading"><div id="presentation-settings-host"></div><span class="view-label"><span class="view-label-square"></span> <span id="view-name">PERSPECTIVA</span> <span class="view-label-separator">/</span> <span id="view-projection">3D</span></span></div></div>
           <nav id="view-cube-panel" class="view-cube-panel" aria-label="Orientação e projeção da vista"></nav>
           <aside id="north-control" class="north-control" aria-label="Ajustar norte do projeto" hidden></aside>
           <aside id="elevation-filter" class="elevation-filter" aria-label="Filtro por cota" hidden></aside>
@@ -148,6 +150,7 @@ export function createApp(mount: HTMLElement): AppElements {
   mount.querySelector<HTMLElement>('.intro')!.textContent = projectConfig.description || 'Explore o modelo, selecione peças e ajuste os filtros para consultar o estudo.';
   mount.querySelector<HTMLElement>('#brand-name')!.textContent = projectConfig.name;
   mountProjectPanels(mount);
+  const presentationSettings = mountPresentationSettings(mount.querySelector<HTMLElement>('#presentation-settings-host')!);
   const massingPanel = mount.querySelector<HTMLElement>('#massing-panel');
   const locationPanel = mount.querySelector<HTMLElement>('#location-panel');
   const locationVideo = mount.querySelector<HTMLVideoElement>('#location-video');
@@ -238,6 +241,7 @@ export function createApp(mount: HTMLElement): AppElements {
   let elevationControl: ElevationFilter | null = null;
   const updateSelectionSummary = mountSelectionSummary(mount.querySelector<HTMLElement>('#marked-summary')!);
   return {
+    onBackgroundChange(callback) { presentationSettings.onBackgroundChange(callback); },
     viewport,
     fitButton,
     homeButton,

@@ -16,7 +16,7 @@
     "name": "three.core"
   },
   "src/data/simulation.ts": {
-    "file": "chunks/simulation-C8DJ8OFI.js",
+    "file": "chunks/simulation-Cu4-fvdh.js",
     "name": "simulation",
     "src": "src/data/simulation.ts",
     "isDynamicEntry": true,
@@ -26,7 +26,7 @@
     ]
   },
   "src/entry.ts": {
-    "file": "viewer-Cv2jBv4l.js",
+    "file": "viewer-CWh1QCFL.js",
     "name": "entry",
     "src": "src/entry.ts",
     "isEntry": true,
@@ -38,7 +38,7 @@
       "src/data/simulation.ts"
     ],
     "css": [
-      "assets/entry-agO7M0vS.css"
+      "assets/entry-BQ4UFx8B.css"
     ],
     "assets": [
       "assets/geist-BGnTDqni.woff2",
@@ -47,7 +47,7 @@
     ]
   },
   "src/ui/SimulationPanel.ts": {
-    "file": "chunks/SimulationPanel-D6n9rEx1.js",
+    "file": "chunks/SimulationPanel-zmRAwr2I.js",
     "name": "SimulationPanel",
     "src": "src/ui/SimulationPanel.ts",
     "isDynamicEntry": true,
@@ -57,7 +57,7 @@
     ]
   },
   "src/viewer/ArchitecturalViewer.ts": {
-    "file": "chunks/ArchitecturalViewer-DoeXO6Uz.js",
+    "file": "chunks/ArchitecturalViewer-DZFNL6-Z.js",
     "name": "ArchitecturalViewer",
     "src": "src/viewer/ArchitecturalViewer.ts",
     "isDynamicEntry": true,

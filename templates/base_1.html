@@ -1,25 +1,26 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="pt-br" data-theme="dark">
+<html lang="pt-br" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#020617">
+    <meta name="theme-color" content="#f4f4f5">
     <title>{% block title %}Rafael Castro Arquitetos{% endblock %}</title>
-    <link rel="preload" href="{% static 'projects3d/design-system/fonts/geist.woff2' %}" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="{% static 'projects3d/design-system/fonts/inter.woff2' %}" as="font" type="font/woff2" crossorigin>
     <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css">
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.4/dist/htmx.min.js"></script>
     <style type="text/tailwindcss">
         @theme {
-            --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
-            --font-serifa: "Geist", ui-sans-serif, system-ui, sans-serif;
-            --color-areia: #020617;
-            --color-verde: #e879f9;
-            --color-preto: #f4f4f5;
+            --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+            --font-serifa: "Inter", ui-sans-serif, system-ui, sans-serif;
+            --color-areia: #f4f4f5;
+            --color-verde: #c2410c;
+            --color-preto: #18181b;
         }
     </style>
     <link rel="stylesheet" href="{% static 'projects3d/design-system/auragen.css' %}">
+    <link rel="stylesheet" href="{% static 'projects3d/design-system/genlabs.css' %}">
 </head>
 <body class="au-management min-h-screen font-sans antialiased bg-areia text-preto">
     {% block content %}{% endblock %}

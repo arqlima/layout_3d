@@ -1,6 +1,6 @@
 import { projectConfig } from '../data/config';
 
-export type IconName = 'arrow-right' | 'arrow-left' | 'arrow-up-right' | 'plus' | 'x' | 'search' | 'user' | 'log-out' | 'log-in' | 'edit' | 'trash' | 'folder' | 'box' | 'home' | 'map-pin' | 'file-text' | 'image' | 'calculator' | 'maximize' | 'refresh' | 'save' | 'printer' | 'download' | 'play' | 'pause' | 'move' | 'zoom' | 'orbit';
+export type IconName = 'brand-triangle' | 'arrow-right' | 'arrow-left' | 'arrow-up-right' | 'plus' | 'x' | 'search' | 'user' | 'log-out' | 'log-in' | 'edit' | 'trash' | 'folder' | 'box' | 'home' | 'map-pin' | 'file-text' | 'image' | 'calculator' | 'maximize' | 'refresh' | 'save' | 'printer' | 'download' | 'play' | 'pause' | 'move' | 'zoom' | 'orbit';
 
 export function iconMarkup(name: IconName): string {
   return `<svg class="au-icon" aria-hidden="true" focusable="false"><use href="${projectConfig.iconSpriteUrl}#${name}"></use></svg>`;

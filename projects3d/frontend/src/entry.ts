@@ -9,6 +9,7 @@ import { mountSceneToolbar } from './ui/SceneToolbar';
 import { mountImageExport } from './ui/ImageExport';
 import './styles/main.css';
 import '../../static/projects3d/design-system/auragen.css';
+import '../../static/projects3d/design-system/genlabs.css';
 
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('Elemento #app não encontrado.');
@@ -38,6 +39,7 @@ async function start(): Promise<void> {
     refreshTotals();
   }, (state) => ui.setViewState(state));
   activeViewer = viewer;
+  ui.onBackgroundChange(color => viewer.setBackgroundColor(color));
   ui.onSolarSettingsChange(settings => viewer.setSolarSettings(settings));
   ui.onSolarVisibilityChange(visible => viewer.setSelectionEnabled(!visible));
   viewer.setActive(massingVisible);

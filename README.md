@@ -101,12 +101,22 @@ depende das malhas salvas pelo Rhino.
 
 ## Alterar o visualizador
 
-A identidade visual segue a referência local `novo_estilo/auragen-design-system`.
+A identidade visual segue a referência local `novo_estilo/genlabs-design-system`:
+Inter, superfícies claras de vidro, cinzas neutros e ações em laranja.
+O tema `genlabs.css` é aplicado após a base `auragen.css`, preservando a estrutura,
+as posições dos controles e a lógica existente. Não modifica a cena 3D.
 Os tokens, componentes, ícones SVG e fontes locais ficam em
 `projects3d/static/projects3d/design-system/`. O mesmo CSS atende login, cadastro,
 gerenciamento de projetos e visualizador; no visualizador, ele entra no build do
 Vite com os arquivos de fontes versionados. Preserve essa fonte compartilhada ao
 alterar cores, tipografia ou botões.
+
+Na apresentação, a engrenagem à esquerda de **Perspectiva / 3D** abre as
+configurações de aparência. **Claro/Escuro** altera a interface em todas as abas;
+o seletor de cor e os campos **R/G/B** (0–255) alteram somente o fundo do ambiente
+3D e a cor da névoa, sem alterar materiais ou iluminação. As escolhas valem para
+a sessão da página. Clique fora do painel ou pressione Escape para fechá-lo.
+Teste: `node scripts/test-presentation-settings.mjs` em `projects3d/frontend`.
 
 O código editável está em `projects3d/frontend/src/`: `viewer/` concentra Three.js,
 `ui/` a interface, `data/` a integração com o Django e `styles/` a apresentação.

@@ -1,0 +1,230 @@
+/* GenLabs: presentation only. Existing layout, states and 3D rendering stay intact. */
+:root {
+  --au-font-body: Inter, system-ui, sans-serif;
+  --au-font-heading: Inter, system-ui, sans-serif;
+  --au-font-action: Inter, system-ui, sans-serif;
+  --au-page: #f4f4f5;
+  --au-panel: #fff;
+  --au-well: #fafafa;
+  --au-glass: rgb(255 255 255 / .90);
+  --au-hover: #f4f4f5;
+  --au-border: rgb(24 24 27 / .10);
+  --au-border-strong: rgb(24 24 27 / .22);
+  --au-text: #18181b;
+  --au-secondary: #52525b;
+  --au-muted: #71717a;
+  --au-accent: #c2410c;
+  --au-indigo: #c2410c;
+  --au-blue: #4f46e5;
+  --au-success: #047857;
+  --au-danger: #be123c;
+  --au-warning: #b45309;
+  --au-radius: 24px;
+  --gl-shadow: 0 0 0 1px rgb(0 0 0 / .04), 0 1px 1px -.5px rgb(0 0 0 / .06), 0 6px 18px -6px rgb(0 0 0 / .10);
+  --gl-orange: radial-gradient(circle at 10% 0%, #fed7aa, #fb923c);
+  --gl-bevel: inset 0 4px 8px rgb(253 230 138 / .65), inset 0 -4px 8px rgb(249 115 22 / .65);
+  color-scheme: light;
+}
+::selection { background: #fed7aa; color: #18181b; }
+body.au-management, body.au-viewer { color: var(--au-text); background: var(--au-page); }
+.au-management { background-image: linear-gradient(135deg, #fafafa, #e4e4e7); }
+.au-management :is(h1,h2,h3,.font-serifa), .au-viewer :is(h1,h2,h3,h4),
+.au-viewer :is(.brand strong,.brand small) { font-family: var(--au-font-heading); }
+.au-management :is(h1,h2), .au-viewer :is(h1,h2) { font-weight: 500; letter-spacing: -.045em; }
+.au-management .au-nav, .au-viewer .topbar {
+  background: rgb(255 255 255 / .90); border-color: var(--au-border);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+}
+.au-management .au-wordmark, .au-viewer .brand strong { color: #262626; }
+.au-management .au-wordmark > .au-icon { color: #000; }
+.au-viewer .brand > .au-icon { color: #000; }
+[data-presentation-theme="dark"] .au-viewer .brand > .au-icon { color: #fff; }
+.au-management .au-wordmark small, .au-viewer .brand small { color: var(--au-muted); }
+.au-management .au-project-card { background: #fff; border-color: var(--au-border); box-shadow: var(--gl-shadow); }
+.au-management .au-project-card:hover { border-color: #d4d4d8; box-shadow: 0 12px 30px #18181b12; transform: none; }
+.au-management .au-project-placeholder { background: linear-gradient(145deg, #fafafa, #e4e4e7); color: #71717a; }
+.au-management .campo { background: #fafafa; color: var(--au-text); border-radius: 12px; }
+.au-management .campo:focus { border-color: #f97316; box-shadow: 0 0 0 3px #f973161c; }
+.au-management .campo::placeholder { color: #71717a; }
+.au-management .campo.arquivo::file-selector-button { background: #f4f4f5; color: #3f3f46; border-radius: 999px; }
+.au-management .botao, .au-viewer .sim-actions .sim-save, .au-viewer .action-button.primary {
+  background: var(--gl-orange); color: #431407; border-color: #fdba74; box-shadow: var(--gl-bevel);
+}
+.au-management .botao:hover, .au-viewer .sim-actions .sim-save:hover:not(:disabled), .au-viewer .action-button.primary:hover {
+  background: radial-gradient(circle at 10% 0%, #ffedd5, #fb923c); border-color: #fb923c; color: #431407; box-shadow: var(--gl-bevel);
+}
+.au-management :is(.botao-linha,.au-text-action,.au-pagination a):hover { color: #18181b; background: #e4e4e7; }
+.au-management .botao-perigo { background: #fff1f2; border-color: #fecdd3; color: #be123c; }
+.au-management .botao-perigo:hover { background: #ffe4e6; border-color: #fda4af; }
+.au-management :is(.au-text-action.danger,.text-error,.text-red-800) { color: #be123c; }
+.au-management .au-auth-main { background: rgb(255 255 255 / .9); }
+.au-management .au-auth-main .sobretitulo { color: #c2410c; }
+.au-management .au-auth-visual { background: #18181b; }
+.au-management .au-auth-visual::after { background: linear-gradient(90deg, #18181b20, #18181b60), linear-gradient(0deg, #18181be8, transparent 70%); }
+.au-management .au-auth-visual h1 { color: #fff; font-family: var(--au-font-heading); }
+.au-management .au-auth-visual em { color: #fed7aa; }
+.au-management .au-auth-main a { text-decoration-color: #fdba74; }
+.au-management .modal-box { background: #fff; box-shadow: 0 30px 100px #18181b40; }
+.au-management .modal-backdrop { background: #18181b66; }
+.au-management :is(.alert-error,[role="alert"]) { background: #fff1f2; border-color: #fecdd3; color: #9f1239; }
+.au-management #folder-preview { background: #fafafa; }
+
+/* Compact controls retain their dimensions and their existing state selectors. */
+.au-viewer .sidebar { background: #fff; }
+.au-viewer :is(.section-tab,.project-tag) { background: rgb(255 255 255 / .6); color: #52525b; }
+.au-viewer .section-tab:hover { color: #18181b; background: #e4e4e7; }
+.au-viewer .section-tab[aria-selected="true"] { background: #18181b; color: #fff; border-color: #27272a; box-shadow: 0 2px 5px #18181b1a; }
+.au-viewer .section-tab .au-icon { color: #71717a; }
+.au-viewer .section-tab[aria-selected="true"] .au-icon { color: #fed7aa; }
+.au-viewer .status-dot { background: #10b981; box-shadow: 0 0 0 3px #10b9811f; }
+.au-viewer :is(.eyebrow-line,.sidebar-divider) { background: #e4e4e7; }
+.au-viewer :is(.eyebrow-count,.version) { color: #71717a; }
+.au-viewer h1 em { color: #71717a; }
+.au-viewer .scene-thumb { background: linear-gradient(145deg, #fafafa, #e4e4e7); }
+.au-viewer .scene-thumb::before { background: #fff; box-shadow: 1px 16px 0 #f4f4f5; }
+.au-viewer .scene-thumb::after { background: #f97316; }
+.au-viewer :is(.selection-modes button,.layer-actions button,.usage-button,.view-projection button,.elevation-heading button,.selection-hint button,.video-toggle,.sim-actions button,.sim-export-dialog button) {
+  background: #fff; color: #52525b; border-color: var(--au-border); border-radius: 999px;
+}
+.au-viewer :is(.selection-modes button,.layer-actions button,.usage-button,.elevation-heading button,.selection-hint button,.sim-actions button):hover:not(:disabled) {
+  color: #18181b; background: #f4f4f5; border-color: #d4d4d8;
+}
+.au-viewer :is(.selection-modes button,.usage-button,.view-projection button)[aria-pressed="true"], .au-viewer .sim-slot[aria-pressed="true"] {
+  background: #fff7ed; color: #9a3412; border-color: #fdba74;
+}
+.au-viewer .layer-list { scrollbar-color: #a1a1aa transparent; }
+.au-viewer .layer-row:has(input:not(:checked)) .layer-name { color: #71717a; }
+.au-viewer .hide-unchecked input { border-color: #a1a1aa; background: #e4e4e7; }
+.au-viewer .hide-unchecked input::before { background: #71717a; }
+.au-viewer .hide-unchecked input:checked { background: #ea580c; border-color: #c2410c; }
+.au-viewer :is(.marked-efficiency,.indicator-row dd) { color: #18181b; }
+.au-viewer :is(.view-label,.view-cube-panel,.elevation-filter,.usage-filter,.selection-hint,.viewer-toolbar,.north-control) {
+  border-color: var(--au-border); border-radius: 18px; background: rgb(255 255 255 / .90);
+  color: #18181b; box-shadow: var(--gl-shadow); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+}
+.au-viewer .view-cube-face { background: #fafafa; border-color: #a1a1aa; color: #52525b; }
+.au-viewer .view-cube-face:hover { background: #ffedd5; color: #9a3412; }
+.au-viewer :is(.view-cube-select,.sim-export-dialog select) { background: #fafafa; color: #18181b; border-color: #d4d4d8; }
+.au-viewer .elevation-rail { background: #e4e4e7; }
+.au-viewer .elevation-active { background: #f97316; }
+.au-viewer .elevation-handle { background: #c2410c; border-color: #ffedd5; color: #fff; }
+.au-viewer .elevation-tick::before { background: #a1a1aa; }
+.au-viewer .elevation-tick.is-in-range::before { background: #c2410c; }
+.au-viewer .viewport-bottom { background: linear-gradient(transparent, #18181b33); }
+.au-viewer .scene-shortcut { color: #52525b; background: #fff; border-color: #d4d4d8; border-radius: 999px; }
+.au-viewer .scene-shortcut:hover:not(:disabled) { color: #18181b; background: #f4f4f5; border-color: #a1a1aa; }
+.au-viewer .scene-navigation { color: #18181b; }
+.au-viewer .scene-update { color: #9a3412; background: #fff7ed; border-color: #fdba74; }
+.au-viewer .scene-slot[aria-pressed="true"] { background: #18181b; border-color: #18181b; color: #fff; }
+.au-viewer :is(.scene-feedback,.viewer-notice,.concept-image-error) { background: #fff; color: #52525b; }
+.au-viewer .project-cover-panel { background: radial-gradient(ellipse at 80% 10%, #fed7aa70, #f4f4f5 75%); }
+.au-viewer .project-management { background: rgb(255 255 255 / .90); }
+.au-viewer :is(.project-indicators,.project-empty,.project-guidelines-table) { background: #fff; box-shadow: var(--gl-shadow); }
+.au-viewer .concept-counter { background: #18181bcc; color: #fff; }
+.au-viewer .concept-thumbnail:hover { border-color: #a1a1aa; }
+.au-viewer .concept-thumbnail[aria-pressed="true"] { border-color: #f97316; box-shadow: 0 0 0 1px #f9731626; }
+.au-viewer .video-controls { background: #fff; }
+.au-viewer .sim-sheet { background: #fff; border-radius: 24px; box-shadow: var(--gl-shadow); }
+.au-viewer .sim-table .sim-use-heading th { background: #f4f4f5; color: #18181b; }
+.au-viewer :is(.sim-layer,.sim-area) { color: #52525b; }
+.au-viewer .sim-sheet input:not([type="checkbox"]) { background: #fafafa; border-color: #d4d4d8; color: #18181b; }
+.au-viewer .sim-sheet input[aria-invalid="true"] { border-color: #be123c; background: #fff1f2; }
+.au-viewer .sim-blue { color: #4338ca; }
+.au-viewer .sim-excluded :is(.sim-layer,.sim-area) { color: #71717a; }
+.au-viewer .sim-feedback { color: #52525b; }
+.au-viewer .image-export-button { background: #18181b; border-color: #27272a; color: #fff; }
+.au-viewer .image-export-button:hover:not(:disabled) { background: #3f3f46; border-color: #52525b; color: #fff; }
+.au-viewer .image-export-dialog .image-export-status { color: #52525b; }
+.au-viewer .sim-export-dialog::backdrop { background: #18181b66; }
+.au-viewer .action-button { border-radius: 999px; }
+.au-viewer .action-button.secondary { background: #e4e4e7; color: #3f3f46; border-color: #d4d4d8; }
+
+/* Solar study and north indicator use the same neutral glass and orange accent. */
+.au-viewer .solar-controls { color: #52525b; }
+.au-viewer :is(.solar-field output,.solar-status,.north-value) { color: #c2410c; }
+.au-viewer :is(.solar-field small,.solar-note,.north-control small) { color: #71717a; }
+.au-viewer .solar-controls input:is([type="number"],[type="date"]) { background: #fafafa; border-color: #d4d4d8; border-radius: 10px; color: #18181b; color-scheme: light; }
+.au-viewer .solar-field input[type="range"] { accent-color: #c2410c; }
+.au-viewer .north-ring { fill: #fafafa; stroke: #a1a1aa; }
+.au-viewer .north-ticks, .au-viewer .north-tail { stroke: #71717a; }
+.au-viewer .north-tip { fill: #fb923c; stroke: #c2410c; }
+.au-viewer .north-arrow text, .au-viewer .north-center { fill: #c2410c; }
+.au-viewer .north-arrow text { font-family: var(--au-font-body); }
+.au-viewer :is(.solar-controls input,.north-dial):focus-visible { outline-color: #c2410c; }
+
+/* White text remains legible over project photographs, independent of light UI. */
+.au-viewer .is-cover .topbar { background: linear-gradient(180deg, #18181b80, transparent); }
+.au-viewer .is-cover :is(.brand strong,.brand small) { color: #fff; }
+.au-viewer .is-cover :is(.section-tab,.project-tag,.back-projects,.project-management) {
+  color: #fff; background: #18181b66; border-color: #ffffff40; text-shadow: 0 1px 5px #0006;
+}
+.au-viewer .is-cover .section-tab:hover { background: #18181b99; }
+.au-viewer .is-cover .section-tab[aria-selected="true"] { background: #fff; border-color: #fff; color: #18181b; text-shadow: none; }
+.au-viewer .is-cover .section-tab[aria-selected="true"] .au-icon { color: #c2410c; }
+
+/* Presentation preferences: independent from the model's materials and lighting. */
+.au-viewer .view-heading { display: flex; align-items: center; gap: 8px; }
+.au-viewer #presentation-settings-host { pointer-events: auto; }
+.au-viewer .presentation-settings-toggle {
+  display: grid; place-items: center; width: 34px; height: 34px; padding: 0;
+  border: 1px solid var(--au-border); border-radius: 50%; background: var(--au-glass);
+  color: var(--au-text); box-shadow: var(--gl-shadow); cursor: pointer;
+}
+.au-viewer .presentation-settings-toggle:hover { background: var(--au-hover); }
+.au-viewer .presentation-settings {
+  position: fixed; inset: auto; width: min(320px, calc(100vw - 16px)); max-height: calc(100dvh - 16px);
+  overflow-y: auto; margin: 0; padding: 20px; border: 1px solid var(--au-border-strong); border-radius: 20px;
+  background: var(--au-panel); color: var(--au-text); box-shadow: 0 18px 50px #0003;
+  font: 400 13px/1.5 var(--au-font-body); pointer-events: auto;
+}
+.au-viewer .presentation-settings header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 20px; }
+.au-viewer .presentation-settings h2 { margin: 0; font-size: 18px; }
+.au-viewer .presentation-settings header button { border: 0; border-radius: 50%; background: var(--au-hover); color: var(--au-text); width: 28px; height: 28px; font-size: 20px; cursor: pointer; }
+.au-viewer .presentation-setting { display: grid; gap: 8px; }
+.au-viewer .presentation-settings :is(select,input) { min-width: 0; width: 100%; padding: 8px; border: 1px solid var(--au-border-strong); border-radius: 8px; background: var(--au-well); color: var(--au-text); font: inherit; }
+.au-viewer .presentation-settings fieldset { margin: 22px 0 0; padding: 14px 0 0; border: 0; border-top: 1px solid var(--au-border); }
+.au-viewer .presentation-settings legend { padding: 0 8px 0 0; color: var(--au-secondary); }
+.au-viewer .presentation-color { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.au-viewer .presentation-color input { width: 64px; height: 36px; padding: 3px; cursor: pointer; }
+.au-viewer .presentation-rgb { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 14px; }
+.au-viewer .presentation-rgb label { display: grid; gap: 5px; color: var(--au-secondary); }
+
+:root[data-presentation-theme="dark"] {
+  --au-page: #18181b; --au-panel: #27272a; --au-well: #18181b;
+  --au-glass: rgb(39 39 42 / .94); --au-hover: #3f3f46;
+  --au-border: rgb(255 255 255 / .12); --au-border-strong: rgb(255 255 255 / .24);
+  --au-text: #fafafa; --au-secondary: #d4d4d8; --au-muted: #a1a1aa;
+  --au-accent: #fdba74; --au-indigo: #fb923c; --au-success: #34d399; --au-danger: #fda4af;
+  --gl-shadow: 0 0 0 1px #ffffff0a, 0 6px 18px #0003; color-scheme: dark;
+}
+[data-presentation-theme="dark"] .au-viewer :is(.topbar,.sidebar,.view-label,.view-cube-panel,.elevation-filter,.usage-filter,.selection-hint,.viewer-toolbar,.north-control,.project-management) {
+  background: var(--au-glass); color: var(--au-text); border-color: var(--au-border);
+}
+[data-presentation-theme="dark"] .au-viewer :is(.brand strong,.marked-efficiency,.indicator-row dd,.scene-navigation) { color: var(--au-text); }
+[data-presentation-theme="dark"] .au-viewer :is(.brand small,.section-tab .au-icon,.eyebrow-count,.version,.solar-controls,.solar-field small,.solar-note,.north-control small,.sim-layer,.sim-area,.sim-feedback,.image-export-status) { color: var(--au-muted); }
+[data-presentation-theme="dark"] .au-viewer :is(.section-tab,.project-tag,.selection-modes button,.layer-actions button,.usage-button,.view-projection button,.elevation-heading button,.selection-hint button,.video-toggle,.sim-actions button,.sim-export-dialog button,.scene-shortcut) {
+  background: var(--au-panel); color: var(--au-secondary); border-color: var(--au-border-strong);
+}
+[data-presentation-theme="dark"] .au-viewer :is(.section-tab,.selection-modes button,.layer-actions button,.usage-button,.elevation-heading button,.selection-hint button,.sim-actions button,.scene-shortcut):hover:not(:disabled) { background: var(--au-hover); color: var(--au-text); }
+[data-presentation-theme="dark"] .au-viewer :is(.section-tab[aria-selected="true"],.selection-modes button[aria-pressed="true"],.usage-button[aria-pressed="true"],.view-projection button[aria-pressed="true"],.sim-slot[aria-pressed="true"],.scene-slot[aria-pressed="true"],.scene-update) {
+  background: #431407; border-color: #c2410c; color: #fed7aa;
+}
+[data-presentation-theme="dark"] .au-viewer :is(.section-tab[aria-selected="true"] .au-icon,.solar-field output,.solar-status,.north-value) { color: #fdba74; }
+[data-presentation-theme="dark"] .au-viewer :is(.view-cube-select,.sim-export-dialog select,.solar-controls input[type="number"],.solar-controls input[type="date"],.sim-sheet input:not([type="checkbox"])) {
+  background: var(--au-well); border-color: var(--au-border-strong); color: var(--au-text); color-scheme: dark;
+}
+[data-presentation-theme="dark"] .au-viewer :is(.project-indicators,.project-empty,.project-guidelines-table,.sim-sheet,.video-controls,.scene-feedback,.viewer-notice,.concept-image-error) { background: var(--au-panel); color: var(--au-secondary); }
+[data-presentation-theme="dark"] .au-viewer .project-cover-panel { background: radial-gradient(ellipse at 80% 10%, #43140760, #18181b 75%); }
+[data-presentation-theme="dark"] .au-viewer :is(.sim-table .sim-use-heading th,.view-cube-face) { background: var(--au-well); color: var(--au-secondary); border-color: var(--au-border-strong); }
+[data-presentation-theme="dark"] .au-viewer .sim-blue { color: #a5b4fc; }
+[data-presentation-theme="dark"] .au-viewer .sim-sheet input[aria-invalid="true"] { border-color: #fda4af; background: #4c0519; }
+[data-presentation-theme="dark"] .au-viewer .sim-actions .sim-save { background: var(--gl-orange); border-color: #fdba74; color: #431407; }
+[data-presentation-theme="dark"] .au-viewer :is(.elevation-rail,.sidebar-divider,.eyebrow-line) { background: #3f3f46; }
+[data-presentation-theme="dark"] .au-viewer .scene-thumb { background: linear-gradient(145deg, #3f3f46, #18181b); }
+[data-presentation-theme="dark"] .au-viewer .scene-thumb::before { background: #71717a; box-shadow: 1px 16px 0 #52525b; }
+[data-presentation-theme="dark"] .au-viewer .north-ring { fill: #18181b; stroke: #71717a; }
+[data-presentation-theme="dark"] .au-viewer .north-arrow text, [data-presentation-theme="dark"] .au-viewer .north-center { fill: #fdba74; }
+[data-presentation-theme="dark"] .au-viewer .is-cover .topbar { background: linear-gradient(180deg, #18181b80, transparent); }
+[data-presentation-theme="dark"] .au-viewer .is-cover :is(.brand strong,.brand small) { color: #fff; }
+[data-presentation-theme="dark"] .au-viewer .is-cover :is(.section-tab,.project-tag,.back-projects,.project-management) { color: #fff; background: #18181b66; border-color: #ffffff40; }
+[data-presentation-theme="dark"] .au-viewer .is-cover .section-tab[aria-selected="true"] { color: #18181b; background: #fff; }

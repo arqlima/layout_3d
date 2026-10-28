@@ -23,6 +23,15 @@ async function moduleUrl(path) {
 }
 const { parseLayerName, matchingLayers } = await import(await moduleUrl(resolve(root, 'src/data/layerSelection.ts')));
 const { ArchitecturalViewer } = await import(await moduleUrl(resolve(root, 'src/viewer/ArchitecturalViewer.ts')));
+const backgroundViewer = Object.create(ArchitecturalViewer.prototype);
+backgroundViewer.scene = new THREE.Scene();
+backgroundViewer.scene.fog = new THREE.Fog('#020617', 55, 120);
+backgroundViewer.setBackgroundColor('#ff8000');
+assert.equal(backgroundViewer.scene.background.getHexString(), 'ff8000');
+assert.equal(backgroundViewer.scene.fog.color.getHexString(), 'ff8000');
+assert.equal(backgroundViewer.scene.fog.near, 55);
+backgroundViewer.setBackgroundColor('invalid');
+assert.equal(backgroundViewer.scene.background.getHexString(), 'ff8000');
 assert.deepEqual(parseLayerName('00-Res_des-priv'), { group: '00', name: 'Res_des', use: 'PRIV' });
 assert.deepEqual(parseLayerName('01-circ-vert-com'), { group: '01', name: 'circ-vert', use: 'COM' });
 assert.deepEqual(parseLayerName('CALCULO'), { group: 'Sem grupo', name: 'CALCULO', use: 'Sem uso' });

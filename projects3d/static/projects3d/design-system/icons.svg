@@ -1,4 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg">
+  <symbol id="brand-triangle" viewBox="0 0 250 224"><path fill="currentColor" stroke="none" d="M109 10C116-3 134-3 141 10L246 195C254 209 246 224 230 224H20C4 224-4 209 4 195Z"/></symbol>
   <symbol id="arrow-right" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
   <symbol id="arrow-left" viewBox="0 0 24 24"><path d="M19 12H5m6-6-6 6 6 6"/></symbol>
   <symbol id="arrow-up-right" viewBox="0 0 24 24"><path d="M7 17 17 7M7 7h10v10"/></symbol>

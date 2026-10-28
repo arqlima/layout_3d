@@ -76,8 +76,8 @@ export class ArchitecturalViewer {
     private readonly onSelectionChange: (selection: ObjectSelection | null) => void = () => {},
     private readonly onViewStateChange: (state: ViewState) => void = () => {},
   ) {
-    this.scene.background = new THREE.Color('#020617');
-    this.scene.fog = new THREE.Fog('#020617', 55, 120);
+    this.scene.background = new THREE.Color('#a3a3a3');
+    this.scene.fog = new THREE.Fog('#a3a3a3', 55, 120);
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -110,6 +110,12 @@ export class ArchitecturalViewer {
       this.resize();
       this.render();
     }
+  }
+
+  setBackgroundColor(color: string): void {
+    if (!/^#[\da-f]{6}$/i.test(color)) return;
+    this.scene.background = new THREE.Color(color);
+    if (this.scene.fog instanceof THREE.Fog) this.scene.fog.color.copy(this.scene.background);
   }
 
   /** Ponto de entrada para uma cena convertida a partir de um modelo Rhino. */
