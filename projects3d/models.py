@@ -1,5 +1,5 @@
 from django.db import models
-from django.core.validators import FileExtensionValidator
+from django.core.validators import FileExtensionValidator, MinValueValidator, MaxValueValidator
 
 
 def default_csv_columns():
@@ -12,6 +12,14 @@ class Project(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
     model_file = models.FileField(upload_to='projects3d/models/', blank=True)
+    location_kmz = models.FileField(
+        'Localização (KMZ)', upload_to='projects3d/locations/', blank=True,
+        validators=[FileExtensionValidator(['kmz'])],
+    )
+    latitude = models.FloatField('Latitude', null=True, blank=True,
+                                 validators=[MinValueValidator(-90), MaxValueValidator(90)])
+    longitude = models.FloatField('Longitude', null=True, blank=True,
+                                  validators=[MinValueValidator(-180), MaxValueValidator(180)])
     object_data_file = models.FileField(
         'Tabela de objetos (CSV)', upload_to='projects3d/data/', blank=True,
         validators=[FileExtensionValidator(['csv'])],

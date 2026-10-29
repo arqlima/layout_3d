@@ -19,6 +19,7 @@
       'localizacao.mp4': 'Vídeo', 'localização.mp4': 'Vídeo',
     };
     if (fixed[name]) return fixed[name];
+    if (!name.includes('/') && name.endsWith('.kmz')) return 'Localização KMZ';
     if (/^capa\.(png|jpe?g|webp)$/.test(name)) return 'Capa';
     if (/^(imagens\/)?[0-9]{1,8}\.(png|jpe?g|webp)$/.test(name)) return 'Imagem';
     return null;

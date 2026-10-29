@@ -155,6 +155,7 @@ class ProjectViewerTests(TestCase):
 
     def test_create_and_update_uploads_preserve_model(self):
         response = self.client.post(reverse('projects3d:project-create'), {
+            'latitude': -20.46, 'longitude': -54.62,
             'name': 'Novo estudo', 'description': 'Descrição', 'csv_columns': json.dumps(COLUMNS),
             'model_file': SimpleUploadedFile('model.3dm', b'test-model'),
             'object_data_file': csv_upload(),
@@ -167,6 +168,7 @@ class ProjectViewerTests(TestCase):
         self.assertEqual(config['modelUrl'], project.model_file.url)
         self.assertEqual(config['videoUrl'], project.location_video.url)
         response = self.client.post(reverse('projects3d:project-update', args=[project.pk]), {
+            'latitude': -20.46, 'longitude': -54.62,
             'name': 'Estudo atualizado', 'csv_columns': json.dumps(COLUMNS),
             'object_data_file-clear': 'on', 'location_video-clear': 'on',
         })
@@ -204,7 +206,8 @@ class ProjectViewerTests(TestCase):
                 self.assertIn(field, form.errors)
 
     def test_model_is_optional_and_existing_forms_use_default_mapping(self):
-        form = ProjectCreateForm({'name': 'Sem modelo', 'csv_columns': json.dumps(default_csv_columns())})
+        form = ProjectCreateForm({'name': 'Sem modelo', 'csv_columns': json.dumps(default_csv_columns()),
+                                  'latitude': -20.46, 'longitude': -54.62})
         self.assertTrue(form.is_valid(), form.errors)
         form = ProjectUpdateForm(instance=self.project)
         self.assertEqual(form.initial['csv_columns'], default_csv_columns())
@@ -240,6 +243,7 @@ def folder_payload(optional=True):
                   SimpleUploadedFile('diretrizes.csv', b'Indicador;Valor\nCA;2\n')]
         paths += ['capa.png', '02.png', 'imagens/01.png', 'resumo.txt', 'localizacao.mp4', 'diretrizes.csv']
     return {'name': 'Projeto por pasta', 'description': 'Apresentação de teste',
+            'latitude': -20.46, 'longitude': -54.62,
             'source_folder': 'Pasta de origem', 'folder_paths': json.dumps(paths), 'folder_files': files}
 
 

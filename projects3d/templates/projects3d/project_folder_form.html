@@ -24,6 +24,8 @@
       {{ form.folder_paths }}{{ form.source_folder }}
       <p class="mt-2 text-sm text-preto/60">Obrigatórios: <strong>massa.3dm</strong> e <strong>objetos.csv</strong>. Opcionais: resumo.txt ou resumo.csv, diretrizes.csv, localizacao.mp4, capa e imagens numeradas. A pasta fontes/ será ignorada.</p>
     </div>
+    {% include "projects3d/_location_fields.html" %}
+    <p class="text-sm text-preto/60">Inclua opcionalmente um único arquivo .kmz na raiz da pasta.</p>
     <section id="folder-preview" hidden class="border border-preto/20 p-5 space-y-4" aria-live="polite">
       <h2 class="font-serifa text-2xl">Conferência da pasta</h2>
       <p id="folder-description" class="text-sm text-preto/60"></p>

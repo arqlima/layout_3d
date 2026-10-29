@@ -162,7 +162,7 @@ export function createApp(mount: HTMLElement): AppElements {
   mountLocationVideo(locationPanel);
   const tabs = [...mount.querySelectorAll<HTMLButtonElement>('.section-tab')];
   const solarSidebar = mount.querySelector<HTMLElement>('#solar-sidebar')!;
-  const solarPanel = mountSolarPanel(solarSidebar);
+  const solarPanel = mountSolarPanel(solarSidebar, projectConfig.location);
   let solarActive = false;
   const northHost = mount.querySelector<HTMLElement>('#north-control')!;
   const northControl = mountNorthControl(northHost, angle => solarPanel.setNorthAngle(angle));

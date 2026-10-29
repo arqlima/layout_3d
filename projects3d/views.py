@@ -53,6 +53,8 @@ class ProjectDetailView(LoginRequiredMixin,DetailView):
         context['viewer_config'] = {
             'name': project.name,
             'description': project.description,
+            'location': {'latitude': project.latitude, 'longitude': project.longitude,
+                         'locked': bool(project.location_kmz)},
             'modelUrl': project.model_file.url if project.model_file else None,
             'objectDataUrl': reverse('projects3d:project-object-data', args=[project.pk]),
             'simulationExportUrl': reverse('projects3d:project-simulation-export', args=[project.pk]),
@@ -107,7 +109,8 @@ class ProjectFolderImportView(LoginRequiredMixin, FormView):
 
     def get_initial(self):
         if self.project:
-            return {'name': self.project.name, 'description': self.project.description}
+            return {'name': self.project.name, 'description': self.project.description,
+                    'latitude': self.project.latitude, 'longitude': self.project.longitude}
         return super().get_initial()
 
     def get_form_kwargs(self):
@@ -121,6 +124,7 @@ class ProjectFolderImportView(LoginRequiredMixin, FormView):
             project = save_folder(
                 form.bundle, form.cleaned_data['name'], form.cleaned_data['description'],
                 form.cleaned_data['source_folder'], self.project.pk if self.project else None,
+                latitude=form.cleaned_data['latitude'], longitude=form.cleaned_data['longitude'],
             )
         except (OSError, DatabaseError):
             logger.exception('Falha ao importar pasta do projeto.')

@@ -14,10 +14,11 @@ from django.db import transaction
 
 from projects3d.models import Project, ProjectImage, default_csv_columns
 from projects3d.object_data import read_object_csv
+from projects3d.location import read_kmz
 
 logger = logging.getLogger(__name__)
 PROJECT_FILES = ('model_file', 'object_data_file', 'location_video', 'cover_image',
-                 'summary_file', 'guidelines_file')
+                 'summary_file', 'guidelines_file', 'location_kmz')
 IMAGE_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.webp'}
 METADATA_LIMIT = 10 * 1024 * 1024
 
@@ -27,6 +28,8 @@ def file_role(path):
     parts = PurePosixPath(path.lower()).parts
     if len(parts) == 1:
         name = parts[0]
+        if PurePosixPath(name).suffix == '.kmz':
+            return 'location_kmz'
         fixed = {'massa.3dm': 'model_file', 'objetos.csv': 'object_data_file',
                  'localizacao.mp4': 'location_video', 'localização.mp4': 'location_video',
                  'resumo.txt': 'summary_file', 'resumo.csv': 'summary_file',
@@ -82,6 +85,7 @@ class FolderBundle:
     summary: list
     guidelines: list
     object_count: int
+    coordinates: tuple | None = None
 
 
 def inspect_folder(files, paths):
@@ -158,7 +162,8 @@ def inspect_folder(files, paths):
         if guidelines and (len(guidelines[0]) > 30 or any(len(row) != len(guidelines[0]) for row in guidelines)):
             raise ValidationError('diretrizes.csv contém uma quantidade inconsistente de colunas.')
     return FolderBundle(selected, sorted(images, key=lambda item: item[0]), columns,
-                        summary, guidelines, len(records))
+                        summary, guidelines, len(records),
+                        read_kmz(selected['location_kmz']) if 'location_kmz' in selected else None)
 
 
 def delete_stored_files(files):
@@ -170,7 +175,7 @@ def delete_stored_files(files):
             logger.exception('Não foi possível remover um arquivo substituído do projeto.')
 
 
-def save_folder(bundle, name, description, source_folder, project_id=None):
+def save_folder(bundle, name, description, source_folder, project_id=None, *, latitude=None, longitude=None):
     """Roll back database changes and newly copied files if any write fails."""
     copied = []
     try:
@@ -205,6 +210,7 @@ def save_folder(bundle, name, description, source_folder, project_id=None):
             project.csv_columns = bundle.columns
             project.summary_data = bundle.summary
             project.guidelines_data = bundle.guidelines
+            project.latitude, project.longitude = bundle.coordinates or (latitude, longitude)
             project.save()
             project.images.all().delete()
             for position, file in bundle.images:

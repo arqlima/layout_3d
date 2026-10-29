@@ -1,7 +1,10 @@
 import { defaultSolarSettings, solarDirection, type SolarSettings } from '../data/solar';
 
-export function mountSolarPanel(container: HTMLElement): { settings(): SolarSettings; setNorthAngle(angle: number): void; onChange(callback: (settings: SolarSettings) => void): void } {
+export function mountSolarPanel(container: HTMLElement, location?: { latitude: number | null; longitude: number | null; locked: boolean }): { settings(): SolarSettings; setNorthAngle(angle: number): void; onChange(callback: (settings: SolarSettings) => void): void } {
   let settings = defaultSolarSettings();
+  if (location?.latitude != null && location.longitude != null) {
+    settings = { ...settings, latitude: location.latitude, longitude: location.longitude };
+  }
   let notify = (_settings: SolarSettings) => {};
   container.innerHTML = `
     <div class="solar-controls">
@@ -31,6 +34,11 @@ export function mountSolarPanel(container: HTMLElement): { settings(): SolarSett
     </div>
     <div class="sidebar-footer"><span>ESTUDO SOLAR</span><span>VISUALIZADOR 3D</span></div>`;
   const inputs = [...container.querySelectorAll<HTMLInputElement>('input')];
+  if (location?.latitude != null && location.longitude != null) {
+    container.querySelector<HTMLElement>('.solar-note')!.textContent = location.locked
+      ? 'Coordenadas obtidas do KMZ. Para alterar a localização, substitua ou remova o KMZ no cadastro.'
+      : 'Coordenadas cadastradas para este projeto. Ajuste aqui para simular outra localização.';
+  }
   const format = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 2 });
   const updateLabels = () => {
     for (const input of inputs) {
@@ -45,8 +53,11 @@ export function mountSolarPanel(container: HTMLElement): { settings(): SolarSett
       ? 'Sol abaixo do horizonte neste horário.' : '';
   };
   for (const input of inputs) {
+    const locked = Boolean(location?.locked && ['latitude', 'longitude'].includes(input.name));
+    input.disabled = locked;
     input.value = String(settings[input.name as keyof SolarSettings]);
     input.addEventListener('input', () => {
+      if (locked) return;
       if (!inputs.every(field => field.checkValidity())) return;
       const next = { ...settings, [input.name]: input.type === 'date' ? input.value : input.valueAsNumber };
       try { solarDirection(next); } catch { return; }

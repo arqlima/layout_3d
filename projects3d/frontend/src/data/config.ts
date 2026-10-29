@@ -1,6 +1,7 @@
 export interface ViewerConfig {
   name: string;
   description: string;
+  location?: { latitude: number | null; longitude: number | null; locked: boolean };
   modelUrl: string | null;
   objectDataUrl: string;
   simulationExportUrl: string;

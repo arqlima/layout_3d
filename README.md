@@ -4,6 +4,25 @@ O Django mantém os apps `accounts` (login e cadastro) e `projects3d` (cadastro,
 edição, exclusão e visualização). O visualizador de `novo_input/Visualizacao_3d`
 foi integrado ao app `projects3d`, sem servidor frontend separado em execução.
 
+## Localização por KMZ
+
+Inclua opcionalmente um único `.kmz` na raiz da pasta do projeto (qualquer nome),
+ou envie-o pelo cadastro individual. O servidor extrai as coordenadas das
+geometrias locais do KML e salva o centro dos limites geográficos. Para vários
+pontos ou polígonos, usa o centro do conjunto, considerando a passagem pelo
+antimeridiano. Links externos e posições de câmera não definem a localização.
+
+Com KMZ, latitude e longitude ficam bloqueadas no cadastro e no estudo solar;
+valores manuais enviados ao servidor são ignorados. Substitua o arquivo para
+atualizar a localização. Sem KMZ (inclusive após removê-lo), os dois campos são
+obrigatórios no cadastro. Projetos antigos preservam seus dados e passam a exigir
+coordenadas ao serem editados. A importação de uma nova pasta substitui também
+o KMZ: se ausente, informe as coordenadas manualmente.
+
+Limites: KMZ de até 10 MB, até 1000 entradas e KML de até 5 MB no total.
+Arquivos inválidos ou sem coordenadas impedem salvar o projeto. Nenhum arquivo
+é extraído no disco e referências externas não são acessadas.
+
 ## Executar
 
 ```powershell

@@ -10,12 +10,15 @@
     {% csrf_token %}
     {{ form.non_field_errors }}
     {% for field in form %}
+    {% if field.name != 'location_kmz' and field.name != 'latitude' and field.name != 'longitude' %}
     <div>
       <label for="{{ field.id_for_label }}" class="rotulo">{{ field.label }}</label>
       {{ field }}
       {% for error in field.errors %}<p class="mt-1 text-error text-xs">{{ error }}</p>{% endfor %}
     </div>
+    {% endif %}
     {% endfor %}
+    {% include "projects3d/_location_fields.html" %}
     <p class="text-xs text-preto/60">O CSV deve usar UTF-8 e ponto e vírgula. Associe id, area, use e elevation aos cabeçalhos; areaFallback é opcional. Modelo, CSV e vídeo podem ser mantidos, substituídos ou removidos.</p>
     <div class="flex gap-4 pt-3">
       <button type="submit" class="botao">{% include "partials/_icon.html" with name="save" %} Salvar</button>
