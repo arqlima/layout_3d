@@ -12,6 +12,8 @@ e uso, esses atalhos adicionam ou removem a categoria correspondente. Se ambas
 as teclas estiverem pressionadas, Ctrl tem prioridade. Clique no fundo sem
 modificadores ou use Limpar/Escape para limpar a seleção explícita. Os totais
 acompanham os objetos destacados e cenas salvas preservam a seleção múltipla.
+Quando houver várias seleções sem dados individuais, o quadro mostra apenas a
+quantidade (por exemplo, “2 seleções”) e o botão Limpar, ocultando os campos sem informação.
 
 ## Localização por KMZ
 

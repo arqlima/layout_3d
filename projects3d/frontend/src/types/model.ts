@@ -10,6 +10,7 @@ export interface ObjectRecord {
 export interface ObjectSelection {
   id: string | null;
   name: string;
+  count?: number;
   mode?: 'name' | 'use' | 'group';
 }
 

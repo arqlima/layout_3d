@@ -294,6 +294,7 @@ export function createApp(mount: HTMLElement): AppElements {
     },
     setSelection(selection, record) {
       selectionName.textContent = selection?.name ?? '';
+      selectionHint.querySelector<HTMLElement>('.selection-details')!.hidden = (selection?.count ?? 1) > 1 && !record;
       selectionArea.textContent = record?.use?.toUpperCase() === 'VAGAS'
         ? 'Não contabilizada'
         : record?.areaM2 == null ? 'Não informada' : `${metric.format(record.areaM2)} m²`;

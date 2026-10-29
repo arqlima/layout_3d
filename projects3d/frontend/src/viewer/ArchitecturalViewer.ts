@@ -788,6 +788,7 @@ export class ArchitecturalViewer {
     const layer = selected?.layerIndex == null ? undefined : this.layers[selected.layerIndex];
     const layerName = layer ? layerLabel(layer, this.selectionMode) : undefined;
     this.onSelectionChange({
+      count: this.selectedObjects?.size ?? 1,
       id: this.selectionMode === 'name' && (this.selectedObjects?.size ?? 1) === 1 ? selected?.objectId ?? null : null,
       name: (this.selectedObjects?.size ?? 0) > 1 ? `${this.selectedObjects!.size} seleções`
         : layerName || object.name?.trim() || object.userData.attributes?.name?.trim() || 'Geometria selecionada',
