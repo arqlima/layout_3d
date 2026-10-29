@@ -21,6 +21,7 @@ export interface ViewerSnapshot {
   activeUsages: UsageCode[];
   hideUnchecked: boolean;
   selected: { id: string | null; index: number } | null;
+  selectedObjects?: Array<{ id: string | null; index: number }>;
 }
 
 export interface SavedScene {

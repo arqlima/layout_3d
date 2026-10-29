@@ -151,7 +151,7 @@ export function createApp(mount: HTMLElement): AppElements {
   `;
 
   mount.querySelector<HTMLAnchorElement>('#back-projects')!.href = projectConfig.listUrl;
-  mount.querySelector<HTMLElement>('.intro')!.textContent = projectConfig.description || 'Explore o modelo, selecione peças e ajuste os filtros para consultar o estudo.';
+  mount.querySelector<HTMLElement>('.intro')!.textContent = projectConfig.description || 'Clique para selecionar. Shift + clique adiciona; Ctrl + clique remove da seleção.';
   mount.querySelector<HTMLElement>('#brand-name')!.textContent = projectConfig.name;
   mountProjectPanels(mount);
   const presentationSettings = mountPresentationSettings(mount.querySelector<HTMLElement>('#presentation-settings-host')!);

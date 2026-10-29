@@ -4,6 +4,15 @@ O Django mantém os apps `accounts` (login e cadastro) e `projects3d` (cadastro,
 edição, exclusão e visualização). O visualizador de `novo_input/Visualizacao_3d`
 foi integrado ao app `projects3d`, sem servidor frontend separado em execução.
 
+## Seleção no visualizador
+
+Clique simples seleciona apenas o objeto clicado. **Shift + clique** adiciona
+objetos à seleção; **Ctrl + clique** remove o objeto clicado. Nos modos de grupo
+e uso, esses atalhos adicionam ou removem a categoria correspondente. Se ambas
+as teclas estiverem pressionadas, Ctrl tem prioridade. Clique no fundo sem
+modificadores ou use Limpar/Escape para limpar a seleção explícita. Os totais
+acompanham os objetos destacados e cenas salvas preservam a seleção múltipla.
+
 ## Localização por KMZ
 
 Inclua opcionalmente um único `.kmz` na raiz da pasta do projeto (qualquer nome),

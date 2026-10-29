@@ -25,6 +25,9 @@ export function isSavedScene(value: unknown): value is SavedScene {
     || typeof state.hideUnchecked !== 'boolean') return false;
   if (state.selected !== null && (!state.selected || (state.selected.id !== null && typeof state.selected.id !== 'string')
     || !Number.isInteger(state.selected.index) || state.selected.index < 0)) return false;
+  if (state.selectedObjects !== undefined && (!Array.isArray(state.selectedObjects)
+    || !state.selectedObjects.every(item => item && (item.id === null || typeof item.id === 'string')
+      && Number.isInteger(item.index) && item.index >= 0))) return false;
   return typeof scene.areaExclusions.excludeUncovered === 'boolean' && typeof scene.areaExclusions.excludeParking === 'boolean';
 }
 

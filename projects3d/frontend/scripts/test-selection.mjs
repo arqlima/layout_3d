@@ -76,6 +76,39 @@ viewer.select(meshes[0]);
 assert.deepEqual([...viewer.getMarkedObjects().keys()], ['object-0'], 'Plain click replaces a multiple selection even on its current object');
 viewer.clearSelection();
 viewer.setAllLayersVisible(true);
+let pointerHit = meshes[0];
+Object.assign(viewer, {
+  selectionEnabled: true, pointer: new THREE.Vector2(),
+  camera: { position: new THREE.Vector3(10, 10, 10) }, controls: { target: new THREE.Vector3() },
+  renderer: { domElement: { getBoundingClientRect: () => ({ left: 0, top: 0, width: 100, height: 100 }) } },
+  raycaster: { params: { Line: {}, Points: {} }, setFromCamera() {}, intersectObjects: () => pointerHit ? [{ object: pointerHit }] : [] },
+});
+const click = (object, modifiers = {}, movement = 0) => {
+  pointerHit = object;
+  viewer.pointerStart = { id: 1, x: 20, y: 20 };
+  viewer.handlePointerUp({ pointerId: 1, button: 0, clientX: 20 + movement, clientY: 20, ...modifiers });
+};
+click(meshes[0]);
+click(meshes[1], { shiftKey: true });
+assert.equal(viewer.getMarkedObjects().size, 2, 'Shift pointer event adds');
+click(null, { shiftKey: true });
+click(null, { ctrlKey: true });
+assert.equal(viewer.getMarkedObjects().size, 2, 'Modified background clicks preserve selection');
+click(meshes[0], { ctrlKey: true, shiftKey: true });
+assert.deepEqual([...viewer.getMarkedObjects().keys()], ['object-1'], 'Ctrl takes priority over Shift');
+click(meshes[0], { shiftKey: true }, 10);
+assert.equal(viewer.getMarkedObjects().size, 1, 'Dragging does not add objects');
+click(null);
+assert.equal(viewer.selectedObjects, null, 'Plain background click clears explicit selection');
+viewer.setAllLayersVisible(true);
+viewer.setSelectionMode('group');
+viewer.select(meshes[0]);
+viewer.select(meshes[1], 'add');
+assert.deepEqual(viewer.getLayers().map(layer => layer.visible), [true, true, true, false]);
+viewer.select(meshes[2], 'remove');
+assert.deepEqual(viewer.getLayers().map(layer => layer.visible), [false, true, false, false], 'Ctrl removes a complete group');
+viewer.setSelectionMode('name');
+viewer.setAllLayersVisible(true);
 assert.deepEqual(matchingLayers(viewer.getLayers(), 0, 'use').map(layer => layer.index), [0, 1]);
 viewer.setSelectionMode('use');
 viewer.select(meshes[0]);
@@ -440,6 +473,22 @@ savedIndividual.hideUnchecked = false;
 viewer.restoreState(savedIndividual);
 assert.equal(meshes[0].material, selectedEntry.original);
 assert.equal(sameLayerPeer.material, peerEntry.muted, 'saved individual highlights do not become layer-wide');
+viewer.select(meshes[0]);
+viewer.select(meshes[1], 'add');
+const savedMultiple = viewer.captureState();
+viewer.clearSelection();
+viewer.restoreState(savedMultiple);
+assert.deepEqual([...viewer.getMarkedObjects().keys()].sort(), ['object-0', 'object-1'], 'Scenes restore multiple selections');
+viewer.select(meshes[0], 'remove');
+viewer.select(meshes[1], 'remove');
+const savedEmpty = viewer.captureState();
+viewer.select(meshes[0]);
+viewer.restoreState(savedEmpty);
+assert.equal(viewer.getMarkedObjects().size, 0, 'Scenes preserve an explicitly empty selection');
+const legacyIndividual = structuredClone(savedIndividual);
+delete legacyIndividual.selectedObjects;
+viewer.restoreState(legacyIndividual);
+assert.deepEqual([...viewer.getMarkedObjects().keys()], ['object-0'], 'Scenes saved before multiple selection remain supported');
 const savedOrtho = structuredClone(savedView);
 Object.assign(savedOrtho.camera, { projection: 'orthographic', position: [0, 100, 0], up: [0, 0, -1], target: [0, 0, 0], zoom: 2, orthographicHeight: 48, label: 'TOPO' });
 viewer.restoreState(savedOrtho);
@@ -457,6 +506,9 @@ assert.deepEqual(viewer.captureState(), beforeIncompatible, 'incompatible scenes
 const { SavedSceneStore, isSavedScene, SCENE_COUNT } = await import(await moduleUrl(resolve(root, 'src/data/savedScenes.ts')));
 const scene = { version: 1, viewer: savedView, areaExclusions: { excludeUncovered: true, excludeParking: false } };
 assert.equal(isSavedScene(scene), true);
+const invalidMultiple = structuredClone(scene);
+invalidMultiple.viewer.selectedObjects = [{ id: null, index: -1 }];
+assert.equal(isSavedScene(invalidMultiple), false, 'Invalid saved multiple selections are rejected');
 const persisted = new Map();
 const storage = { getItem: key => persisted.get(key) ?? null, setItem: (key, value) => persisted.set(key, value) };
 const scenes = new SavedSceneStore(storage, 'project-A');
