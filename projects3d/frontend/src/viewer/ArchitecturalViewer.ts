@@ -597,15 +597,20 @@ export class ArchitecturalViewer {
     if (!objectData || objectData.size === 0) return;
 
     const levels = new Set<number>();
+    const modelBounds = new THREE.Box3();
     const absoluteBase = typeof content.userData.absoluteBaseElevationM === 'number'
       ? content.userData.absoluteBaseElevationM : 0;
     content.updateMatrixWorld(true);
     content.traverse((object) => {
       if (!(object instanceof THREE.Mesh || object instanceof THREE.Line || object instanceof THREE.Points)) return;
       if (object.userData.isEdgeHelper) return;
+      const layerIndex = this.findLayerIndex(object);
+      const layerName = layerIndex === null ? object.name : this.layers[layerIndex]?.name ?? object.name;
+      if (isRepLayer(layerName)) return;
       if (!object.geometry.boundingBox) object.geometry.computeBoundingBox();
       const bounds = object.geometry.boundingBox?.clone().applyMatrix4(object.matrixWorld);
       if (!bounds || bounds.isEmpty()) return;
+      modelBounds.union(bounds);
       const id = this.findObjectId(object)?.toLowerCase();
       const csvElevation = id ? objectData.get(id)?.elevationM : null;
       const elevation = Math.round((csvElevation ?? bounds.min.y + absoluteBase) * 100) / 100;
@@ -613,8 +618,7 @@ export class ArchitecturalViewer {
       levels.add(elevation);
     });
 
-    // Inclui a altura física da última geometria para representar o topo do modelo.
-    const modelBounds = new THREE.Box3().setFromObject(content);
+    // O topo considera somente as geometrias sujeitas ao filtro de cotas.
     if (!modelBounds.isEmpty()) levels.add(Math.round((modelBounds.max.y + absoluteBase) * 100) / 100);
     this.elevationLevels = [...levels].sort((a, b) => a - b);
     if (this.elevationLevels.length > 0) {

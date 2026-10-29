@@ -6,6 +6,10 @@ foi integrado ao app `projects3d`, sem servidor frontend separado em execução.
 
 ## Seleção no visualizador
 
+O filtro de cotas ignora elementos REP: eles não definem os níveis ou limites da
+régua e não são ocultados pela faixa de altura. A visibilidade de REP continua
+controlada pelos filtros de layers e uso.
+
 Clique simples seleciona apenas o objeto clicado. **Shift + clique** adiciona
 objetos à seleção; **Ctrl + clique** remove o objeto clicado. Nos modos de grupo
 e uso, esses atalhos adicionam ou removem a categoria correspondente. Se ambas
