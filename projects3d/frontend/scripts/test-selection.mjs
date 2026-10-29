@@ -690,3 +690,34 @@ viewer.setSelectionEnabled(true);
 viewer.select(meshes[1]);
 assert.equal(viewer.selectedObject, meshes[1], 'Returning to massing enables object selection');
 console.log('Solar interaction tests passed: clearing, blocked selection, preserved filters and re-enabling.');
+
+const elevationModel = new THREE.Group();
+elevationModel.userData.layers = ['00-Volume-PRIV', 'REP-Entorno-COM', '00-Referencia-REP', 'REP'].map(name => ({ name }));
+const elevationMeshes = [5, 100, -100, 200].map((height, layerIndex) => {
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(1, 10, 1), new THREE.MeshStandardMaterial());
+  mesh.position.y = height;
+  mesh.userData.attributes = { layerIndex };
+  mesh.userData.objectId = `elevation-${layerIndex}`;
+  elevationModel.add(mesh);
+  return mesh;
+});
+const elevationViewer = Object.create(ArchitecturalViewer.prototype);
+Object.assign(elevationViewer, {
+  content: elevationModel, layers: [], originalVisibility: new Map(), selectionEntries: [], mutedMaterials: new Set(),
+  elevationEntries: [], selectedObject: null, selectedObjects: null, activeUsages: new Set(DEFAULT_USAGES),
+  selectionMode: 'name', hideUnchecked: false, onSelectionChange() {},
+});
+elevationViewer.readLayers(elevationModel);
+elevationViewer.prepareSelection(elevationModel);
+elevationViewer.prepareElevationFilter(elevationModel, new Map([
+  ['elevation-0', { id: 'elevation-0', elevationM: 0, use: 'PRIV', areaM2: 1 }],
+]));
+assert.deepEqual(elevationViewer.getElevationLevels(), [0, 10], 'REP contributes neither base levels nor the physical model top');
+assert.equal(elevationViewer.elevationEntries.length, 1, 'REP is excluded even without CSV metadata');
+elevationViewer.setAllLayersVisible(true);
+elevationViewer.setElevationRange(2, 3);
+assert.equal(elevationMeshes[0].visible, false, 'Ordinary geometry still follows the elevation filter');
+for (const mesh of elevationMeshes.slice(1)) assert.equal(mesh.visible, true, 'Enabled REP remains visible outside the elevation range');
+elevationViewer.setLayerVisible(1, false);
+assert.equal(elevationMeshes[1].visible, false, 'REP still obeys its layer visibility');
+console.log('REP elevation tests passed: group, usage, standalone layer, bounds, missing CSV and independent visibility.');
