@@ -712,7 +712,7 @@ elevationViewer.prepareSelection(elevationModel);
 elevationViewer.prepareElevationFilter(elevationModel, new Map([
   ['elevation-0', { id: 'elevation-0', elevationM: 0, use: 'PRIV', areaM2: 1 }],
 ]));
-assert.deepEqual(elevationViewer.getElevationLevels(), [0, 10], 'REP contributes neither base levels nor the physical model top');
+assert.deepEqual(elevationViewer.getElevationLevels(), [0], 'The scale includes only eligible object elevations, never an extra physical bounding-box top');
 assert.equal(elevationViewer.elevationEntries.length, 1, 'REP is excluded even without CSV metadata');
 elevationViewer.setAllLayersVisible(true);
 elevationViewer.setElevationRange(2, 3);

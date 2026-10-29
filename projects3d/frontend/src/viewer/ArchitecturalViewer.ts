@@ -597,7 +597,6 @@ export class ArchitecturalViewer {
     if (!objectData || objectData.size === 0) return;
 
     const levels = new Set<number>();
-    const modelBounds = new THREE.Box3();
     const absoluteBase = typeof content.userData.absoluteBaseElevationM === 'number'
       ? content.userData.absoluteBaseElevationM : 0;
     content.updateMatrixWorld(true);
@@ -610,7 +609,6 @@ export class ArchitecturalViewer {
       if (!object.geometry.boundingBox) object.geometry.computeBoundingBox();
       const bounds = object.geometry.boundingBox?.clone().applyMatrix4(object.matrixWorld);
       if (!bounds || bounds.isEmpty()) return;
-      modelBounds.union(bounds);
       const id = this.findObjectId(object)?.toLowerCase();
       const csvElevation = id ? objectData.get(id)?.elevationM : null;
       const elevation = Math.round((csvElevation ?? bounds.min.y + absoluteBase) * 100) / 100;
@@ -618,8 +616,6 @@ export class ArchitecturalViewer {
       levels.add(elevation);
     });
 
-    // O topo considera somente as geometrias sujeitas ao filtro de cotas.
-    if (!modelBounds.isEmpty()) levels.add(Math.round((modelBounds.max.y + absoluteBase) * 100) / 100);
     this.elevationLevels = [...levels].sort((a, b) => a - b);
     if (this.elevationLevels.length > 0) {
       this.elevationBase = this.elevationLevels[0];
