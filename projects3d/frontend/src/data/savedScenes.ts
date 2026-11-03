@@ -1,5 +1,6 @@
 import type { SavedScene } from '../types/scenes';
 import { USAGE_CODES } from '../types/model';
+import { isSectionState } from '../types/section';
 
 export const SCENE_COUNT = 10;
 
@@ -10,6 +11,7 @@ export function isSavedScene(value: unknown): value is SavedScene {
   const camera = state?.camera;
   const vector = (value: unknown) => Array.isArray(value) && value.length === 3 && value.every(Number.isFinite);
   if (scene.version !== 1 || !state || !camera || !scene.areaExclusions) return false;
+  if (state.section != null && !isSectionState(state.section)) return false;
   if (!['perspective', 'orthographic'].includes(camera.projection)
     || !vector(camera.position) || !vector(camera.target) || !vector(camera.up)
     || !camera.up.some(value => value !== 0)

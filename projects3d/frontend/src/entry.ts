@@ -41,6 +41,7 @@ async function start(): Promise<void> {
   }, (state) => ui.setViewState(state));
   activeViewer = viewer;
   viewer.mountMeasurement(document.querySelector<HTMLButtonElement>('#measure-distance')!);
+  viewer.mountSections(ui.viewport.parentElement!, document.querySelector<HTMLButtonElement>('#create-section')!);
   ui.onBackgroundChange(color => viewer.setBackgroundColor(color));
   ui.onSolarSettingsChange(settings => viewer.setSolarSettings(settings));
   ui.onSolarVisibilityChange(visible => viewer.setSelectionEnabled(!visible));

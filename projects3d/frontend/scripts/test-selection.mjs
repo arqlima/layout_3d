@@ -439,6 +439,7 @@ Object.assign(viewer, {
   perspectiveCamera: new THREE.PerspectiveCamera(45, 1.5, 0.1, 2000),
   orthographicCamera: new THREE.OrthographicCamera(-15, 15, 10, -10, 0.1, 2000),
   renderer: { domElement: canvas, setSize() {} },
+  shadowDepthMaterial: new THREE.MeshDepthMaterial(),
   container: { clientWidth: 1200, clientHeight: 800 },
   viewLabel: 'PERSPECTIVA', projectionMode: 'perspective', lastViewState: '', onViewStateChange() {},
 });
@@ -632,6 +633,10 @@ const sourceCamera = new THREE.PerspectiveCamera(45, 1600 / 900, .1, 500);
 sourceCamera.position.set(10, 10, 20); sourceCamera.lookAt(0, 0, 0);
 const sourceMatrix = sourceCamera.projectionMatrix.clone();
 const referenceRenderer = { outputColorSpace: THREE.SRGBColorSpace, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.5, shadowMap: { enabled: true, type: THREE.PCFSoftShadowMap }, setSize() { assert.fail('live renderer must not be resized'); } };
+referenceRenderer.localClippingEnabled = true;
+referenceRenderer.clippingPlanes = [new THREE.Plane(new THREE.Vector3(1, 0, 0), 0)];
+const exportedCap = new THREE.Mesh(new THREE.PlaneGeometry(), new THREE.MeshBasicMaterial());
+exportMesh.add(exportedCap);
 let disposedExport = false, releasedExport = false, clearAlpha = null, renderedCamera = null, renderedSize = null;
 const fakeGl = { MAX_VIEWPORT_DIMS: 1, MAX_RENDERBUFFER_SIZE: 2, getParameter: name => name === 1 ? new Int32Array([16384, 16384]) : 16384 };
 const captureRenderer = {
@@ -644,6 +649,10 @@ const captureRenderer = {
     assert.equal(syntheticGround.visible, false, 'transparent output excludes artificial shadow ground');
     assert.equal(exportLight.visible, true); assert.equal(exportModel.visible, true);
     assert.equal(exportMesh.material.opacity, .35, 'native material transparency is preserved');
+    assert.equal(exportedCap.visible, true, 'Section caps stay in the exported model');
+    assert.equal(captureRenderer.localClippingEnabled, true, 'Image export preserves local clipping');
+    assert.ok(captureRenderer.clippingPlanes[0].equals(referenceRenderer.clippingPlanes[0]));
+    assert.notEqual(captureRenderer.clippingPlanes[0], referenceRenderer.clippingPlanes[0]);
     assert.notEqual(camera, sourceCamera); renderedCamera = camera;
   },
   domElement: { toBlob(callback, type) {

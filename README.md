@@ -19,6 +19,30 @@ acompanham os objetos destacados e cenas salvas preservam a seleção múltipla.
 Quando houver várias seleções sem dados individuais, o quadro mostra apenas a
 quantidade (por exemplo, “2 seleções”) e o botão Limpar, ocultando os campos sem informação.
 
+## Cortes arquitetônicos
+
+Em **Estudo de massa**, clique em **Corte**. Na vista superior, dê dois cliques
+para posicionar a linha: a direção trava automaticamente em X ou Y da planta.
+Escolha uma das setas para definir para qual lado olhar.
+
+O painel permite alternar entre **Ortogonal** (zoom e deslocamento, sem rotação)
+e **3D livre**, inverter o lado, reposicionar ou desativar o corte. **Esc** cancela
+o desenho e recupera a visualização anterior. O plano se estende por todo o modelo;
+o comprimento da linha serve para indicar sua direção.
+
+Para guardar o corte, clique em uma cena vazia ou abra uma cena existente e use
+**Atualizar**. Posição, lado, modo e câmera acompanham a cena, no navegador atual.
+Conclua a escolha do lado antes de salvar. Cenas antigas continuam funcionando.
+
+O preenchimento usa a cor e a transparência do objeto e preserva vazios em contornos
+fechados. Contornos abertos ou ramificados ficam sem preenchimento, com aviso.
+Objetos animados ou instanciados também são cortados, mas não recebem preenchimento.
+Em peças com vários materiais, cada região preenchida usa o material predominante
+em seu contorno. O corte é visual: não altera o arquivo original nem os quantitativos.
+A régua, a seleção e a exportação de imagem respeitam o corte.
+
+Detalhes e verificações: [docs/sections-validation.md](docs/sections-validation.md).
+
 ## Localização por KMZ
 
 Inclua opcionalmente um único `.kmz` na raiz da pasta do projeto (qualquer nome),

@@ -122,6 +122,7 @@ export function createApp(mount: HTMLElement): AppElements {
             </dl>
           </div>
           <div class="viewport-bottom">
+            <button id="create-section" class="measurement-button" type="button" aria-pressed="false" title="Criar corte na vista superior">${iconMarkup('box')}<span>Corte</span></button>
             <button id="measure-distance" class="measurement-button" type="button" aria-pressed="false" title="Medir distância entre dois vértices" aria-label="Régua: medir distância">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 16 13-13 5 5L8 21Z M7 12l2 2 M10 9l2 2 M13 6l2 2"/></svg><span>Régua</span>
             </button>

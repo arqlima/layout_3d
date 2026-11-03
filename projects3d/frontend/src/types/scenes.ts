@@ -1,8 +1,10 @@
 import type { SelectionMode } from '../data/layerSelection';
 import type { AreaExclusions, UsageCode } from './model';
 import type { ProjectionMode } from './view';
+import type { SectionState } from './section';
 
 export interface ViewerSnapshot {
+  section?: SectionState | null;
   camera: {
     projection: ProjectionMode;
     position: [number, number, number];

@@ -538,3 +538,18 @@ h1 em { color: #9bbcad; }
 .measurement-hint { top: 72px; left: 33px; max-width: calc(100% - 190px); }
 @media (min-width: 1400px) { .viewer-panel .usage-filter { right: 650px; } }
 @media (max-width: 650px) { .measurement-button { padding: 0 9px; } .measurement-button span { display: none; } .measurement-hint { left: 13px; font-size: 10px; } }
+.section-panel { position: absolute; top: 70px; left: 18px; z-index: 5; width: min(310px, calc(100% - 36px)); padding: 14px; color: #eef5f3; background: #172126f5; border: 1px solid #405854; border-radius: 6px; box-shadow: 0 8px 22px #070d1060; font-size: 12px; }
+.section-panel[hidden], .section-overlay[hidden], .section-panel [hidden] { display: none; }
+.section-panel strong { font-size: 13px; }
+.section-hint { margin: 9px 0; line-height: 1.5; }
+.section-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.section-panel button { padding: 7px 9px; border: 1px solid #68847b; border-radius: 4px; color: #eef5f3; background: #263936; cursor: pointer; font: inherit; }
+.section-panel button[aria-pressed="true"] { color: #172126; background: #b4e4c2; }
+.section-panel button:focus-visible { outline: 2px solid #b4e4c2; outline-offset: 2px; }
+.section-overlay { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
+.section-overlay svg { width: 100%; height: 100%; }
+.section-overlay line { stroke: #fcdd72; stroke-width: 3; stroke-dasharray: 12 5; }
+.viewport canvas.is-sectioning { cursor: crosshair; touch-action: none; }
+.section-side-arrow { position: absolute; transform: translate(-50%, -50%); pointer-events: auto; width: 36px; height: 36px; border: 2px solid #172126; border-radius: 50%; background: #fcdd72; color: #172126; font: bold 24px/1 sans-serif; cursor: pointer; box-shadow: 0 2px 8px #0005; }
+.section-side-arrow[hidden] { display: none; }
+.section-side-arrow:focus-visible { outline: 3px solid white; outline-offset: 2px; }

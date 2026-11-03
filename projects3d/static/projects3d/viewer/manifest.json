@@ -11,32 +11,32 @@
     "file": "assets/manrope-C46ZzDBF.woff2",
     "src": "../static/projects3d/design-system/fonts/manrope.woff2"
   },
-  "_three.core-CPmbW-Pz.js": {
-    "file": "chunks/three.core-CPmbW-Pz.js",
+  "_three.core-Bu1Mfr0O.js": {
+    "file": "chunks/three.core-Bu1Mfr0O.js",
     "name": "three.core"
   },
   "src/data/modelNorth.ts": {
-    "file": "chunks/modelNorth-rRsfUwTB.js",
+    "file": "chunks/modelNorth-sMzSpm4o.js",
     "name": "modelNorth",
     "src": "src/data/modelNorth.ts",
     "isDynamicEntry": true,
     "imports": [
       "src/entry.ts",
-      "_three.core-CPmbW-Pz.js"
+      "_three.core-Bu1Mfr0O.js"
     ]
   },
   "src/data/simulation.ts": {
-    "file": "chunks/simulation-BHN5scbp.js",
+    "file": "chunks/simulation-rV13IqTF.js",
     "name": "simulation",
     "src": "src/data/simulation.ts",
     "isDynamicEntry": true,
     "imports": [
       "src/entry.ts",
-      "_three.core-CPmbW-Pz.js"
+      "_three.core-Bu1Mfr0O.js"
     ]
   },
   "src/entry.ts": {
-    "file": "viewer-CgU6Bg_Q.js",
+    "file": "viewer-CdFZ4Q33.js",
     "name": "entry",
     "src": "src/entry.ts",
     "isEntry": true,
@@ -49,7 +49,7 @@
       "src/data/simulation.ts"
     ],
     "css": [
-      "assets/entry-Cao7dd0x.css"
+      "assets/entry-DNC2T9Gf.css"
     ],
     "assets": [
       "assets/geist-BGnTDqni.woff2",
@@ -58,7 +58,7 @@
     ]
   },
   "src/ui/SimulationPanel.ts": {
-    "file": "chunks/SimulationPanel-D6_MaX97.js",
+    "file": "chunks/SimulationPanel-B6ja-syj.js",
     "name": "SimulationPanel",
     "src": "src/ui/SimulationPanel.ts",
     "isDynamicEntry": true,
@@ -68,31 +68,31 @@
     ]
   },
   "src/viewer/ArchitecturalViewer.ts": {
-    "file": "chunks/ArchitecturalViewer-BliEc8XQ.js",
+    "file": "chunks/ArchitecturalViewer-BEIaEujS.js",
     "name": "ArchitecturalViewer",
     "src": "src/viewer/ArchitecturalViewer.ts",
     "isDynamicEntry": true,
     "imports": [
       "src/entry.ts",
-      "_three.core-CPmbW-Pz.js"
+      "_three.core-Bu1Mfr0O.js"
     ]
   },
   "src/viewer/demoScene.ts": {
-    "file": "chunks/demoScene-CnuZmQ39.js",
+    "file": "chunks/demoScene-CaeqmB6W.js",
     "name": "demoScene",
     "src": "src/viewer/demoScene.ts",
     "isDynamicEntry": true,
     "imports": [
-      "_three.core-CPmbW-Pz.js"
+      "_three.core-Bu1Mfr0O.js"
     ]
   },
   "src/viewer/loadModel.ts": {
-    "file": "chunks/loadModel-BYJ6YhGZ.js",
+    "file": "chunks/loadModel-C8VJFLPn.js",
     "name": "loadModel",
     "src": "src/viewer/loadModel.ts",
     "isDynamicEntry": true,
     "imports": [
-      "_three.core-CPmbW-Pz.js"
+      "_three.core-Bu1Mfr0O.js"
     ]
   }
 }

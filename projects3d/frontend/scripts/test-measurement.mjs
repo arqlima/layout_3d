@@ -35,6 +35,12 @@ parent.add(mesh);
 parent.visible = false;
 assert.equal(snapVertex(ray, [mesh], camera, 700, 400, 1000, 1000), null, 'hidden parent is excluded');
 console.log('Measurement tests passed: meters, two decimals, world transforms, snap radius and hidden geometry.');
+parent.visible = true;
+const clipping = new THREE.Plane(new THREE.Vector3(0, 0, -1), 0);
+assert.equal(snapVertex(ray, [mesh], camera, 700, 400, 1000, 1000, clipping), null, 'Clipped faces cannot supply measurement points');
+const cap = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.MeshBasicMaterial({ side: THREE.DoubleSide }));
+cap.position.x = 1; cap.updateMatrixWorld(true);
+assert.ok(snapVertex(ray, [mesh, cap], camera, 700, 400, 1000, 1000, clipping), 'Cut-surface vertices remain measurable');
 
 // Minimal DOM surface: exercise the real pointer workflow without WebGL.
 class Element {

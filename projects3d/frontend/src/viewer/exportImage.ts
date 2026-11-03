@@ -48,6 +48,8 @@ export async function exportScenePng(
     renderer.toneMappingExposure = reference.toneMappingExposure;
     renderer.shadowMap.enabled = reference.shadowMap.enabled;
     renderer.shadowMap.type = reference.shadowMap.type;
+    renderer.clippingPlanes = reference.clippingPlanes?.map(plane => plane.clone()) ?? [];
+    renderer.localClippingEnabled = reference.localClippingEnabled;
     renderer.setClearColor(0x000000, options.transparent ? 0 : 1);
     const exportCamera = camera.clone();
     if (exportCamera instanceof THREE.PerspectiveCamera) exportCamera.aspect = width / height;

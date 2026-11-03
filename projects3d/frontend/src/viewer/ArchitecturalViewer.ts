@@ -8,6 +8,9 @@ import type { ViewerSnapshot } from '../types/scenes';
 import { exportScenePng, type ExportedImage, type ImageExportOptions } from './exportImage';
 import { solarDirection, type SolarSettings } from '../data/solar';
 import { MeasurementTool, metersPerUnit } from './measurement';
+import { SectionTool } from '../ui/SectionTool';
+import { createCapGeometry, sectionPlane } from './sectionGeometry';
+import { isSectionState, type SectionState } from '../types/section';
 
 type Renderable = THREE.Mesh | THREE.Line | THREE.Points;
 type ObjectMaterial = THREE.Material | THREE.Material[];
@@ -75,6 +78,12 @@ export class ArchitecturalViewer {
   private pointerStart: { id: number; x: number; y: number } | null = null;
   private frameId = 0;
   private measurement: MeasurementTool | null = null;
+  private section: SectionState | null = null;
+  private sectionTool: SectionTool | null = null;
+  private beforeSectionDrawing: ViewerSnapshot | null = null;
+  private sectionCaps: THREE.Mesh[] = [];
+  private sectionOpenCount = 0;
+  private sectionUnsupportedCount = 0;
 
   constructor(
     private readonly container: HTMLElement,
@@ -111,6 +120,7 @@ export class ArchitecturalViewer {
 
   setActive(active: boolean): void {
     cancelAnimationFrame(this.frameId);
+    if (!active) this.sectionTool?.cancelDrawing();
     if (!active) this.measurement?.setEnabled(false);
     if (active) {
       this.resize();
@@ -126,6 +136,8 @@ export class ArchitecturalViewer {
 
   /** Ponto de entrada para uma cena convertida a partir de um modelo Rhino. */
   setContent(content: THREE.Object3D, objectData?: Map<string, ObjectRecord>): void {
+    this.beforeSectionDrawing = null;
+    this.setSection(null, false);
     this.measurement?.setEnabled(false);
     this.clearSelection();
     this.clearSelectionEntries();
@@ -248,6 +260,8 @@ export class ArchitecturalViewer {
         depthTest: material.depthTest, vertexColors: material.vertexColors,
         polygonOffset: material.polygonOffset, polygonOffsetFactor: material.polygonOffsetFactor,
         polygonOffsetUnits: material.polygonOffsetUnits, roughness: 0.85, metalness: 0 });
+      converted.clippingPlanes = material.clippingPlanes;
+      converted.clipShadows = material.clipShadows;
       this.solarMaterials.set(material, converted);
     }
     return converted;
@@ -258,6 +272,11 @@ export class ArchitecturalViewer {
   }
 
   setStandardView(view: StandardView): void {
+    this.sectionTool?.cancelDrawing();
+    if (this.section) {
+      this.section.mode = '3d';
+      this.sectionTool?.setState(this.section, this.sectionOpenCount, this.sectionUnsupportedCount);
+    }
     const directions: Record<StandardView, THREE.Vector3> = {
       top: new THREE.Vector3(0, 1, 0),
       bottom: new THREE.Vector3(0, -1, 0),
@@ -275,6 +294,11 @@ export class ArchitecturalViewer {
   }
 
   setProjectionMode(mode: ProjectionMode): void {
+    this.sectionTool?.cancelDrawing();
+    if (this.section) {
+      this.section.mode = '3d';
+      this.sectionTool?.setState(this.section, this.sectionOpenCount, this.sectionUnsupportedCount);
+    }
     const direction = mode === 'perspective'
       ? new THREE.Vector3(16, 13, 20).normalize()
       : new THREE.Vector3(1, 1, 1).normalize();
@@ -292,8 +316,10 @@ export class ArchitecturalViewer {
   }
 
   captureState(): ViewerSnapshot {
+    if (this.sectionTool?.drawing) throw new Error('Conclua ou cancele o desenho do corte antes de salvar uma cena.');
     const index = this.selectionEntries.findIndex(entry => entry.object === this.selectedObject);
     return {
+      section: this.section ? { ...this.section } : null,
       camera: {
         projection: this.projectionMode,
         position: this.camera.position.toArray(),
@@ -323,6 +349,8 @@ export class ArchitecturalViewer {
     if (state.layers.length !== this.layers.length || state.layers.some((layer, index) => layer.name !== this.layers[index].name)) {
       throw new Error('A cena salva pertence a uma versão diferente das layers deste modelo.');
     }
+    this.beforeSectionDrawing = null;
+    this.sectionTool?.stopDrawing();
     this.selectedObject = null;
     this.selectedObjects = null;
     state.layers.forEach((layer, index) => { this.layers[index].visible = layer.visible; });
@@ -363,6 +391,7 @@ export class ArchitecturalViewer {
     this.controls = this.createControls(this.camera);
     this.controls.target.fromArray(state.camera.target);
     this.controls.maxDistance = state.camera.maxDistance;
+    this.setSection(state.section ?? null, false);
     this.resize();
     this.controls.update();
     this.controls.saveState();
@@ -499,11 +528,124 @@ export class ArchitecturalViewer {
     this.measurement?.dispose();
     this.measurement = new MeasurementTool(this.renderer.domElement, button,
       () => this.camera,
-      () => this.selectionEntries.map(entry => entry.object).filter(object => !object.userData.isEdgeHelper),
-      () => metersPerUnit(this.content?.userData.settings));
+      () => [...this.selectionEntries.map(entry => entry.object).filter(object => !object.userData.isEdgeHelper), ...this.sectionCaps],
+      () => metersPerUnit(this.content?.userData.settings),
+      () => this.section ? sectionPlane(this.section) : null,
+      () => this.sectionTool?.cancelDrawing());
+  }
+
+  mountSections(host: HTMLElement, button: HTMLButtonElement): void {
+    this.sectionTool?.dispose();
+    this.sectionTool = new SectionTool(this.renderer.domElement, host, button, {
+      camera: () => this.camera,
+      begin: () => {
+        const previous = this.captureState();
+        this.measurement?.setEnabled(false);
+        this.setSection(null, false);
+        this.setStandardView('top');
+        this.beforeSectionDrawing = previous;
+        this.controls.enabled = false;
+      },
+      cancel: () => {
+        const previous = this.beforeSectionDrawing;
+        this.beforeSectionDrawing = null;
+        if (previous) this.restoreState(previous);
+      },
+      apply: state => { this.beforeSectionDrawing = null; this.setSection(state); },
+    });
+  }
+
+  /** A visual section only: never alters source model geometry or project quantities. */
+  setSection(state: SectionState | null, orient = true): void {
+    if (state !== null && !isSectionState(state)) throw new Error('Corte inválido.');
+    this.sectionTool?.stopDrawing();
+    const samePlane = !!state && !!this.section && state.axis === this.section.axis
+      && state.coordinate === this.section.coordinate && state.side === this.section.side;
+    for (const cap of samePlane ? [] : this.sectionCaps ?? []) {
+      cap.removeFromParent(); cap.geometry.dispose();
+      const materials = Array.isArray(cap.material) ? cap.material : [cap.material];
+      materials.forEach(material => material.dispose());
+    }
+    if (!samePlane) this.sectionCaps = [];
+    this.section = state ? { ...state } : null;
+    if (!state && orient) this.viewLabel = this.projectionMode === 'perspective' ? 'PERSPECTIVA' : 'ORTOGRÁFICA';
+    const plane = state ? sectionPlane(state) : null;
+    // Local planes clip the model and its edges, leaving the environment untouched.
+    // The shared depth material also clips model shadows.
+    this.renderer.localClippingEnabled = !!plane;
+    this.shadowDepthMaterial.clippingPlanes = plane ? [plane] : [];
+    this.shadowDepthMaterial.clipShadows = !!plane;
+    this.shadowDepthMaterial.needsUpdate = true;
+    const modelMaterials = new Set<THREE.Material>();
+    for (const entry of this.selectionEntries) {
+      for (const value of [entry.original, entry.muted]) {
+        (Array.isArray(value) ? value : [value]).forEach(material => modelMaterials.add(material));
+      }
+    }
+    this.solarMaterials?.forEach(material => modelMaterials.add(material));
+    for (const material of modelMaterials) {
+      material.clippingPlanes = plane ? [plane] : null;
+      material.clipShadows = !!plane;
+      material.needsUpdate = true;
+    }
+    this.controls.enabled = true;
+    this.controls.enableRotate = state?.mode !== 'orthographic';
+    if (plane) this.measurement?.setEnabled(false);
+    let openCount = samePlane ? this.sectionOpenCount : 0;
+    let unsupportedCount = samePlane ? this.sectionUnsupportedCount : 0;
+    if (plane && this.content && !samePlane) {
+      this.content.updateWorldMatrix(true, true);
+      for (const entry of this.selectionEntries) {
+        if (!(entry.object instanceof THREE.Mesh)) continue;
+        if (entry.object instanceof THREE.SkinnedMesh || entry.object instanceof THREE.InstancedMesh) { unsupportedCount++; continue; }
+        const result = createCapGeometry(entry.object, plane);
+        if (result.open) openCount++;
+        if (!result.geometry) continue;
+        const originals = Array.isArray(entry.original) ? entry.original : [entry.original];
+        const materials = originals.map(source => new THREE.MeshBasicMaterial({
+          color: 'color' in source && source.color instanceof THREE.Color ? source.color : '#cccccc',
+          side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1,
+        }));
+        const cap = new THREE.Mesh(result.geometry, materials);
+        cap.userData.isSectionCap = true;
+        cap.name = 'Preenchimento do corte';
+        cap.renderOrder = 2;
+        entry.object.add(cap);
+        this.sectionCaps.push(cap);
+      }
+    }
+    this.sectionOpenCount = openCount;
+    this.sectionUnsupportedCount = unsupportedCount;
+    this.syncSectionAppearance();
+    if (state && orient) {
+      const normal = plane!.normal;
+      const direction = normal.clone().negate();
+      if (state.mode === '3d') direction.add(new THREE.Vector3(0, .7, 0))
+        .addScaledVector(new THREE.Vector3(0, 1, 0).cross(normal), .5).normalize();
+      this.activateView(state.mode === '3d' ? 'perspective' : 'orthographic', direction,
+        new THREE.Vector3(0, 1, 0), `CORTE ${state.axis.toUpperCase()}`);
+      this.controls.enableRotate = state.mode === '3d';
+    }
+    this.sectionTool?.setState(this.section, openCount, unsupportedCount);
+  }
+
+  private syncSectionAppearance(): void {
+    for (const cap of this.sectionCaps ?? []) {
+      const source = cap.parent as THREE.Mesh;
+      const sources = Array.isArray(source.material) ? source.material : [source.material];
+      const materials = cap.material as THREE.MeshBasicMaterial[];
+      materials.forEach((material, index) => {
+        const original = sources[index] ?? sources[0];
+        if ('color' in original && original.color instanceof THREE.Color) material.color.copy(original.color);
+        material.opacity = original.opacity;
+        if (material.transparent !== original.transparent) { material.transparent = original.transparent; material.needsUpdate = true; }
+        material.depthWrite = original.depthWrite;
+      });
+    }
   }
 
   dispose(): void {
+    this.sectionTool?.dispose();
     this.measurement?.dispose();
     cancelAnimationFrame(this.frameId);
     this.resizeObserver.disconnect();
@@ -567,6 +709,7 @@ export class ArchitecturalViewer {
     this.camera.position.copy(target).addScaledVector(direction, 30);
     this.camera.lookAt(target);
     this.controls = this.createControls(this.camera);
+    this.controls.enableRotate = this.section?.mode !== 'orthographic';
     this.controls.target.copy(target);
     this.fitToContent();
     this.controls.saveState();
@@ -823,6 +966,7 @@ export class ArchitecturalViewer {
           : this.solarMaterial(entry.object.material);
       }
     }
+    this.syncSectionAppearance();
   }
 
   private readonly onPointerDown = (event: PointerEvent): void => {
@@ -851,7 +995,10 @@ export class ArchitecturalViewer {
     const candidates = this.selectionEntries
       .map((entry) => entry.object)
       .filter((object) => !object.userData.isEdgeHelper && this.isVisible(object));
-    const hit = this.raycaster.intersectObjects(candidates, false)[0]?.object;
+    const plane = this.section ? sectionPlane(this.section) : null;
+    const picked = this.raycaster.intersectObjects([...candidates, ...(this.sectionCaps ?? [])], false)
+      .find(hit => !plane || plane.distanceToPoint(hit.point) >= -1e-7)?.object;
+    const hit = picked?.userData.isSectionCap ? picked.parent : picked;
     if (hit instanceof THREE.Mesh || hit instanceof THREE.Line || hit instanceof THREE.Points) {
       this.select(hit, event.ctrlKey ? 'remove' : event.shiftKey ? 'add' : 'replace');
     } else if (!event.ctrlKey && !event.shiftKey) this.clearSelection();
@@ -920,6 +1067,7 @@ export class ArchitecturalViewer {
     this.controls.update();
     this.emitViewState();
     this.measurement?.update();
+    this.sectionTool?.update();
     this.renderer.render(this.scene, this.camera);
   };
 

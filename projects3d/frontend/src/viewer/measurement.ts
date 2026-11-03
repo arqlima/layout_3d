@@ -33,6 +33,7 @@ function visible(object: THREE.Object3D): boolean {
 export function snapVertex(
   ray: THREE.Raycaster, objects: THREE.Object3D[], camera: THREE.Camera,
   x: number, y: number, width: number, height: number,
+  clipPlane: THREE.Plane | null = null,
 ): THREE.Vector3 | null {
   const radius = 14;
   const candidates = objects.filter(visible);
@@ -43,7 +44,8 @@ export function snapVertex(
   for (const [dx, dy] of offsets) {
     pointer.set((x + dx) / width * 2 - 1, -(y + dy) / height * 2 + 1);
     ray.setFromCamera(pointer, camera);
-    const hit = ray.intersectObjects(candidates, false)[0];
+    const hit = ray.intersectObjects(candidates, false)
+      .find(hit => !clipPlane || clipPlane.distanceToPoint(hit.point) >= -1e-7);
     if (!hit) continue;
     const object = hit.object as THREE.Mesh | THREE.Line | THREE.Points;
     const positions = object.geometry?.getAttribute('position');
@@ -53,6 +55,7 @@ export function snapVertex(
     for (const index of indices) {
       if (index >= positions.count) continue;
       const world = new THREE.Vector3().fromBufferAttribute(positions, index).applyMatrix4(object.matrixWorld);
+      if (clipPlane && clipPlane.distanceToPoint(world) < -1e-7) continue;
       const projected = world.clone().project(camera);
       if (projected.z < -1 || projected.z > 1) continue;
       const distance = Math.hypot((projected.x + 1) * width / 2 - x, (1 - projected.y) * height / 2 - y);
@@ -82,6 +85,8 @@ export class MeasurementTool {
     private readonly getCamera: () => THREE.Camera,
     private readonly getObjects: () => THREE.Object3D[],
     private readonly getUnits: () => number,
+    private readonly getClipPlane: () => THREE.Plane | null = () => null,
+    private readonly onEnable: () => void = () => {},
   ) {
     this.overlay.className = 'measurement-overlay';
     this.overlay.hidden = true;
@@ -103,6 +108,7 @@ export class MeasurementTool {
   }
 
   setEnabled(enabled: boolean): void {
+    if (enabled) this.onEnable();
     this.enabled = enabled;
     this.button.setAttribute('aria-pressed', String(enabled));
     this.canvas.classList.toggle('is-measuring', enabled);
@@ -128,7 +134,7 @@ export class MeasurementTool {
     if (!rect.width || !rect.height) return null;
     this.getCamera().updateMatrixWorld();
     return snapVertex(this.ray, this.getObjects(), this.getCamera(), event.clientX - rect.left,
-      event.clientY - rect.top, rect.width, rect.height);
+      event.clientY - rect.top, rect.width, rect.height, this.getClipPlane());
   }
   private readonly move = (event: PointerEvent): void => {
     if (!this.enabled || event.buttons) return;
