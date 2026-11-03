@@ -16,6 +16,7 @@ import { mountSolarPanel } from './SolarPanel';
 import type { SolarSettings } from '../data/solar';
 import { mountNorthControl } from './NorthControl';
 import { mountPresentationSettings } from './PresentationSettings';
+import { DEFAULT_SECTION_LINES, type SectionLineSettings } from '../types/section';
 
 export interface AppElements {
   viewport: HTMLDivElement;
@@ -30,6 +31,7 @@ export interface AppElements {
   onSolarSettingsChange(callback: (settings: SolarSettings) => void): void;
   onSolarVisibilityChange(callback: (visible: boolean) => void): void;
   onBackgroundChange(callback: (color: string) => void): void;
+  onSectionLineSettingsChange(callback: (settings: SectionLineSettings) => void): void;
   setBrand(name: string, markUrl: string): void;
   setSceneInfo(title: string, subtitle: string, status: string): void;
   setSelection(selection: ObjectSelection | null, record?: ObjectRecord): void;
@@ -107,7 +109,15 @@ export function createApp(mount: HTMLElement): AppElements {
 
         <section class="viewer-panel" aria-label="Visualizador 3D">
           <div id="viewport" class="viewport"></div>
-          <div class="viewport-top"><div class="view-heading"><div id="presentation-settings-host"></div><span class="view-label"><span class="view-label-square"></span> <span id="view-name">PERSPECTIVA</span> <span class="view-label-separator">/</span> <span id="view-projection">3D</span></span></div></div>
+          <div class="viewport-top">
+            <div class="view-heading"><div id="presentation-settings-host"></div><span class="view-label"><span class="view-label-square"></span> <span id="view-name">PERSPECTIVA</span> <span class="view-label-separator">/</span> <span id="view-projection">3D</span></span></div>
+            <div class="viewport-tools" role="group" aria-label="Ferramentas do modelo">
+              <button id="create-section" class="measurement-button" type="button" aria-pressed="false" title="Criar corte na vista superior">${iconMarkup('box')}<span>Corte</span></button>
+              <button id="measure-distance" class="measurement-button" type="button" aria-pressed="false" title="Medir distância entre dois vértices" aria-label="Régua: medir distância">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 16 13-13 5 5L8 21Z M7 12l2 2 M10 9l2 2 M13 6l2 2"/></svg><span>Régua</span>
+              </button>
+            </div>
+          </div>
           <nav id="view-cube-panel" class="view-cube-panel" aria-label="Orientação e projeção da vista"></nav>
           <aside id="north-control" class="north-control" aria-label="Ajustar norte do projeto" hidden></aside>
           <aside id="elevation-filter" class="elevation-filter" aria-label="Filtro por cota" hidden></aside>
@@ -122,10 +132,6 @@ export function createApp(mount: HTMLElement): AppElements {
             </dl>
           </div>
           <div class="viewport-bottom">
-            <button id="create-section" class="measurement-button" type="button" aria-pressed="false" title="Criar corte na vista superior">${iconMarkup('box')}<span>Corte</span></button>
-            <button id="measure-distance" class="measurement-button" type="button" aria-pressed="false" title="Medir distância entre dois vértices" aria-label="Régua: medir distância">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 16 13-13 5 5L8 21Z M7 12l2 2 M10 9l2 2 M13 6l2 2"/></svg><span>Régua</span>
-            </button>
             <div id="scene-toolbar" class="viewer-toolbar" role="toolbar" aria-label="Vistas e cenas salvas">
               <button id="fit-view" type="button" class="scene-shortcut scene-navigation" title="Enquadrar toda a cena" aria-label="Enquadrar toda a cena">${iconMarkup('maximize')}</button>
               <button id="home-view" type="button" class="scene-shortcut scene-navigation" title="Vista inicial" aria-label="Vista inicial">${iconMarkup('home')}</button>
@@ -248,6 +254,7 @@ export function createApp(mount: HTMLElement): AppElements {
   return {
     setInitialNorthAngle(angle) { northControl.setInitialAngle(angle); },
     onBackgroundChange(callback) { presentationSettings.onBackgroundChange(callback); },
+    onSectionLineSettingsChange(callback) { presentationSettings.onSectionLineSettingsChange(callback); },
     viewport,
     fitButton,
     homeButton,
@@ -324,6 +331,7 @@ export function createApp(mount: HTMLElement): AppElements {
     updateLayers(layers) { layerPanel?.update(layers); },
     setSelectionTotals(totals) { updateSelectionSummary(totals); },
     restoreSceneControls(scene) {
+      presentationSettings.setSectionLineSettings(scene.viewer.sectionLines ?? DEFAULT_SECTION_LINES);
       layerPanel?.restore(scene.viewer.selectionMode, scene.viewer.hideUnchecked, scene.areaExclusions);
       elevationControl?.setRange(...scene.viewer.elevation);
       usageFilter.hidden = scene.viewer.selectionMode !== 'name' || !usageFilter.childElementCount;

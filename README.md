@@ -21,7 +21,8 @@ quantidade (por exemplo, “2 seleções”) e o botão Limpar, ocultando os cam
 
 ## Cortes arquitetônicos
 
-Em **Estudo de massa**, clique em **Corte**. Na vista superior, dê dois cliques
+Em **Estudo de massa**, **Corte** e **Régua** ficam no canto superior esquerdo do
+visualizador, um abaixo do outro. Clique em **Corte** e, na vista superior, dê dois cliques
 para posicionar a linha: a direção trava automaticamente em X ou Y da planta.
 Escolha uma das setas para definir para qual lado olhar.
 
@@ -40,6 +41,12 @@ Objetos animados ou instanciados também são cortados, mas não recebem preench
 Em peças com vários materiais, cada região preenchida usa o material predominante
 em seu contorno. O corte é visual: não altera o arquivo original nem os quantitativos.
 A régua, a seleção e a exportação de imagem respeitam o corte.
+
+Na **engrenagem de configurações da apresentação → Linhas de corte**, é possível
+exibir/ocultar os contornos e escolher sua cor e espessura de **0,5 a 8 px**.
+O padrão é **cinza escuro (`#3f4a4d`) e 1 px**. Os contornos incluem os vazios,
+sem as diagonais da triangulação, e acompanham a visibilidade/transparência do
+objeto. Os ajustes atualizam o corte existente e são salvos junto com a cena.
 
 Detalhes e verificações: [docs/sections-validation.md](docs/sections-validation.md).
 

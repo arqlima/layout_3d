@@ -10,7 +10,9 @@ import { solarDirection, type SolarSettings } from '../data/solar';
 import { MeasurementTool, metersPerUnit } from './measurement';
 import { SectionTool } from '../ui/SectionTool';
 import { createCapGeometry, sectionPlane } from './sectionGeometry';
-import { isSectionState, type SectionState } from '../types/section';
+import { isSectionState, isSectionLineSettings, DEFAULT_SECTION_LINES, type SectionState, type SectionLineSettings } from '../types/section';
+import { createSectionOutline, applySectionOutlineSettings } from './sectionLines';
+import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
 
 type Renderable = THREE.Mesh | THREE.Line | THREE.Points;
 type ObjectMaterial = THREE.Material | THREE.Material[];
@@ -82,6 +84,7 @@ export class ArchitecturalViewer {
   private sectionTool: SectionTool | null = null;
   private beforeSectionDrawing: ViewerSnapshot | null = null;
   private sectionCaps: THREE.Mesh[] = [];
+  private sectionLineSettings: SectionLineSettings = { ...DEFAULT_SECTION_LINES };
   private sectionOpenCount = 0;
   private sectionUnsupportedCount = 0;
 
@@ -320,6 +323,7 @@ export class ArchitecturalViewer {
     const index = this.selectionEntries.findIndex(entry => entry.object === this.selectedObject);
     return {
       section: this.section ? { ...this.section } : null,
+      sectionLines: { ...(this.sectionLineSettings ?? DEFAULT_SECTION_LINES) },
       camera: {
         projection: this.projectionMode,
         position: this.camera.position.toArray(),
@@ -351,6 +355,7 @@ export class ArchitecturalViewer {
     }
     this.beforeSectionDrawing = null;
     this.sectionTool?.stopDrawing();
+    this.setSectionLineSettings(state.sectionLines ?? DEFAULT_SECTION_LINES);
     this.selectedObject = null;
     this.selectedObjects = null;
     state.layers.forEach((layer, index) => { this.layers[index].visible = layer.visible; });
@@ -555,6 +560,16 @@ export class ArchitecturalViewer {
     });
   }
 
+  setSectionLineSettings(settings: SectionLineSettings): void {
+    if (!isSectionLineSettings(settings)) return;
+    this.sectionLineSettings = { ...settings };
+    for (const cap of this.sectionCaps ?? []) {
+      for (const child of cap.children) {
+        if (child instanceof LineSegments2) applySectionOutlineSettings(child, settings);
+      }
+    }
+  }
+
   /** A visual section only: never alters source model geometry or project quantities. */
   setSection(state: SectionState | null, orient = true): void {
     if (state !== null && !isSectionState(state)) throw new Error('Corte inválido.');
@@ -562,6 +577,9 @@ export class ArchitecturalViewer {
     const samePlane = !!state && !!this.section && state.axis === this.section.axis
       && state.coordinate === this.section.coordinate && state.side === this.section.side;
     for (const cap of samePlane ? [] : this.sectionCaps ?? []) {
+      for (const child of cap.children) {
+        if (child instanceof LineSegments2) { child.geometry.dispose(); child.material.dispose(); }
+      }
       cap.removeFromParent(); cap.geometry.dispose();
       const materials = Array.isArray(cap.material) ? cap.material : [cap.material];
       materials.forEach(material => material.dispose());
@@ -610,6 +628,7 @@ export class ArchitecturalViewer {
         cap.userData.isSectionCap = true;
         cap.name = 'Preenchimento do corte';
         cap.renderOrder = 2;
+        cap.add(createSectionOutline(result.geometry, this.sectionLineSettings ?? DEFAULT_SECTION_LINES));
         entry.object.add(cap);
         this.sectionCaps.push(cap);
       }
@@ -641,6 +660,10 @@ export class ArchitecturalViewer {
         if (material.transparent !== original.transparent) { material.transparent = original.transparent; material.needsUpdate = true; }
         material.depthWrite = original.depthWrite;
       });
+      const opacity = Math.min(...materials.map(material => material.opacity));
+      for (const child of cap.children) {
+        if (child instanceof LineSegments2) child.material.opacity = opacity;
+      }
     }
   }
 

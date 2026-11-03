@@ -11,6 +11,19 @@ do Django, de dependências ou do arquivo 3D enviado.
 desenho, eventos do canvas não acionam a seleção ou os controles de câmera.
 Salvar uma cena exige concluir ou cancelar o desenho.
 
+`sectionLines` cria os contornos dos preenchimentos com `EdgesGeometry`, removendo
+as diagonais coplanares. `LineSegments2`/`LineMaterial`, da dependência Three.js
+existente, permitem espessura em pixels. A resolução é atualizada pelo próprio
+Three.js a cada renderização, inclusive no PNG. Os contornos respeitam profundidade
+e herdam a visibilidade dos objetos; o deslocamento de profundidade evita conflito
+com o preenchimento. Há liberação explícita das geometrias/materiais ao trocar o corte.
+
+A engrenagem de apresentação reúne exibição, cor e espessura (0,5–8 px em passos
+de 0,5 px). O padrão é `#3f4a4d`, 1 px, visível. Os valores são validados na interface,
+no visualizador e na leitura das cenas. Alterar o estilo não recalcula os contornos.
+O campo opcional `ViewerSnapshot.sectionLines` preserva os ajustes; cenas sem esse
+campo usam o padrão. A interface da engrenagem acompanha a cena aberta.
+
 `sectionGeometry` intercepta os triângulos pelo plano, reúne contornos fechados,
 identifica ilhas/vazios e triangula os preenchimentos. As superfícies auxiliares
 são filhas dos objetos originais e herdam suas transformações e sua visibilidade.
@@ -46,6 +59,12 @@ O mesmo teste passou depois da implementação e foi ampliado com integração e
 interações. A medição de cobertura usa os módulos TypeScript em URLs reais e
 o executor nativo do Node, sem instalar ferramentas.
 
+Para os contornos, o checkpoint RED foi `e3c4f4f`: o teste falhou por ausência de
+`sectionLines.ts`. Após criar os contornos, passou a verificar o perímetro de um
+retângulo (20 unidades) e de uma seção vazada (32 unidades, incluindo o contorno
+interno). O teste da engrenagem também foi executado em RED pela ausência do método
+de assinatura dos ajustes, antes de conectar os controles. Ambos passaram em GREEN.
+
 | Garantia | Verificação | Resultado |
 | --- | --- | --- |
 | Trava X/Y, rejeição de pontos iguais e inversão de lado | `test-sections.mjs` | PASS |
@@ -55,6 +74,10 @@ o executor nativo do Node, sem instalar ferramentas.
 | Câmeras reais, rotação, filtros, quantitativos e geometria original | `test-sections.mjs` | PASS |
 | Persistência do corte e abertura de cenas antigas | `test-sections.mjs` | PASS |
 | Dois cliques, escolha explícita de seta, arraste, Esc e descarte | `test-sections.mjs` | PASS |
+| Perímetros externos e vazios sem diagonais; espessura em pixels | `test-sections.mjs` | PASS |
+| Cor, espessura e exibição atualizadas sem reconstrução; liberação de recursos | `test-sections.mjs` | PASS |
+| Estilo salvo/restaurado, compatibilidade e rejeição de valores inválidos | `test-sections.mjs` | PASS |
+| Controles na engrenagem, aplicação imediata e sincronização com cenas | `test-presentation-settings.mjs` | PASS |
 | Régua ignora faces removidas e mede vértices do preenchimento | `test-measurement.mjs` | PASS |
 | Exportação mantém recorte e superfícies auxiliares | `test-selection.mjs` | PASS |
 | Regressões de seleção, cenas, sombras, solar, norte e apresentação | Scripts existentes | PASS |
@@ -70,7 +93,7 @@ Comandos a partir de `projects3d/frontend`:
 node node_modules/typescript/bin/tsc --noEmit
 node scripts/test-sections.mjs
 node scripts/test-sections.mjs "caminho/para/modelo.3dm"
-node --test --experimental-test-coverage --test-coverage-include=**/sectionGeometry.ts --test-coverage-include=**/SectionTool.ts --test-coverage-include=**/section.ts scripts/test-sections.mjs
+node --test --experimental-test-coverage --test-coverage-include=**/sectionGeometry.ts --test-coverage-include=**/sectionLines.ts --test-coverage-include=**/SectionTool.ts --test-coverage-include=**/section.ts scripts/test-sections.mjs
 node scripts/test-selection.mjs
 node scripts/test-measurement.mjs
 node scripts/test-shadows.mjs
@@ -88,8 +111,8 @@ gerado seleciona a versão atual; nenhum arquivo antigo foi excluído.
 ## Relatório de verificação
 
 - Build e TypeScript: PASS.
-- Testes: PASS; cobertura dos três módulos novos de produção medida em 98,13% de
-  linhas, 87,13% de ramos e 92,68% de funções. A cobertura não representa toda a aplicação.
+- Testes: PASS; cobertura dos quatro módulos de corte medidos em 98,35% de
+  linhas, 88,04% de ramos e 91,11% de funções. A cobertura não representa toda a aplicação.
 - Lint: não há comando de lint configurado; TypeScript e `git diff --check` usados
   nos fontes/documentação. O bundle gerado preserva espaços dos shaders do Three.js.
 - Revisão de segurança: nenhum segredo novo; o HTML do painel contém apenas texto
@@ -104,3 +127,8 @@ Antes de considerar a aparência aprovada, conferir manualmente: criar cortes X/
 escolher ambos os lados, alternar modos, reposicionar/cancelar, salvar/reabrir cenas
 e exportar uma imagem. A implementação e as verificações automatizadas estão
 concluídas; a aprovação visual permanece pendente.
+
+Para as linhas, conferir também a engrenagem: cor/espessura em ambos os modos,
+visibilidade, preservação dos vazios, oclusão por geometrias à frente e sincronização
+dos ajustes ao abrir uma cena. O PNG deve manter os mesmos contornos e a espessura
+configurada em pixels da imagem de saída.

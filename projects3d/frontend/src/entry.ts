@@ -43,6 +43,7 @@ async function start(): Promise<void> {
   viewer.mountMeasurement(document.querySelector<HTMLButtonElement>('#measure-distance')!);
   viewer.mountSections(ui.viewport.parentElement!, document.querySelector<HTMLButtonElement>('#create-section')!);
   ui.onBackgroundChange(color => viewer.setBackgroundColor(color));
+  ui.onSectionLineSettingsChange(settings => viewer.setSectionLineSettings(settings));
   ui.onSolarSettingsChange(settings => viewer.setSolarSettings(settings));
   ui.onSolarVisibilityChange(visible => viewer.setSelectionEnabled(!visible));
   viewer.setActive(massingVisible);

@@ -107,6 +107,12 @@ const saved = {
     layers: [], elevation: [null, null], selectionMode: 'name', activeUsages: [], hideUnchecked: false, selected: null, section },
 };
 assert.equal(isSavedScene(saved), true);
+const styledScene = { ...saved, viewer: { ...saved.viewer, sectionLines: { visible: false, color: '#abcdef', width: 2.5 } } };
+assert.equal(isSavedScene(styledScene), true);
+for (const invalid of [null, { visible: 'true' }, { color: 'red' }, { color: '#ffffff;bad' }, { width: Infinity }, { width: 0 }, { width: 1.25 }, { width: 9 }]) {
+  const sectionLines = invalid === null ? null : { ...DEFAULT_SECTION_LINES, ...invalid };
+  assert.equal(isSavedScene({ ...saved, viewer: { ...saved.viewer, sectionLines } }), false);
+}
 for (const invalid of [{ axis: 'z' }, { coordinate: Infinity }, { side: 0 }, { mode: 'invalid' }]) {
   assert.equal(isSavedScene({ ...saved, viewer: { ...saved.viewer, section: { ...section, ...invalid } } }), false);
 }
@@ -117,6 +123,8 @@ const storage = new Map();
 const api = { getItem: key => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value) };
 new SavedSceneStore(api, 'test').save(0, saved);
 assert.deepEqual(new SavedSceneStore(api, 'test').get(0).viewer.section, section);
+new SavedSceneStore(api, 'test').save(1, styledScene);
+assert.deepEqual(new SavedSceneStore(api, 'test').get(1).viewer.sectionLines, styledScene.viewer.sectionLines);
 console.log('Section tests passed: axis locking, side inversion, cap area, transforms, holes, open meshes and scene persistence.');
 
 // Use the actual viewer methods, cameras and controls without requiring a GPU.
@@ -154,6 +162,18 @@ const originalVertices = wall.geometry.getAttribute('position').array.slice();
 const quantities = [...viewer.getMarkedObjects()];
 viewer.setSection(section);
 assert.equal(viewer.sectionCaps.length, 1);
+const firstOutline = viewer.sectionCaps[0].children.find(child => child.userData.isSectionOutline);
+assert.ok(firstOutline);
+assert.equal(firstOutline.material.linewidth, 1);
+assert.equal(firstOutline.material.color.getHexString(), '3f4a4d');
+const unchangedCapGeometry = viewer.sectionCaps[0].geometry;
+viewer.setSectionLineSettings({ visible: false, color: '#aabbcc', width: 3 });
+assert.equal(firstOutline.visible, false); assert.equal(firstOutline.material.linewidth, 3);
+assert.equal(firstOutline.material.color.getHexString(), 'aabbcc');
+assert.equal(viewer.sectionCaps[0].geometry, unchangedCapGeometry, 'Style changes reuse the fill and contour geometry');
+viewer.setSectionLineSettings({ visible: true, color: '#aabbcc', width: 3 });
+viewer.setSectionLineSettings({ visible: true, color: 'invalid', width: -1 });
+assert.equal(firstOutline.material.linewidth, 3, 'Invalid styles leave current settings intact');
 assert.equal(viewer.controls.enableRotate, false);
 assert.equal(viewer.camera, viewer.orthographicCamera);
 assert.equal(viewer.sectionCaps[0].parent, wall);
@@ -172,20 +192,29 @@ viewer.setSection({ ...section, axis: 'y' });
 assert.ok(viewer.sectionCaps[0].geometry.groups.every(group => group.materialIndex < viewer.sectionCaps[0].material.length), 'Single-material meshes cannot reference geometry-group materials that do not exist');
 viewer.setSection({ ...section, mode: '3d' });
 const snapshot = viewer.captureState();
+assert.deepEqual(snapshot.sectionLines, { visible: true, color: '#aabbcc', width: 3 });
+viewer.setSectionLineSettings(DEFAULT_SECTION_LINES);
+let disposedGeometry = false, disposedMaterial = false;
+viewer.sectionCaps[0].children[0].geometry.addEventListener('dispose', () => { disposedGeometry = true; });
+viewer.sectionCaps[0].children[0].material.addEventListener('dispose', () => { disposedMaterial = true; });
 viewer.setSection({ ...section, side: -1 });
+assert.equal(disposedGeometry, true); assert.equal(disposedMaterial, true);
 assert.equal(firstCap.parent, null);
 viewer.restoreState(snapshot);
 assert.deepEqual(viewer.captureState().section, snapshot.section);
+assert.deepEqual(viewer.captureState().sectionLines, snapshot.sectionLines);
+assert.equal(viewer.sectionCaps[0].children[0].material.linewidth, 3);
 viewer.setLayerVisible(0, false);
 viewer.setHideUnchecked(true);
 assert.equal(viewer.isVisible(viewer.sectionCaps[0]), false, 'Caps inherit filtered source visibility');
 viewer.restoreState(snapshot);
-const withoutSection = structuredClone(snapshot); delete withoutSection.section;
+const withoutSection = structuredClone(snapshot); delete withoutSection.section; delete withoutSection.sectionLines;
 viewer.restoreState(withoutSection);
 assert.equal(viewer.section, null, 'Opening an older scene removes any active section');
 assert.equal(viewer.sectionCaps.length, 0);
 assert.equal(material.clippingPlanes, null);
 assert.equal(viewer.controls.enableRotate, true);
+assert.deepEqual(viewer.captureState().sectionLines, DEFAULT_SECTION_LINES, 'Legacy scenes restore the default outline style');
 viewer.controls.dispose();
 console.log('Section integration tests passed: actual cameras, controls, materials, visibility, quantities, unchanged geometry, mode reuse and legacy restoration.');
 

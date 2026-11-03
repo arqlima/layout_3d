@@ -1,10 +1,11 @@
 import type { SelectionMode } from '../data/layerSelection';
 import type { AreaExclusions, UsageCode } from './model';
 import type { ProjectionMode } from './view';
-import type { SectionState } from './section';
+import type { SectionState, SectionLineSettings } from './section';
 
 export interface ViewerSnapshot {
   section?: SectionState | null;
+  sectionLines?: SectionLineSettings;
   camera: {
     projection: ProjectionMode;
     position: [number, number, number];

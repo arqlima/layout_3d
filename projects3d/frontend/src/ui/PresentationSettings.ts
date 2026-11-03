@@ -1,3 +1,5 @@
+import { DEFAULT_SECTION_LINES, isSectionLineSettings, type SectionLineSettings } from '../types/section';
+
 export function mountPresentationSettings(host: HTMLElement) {
   host.innerHTML = `
     <button class="presentation-settings-toggle" type="button" popovertarget="presentation-settings"
@@ -18,12 +20,24 @@ export function mountPresentationSettings(host: HTMLElement) {
           <label>B<input type="number" min="0" max="255" step="1" value="163" data-channel="2" aria-label="Azul (0 a 255)" /></label>
         </div>
       </fieldset>
+      <fieldset><legend>Linhas de corte</legend>
+        <label class="presentation-line-toggle"><input id="section-lines-visible" type="checkbox" checked /> Exibir linhas</label>
+        <label class="presentation-color">Cor <input id="section-lines-color" type="color" value="#3f4a4d" aria-label="Cor das linhas de corte" /></label>
+        <label class="presentation-setting" for="section-lines-width">Espessura (px)
+          <input id="section-lines-width" type="number" min="0.5" max="8" step="0.5" value="1" />
+        </label>
+      </fieldset>
     </section>`;
   const button = host.querySelector<HTMLButtonElement>('.presentation-settings-toggle')!;
   const panel = host.querySelector<HTMLElement>('#presentation-settings')!;
   const theme = host.querySelector<HTMLSelectElement>('#presentation-theme')!;
   const color = host.querySelector<HTMLInputElement>('#presentation-background')!;
   const channels = [...host.querySelectorAll<HTMLInputElement>('[data-channel]')];
+  const lineVisible = host.querySelector<HTMLInputElement>('#section-lines-visible')!;
+  const lineColor = host.querySelector<HTMLInputElement>('#section-lines-color')!;
+  const lineWidth = host.querySelector<HTMLInputElement>('#section-lines-width')!;
+  let sectionLines: SectionLineSettings = { ...DEFAULT_SECTION_LINES };
+  let notifySectionLines = (_settings: SectionLineSettings) => {};
   let background = color.value;
   let notify = (_color: string) => {};
   document.documentElement.dataset.presentationTheme = theme.value;
@@ -34,6 +48,7 @@ export function mountPresentationSettings(host: HTMLElement) {
     const rect = button.getBoundingClientRect();
     panel.style.left = `${Math.max(8, Math.min(rect.left, window.innerWidth - 328))}px`;
     panel.style.top = `${Math.max(8, Math.min(rect.bottom + 10, window.innerHeight - 350))}px`;
+    panel.style.maxHeight = `${Math.max(0, window.innerHeight - parseFloat(panel.style.top) - 8)}px`;
   });
   const update = (next: string) => {
     background = next;
@@ -48,7 +63,26 @@ export function mountPresentationSettings(host: HTMLElement) {
       update(`#${channels.map(channel => channel.valueAsNumber.toString(16).padStart(2, '0')).join('')}`);
     });
   }
+  const updateSectionLines = () => {
+    const next = { visible: lineVisible.checked, color: lineColor.value, width: lineWidth.valueAsNumber };
+    if (!isSectionLineSettings(next)) return;
+    sectionLines = next;
+    notifySectionLines({ ...next });
+  };
+  lineVisible.addEventListener('change', updateSectionLines);
+  lineColor.addEventListener('input', updateSectionLines);
+  lineWidth.addEventListener('input', updateSectionLines);
   return {
     onBackgroundChange(callback: (color: string) => void) { notify = callback; notify(background); },
+    onSectionLineSettingsChange(callback: (settings: SectionLineSettings) => void) {
+      notifySectionLines = callback; notifySectionLines({ ...sectionLines });
+    },
+    setSectionLineSettings(settings: SectionLineSettings) {
+      if (!isSectionLineSettings(settings)) return;
+      sectionLines = { ...settings };
+      lineVisible.checked = settings.visible;
+      lineColor.value = settings.color;
+      lineWidth.value = String(settings.width);
+    },
   };
 }
