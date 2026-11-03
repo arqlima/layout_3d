@@ -26,6 +26,8 @@ registerHooks({
 const moduleUrl = path => pathToFileURL(path).href;
 
 const { sectionPlane, sectionFromPoints, createCapGeometry } = await import(await moduleUrl(resolve(root, 'src/viewer/sectionGeometry.ts')));
+const { createSectionOutline, DEFAULT_SECTION_LINES } = await import(await moduleUrl(resolve(root, 'src/viewer/sectionLines.ts')));
+assert.deepEqual(DEFAULT_SECTION_LINES, { visible: true, color: '#3f4a4d', width: 1 });
 const a = new THREE.Vector3(2, 0, 3);
 assert.deepEqual(sectionFromPoints(a, new THREE.Vector3(8, 0, 4)), { axis: 'x', coordinate: 3, side: 1, mode: 'orthographic' });
 assert.deepEqual(sectionFromPoints(a, new THREE.Vector3(3, 0, 9)), { axis: 'y', coordinate: 2, side: 1, mode: 'orthographic' });
@@ -50,6 +52,23 @@ let result = createCapGeometry(box, plane);
 assert.equal(result.open, false);
 assert.ok(result.geometry);
 assert.ok(Math.abs(area(result.geometry) - 24) < 1e-5, 'A box produces its actual section area');
+function outlineLength(line) {
+  const starts = line.geometry.getAttribute('instanceStart'), ends = line.geometry.getAttribute('instanceEnd');
+  let total = 0;
+  for (let i = 0; i < starts.count; i++) total += new THREE.Vector3().fromBufferAttribute(starts, i)
+    .distanceTo(new THREE.Vector3().fromBufferAttribute(ends, i));
+  return total;
+}
+let outline = createSectionOutline(result.geometry, DEFAULT_SECTION_LINES);
+assert.ok(Math.abs(outlineLength(outline) - 20) < 1e-5, 'Outline follows the perimeter without triangulation diagonals');
+assert.equal(outline.material.color.getHexString(), '3f4a4d');
+assert.equal(outline.material.linewidth, 1);
+outline.onBeforeRender({ getViewport: value => value.set(0, 0, 1200, 800) });
+assert.deepEqual(outline.material.resolution.toArray(), [1200, 800]);
+outline.onBeforeRender({ getViewport: value => value.set(0, 0, 4096, 2304) });
+assert.deepEqual(outline.material.resolution.toArray(), [4096, 2304]);
+assert.equal(outline.material.linewidth, 1, 'Thickness stays in pixels at export resolution');
+outline.geometry.dispose(); outline.material.dispose();
 assert.equal(createCapGeometry(box, new THREE.Plane(new THREE.Vector3(0, 0, 1), -20)).geometry, null);
 assert.equal(createCapGeometry(box, new THREE.Plane(new THREE.Vector3(0, 0, 1), -4)).geometry, null, 'Tangency needs no cap');
 box.position.set(12, 5, 0);
@@ -69,6 +88,10 @@ hollow.updateMatrixWorld(true);
 result = createCapGeometry(hollow, new THREE.Plane(new THREE.Vector3(0, 0, 1), -2));
 assert.equal(result.open, false);
 assert.ok(Math.abs(area(result.geometry) - 32) < 1e-5, 'Voids are holes, not filled polygons');
+outline = createSectionOutline(result.geometry, { visible: false, color: '#ff0000', width: 3 });
+assert.ok(Math.abs(outlineLength(outline) - 32) < 1e-5, 'The outer contour and voids are outlined, without bridges or diagonals');
+assert.equal(outline.visible, false); assert.equal(outline.material.linewidth, 3);
+outline.geometry.dispose(); outline.material.dispose();
 
 const open = new THREE.Mesh(new THREE.PlaneGeometry(4, 6));
 open.updateMatrixWorld(true);
