@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Validação local dos cortes</title></head>
+<body><div id="app"></div><p id="viewer-notice" hidden></p>
+<script id="viewer-config" type="application/json">{"name":"Validação dos cortes","description":"Verificação local do visualizador","modelUrl":"/media/projects3d/models/massa.3dm","objectDataUrl":"data:application/json,%5B%5D","rhinoLibraryUrl":"/projects3d/static/projects3d/viewer/vendor/rhino3dm/","iconSpriteUrl":"/projects3d/static/projects3d/design-system/icons.svg","listUrl":"#","editUrl":"#","importUrl":"#","coverUrl":null,"videoUrl":null,"summary":[],"guidelines":[],"images":[],"location":{"latitude":null,"longitude":null,"locked":false},"simulationExportUrl":"#","csrfToken":""}</script>
+<script type="module">
+const base = '/projects3d/static/projects3d/viewer/';
+const manifest = await (await fetch(base + 'manifest.json', {cache: 'no-store'})).json();
+for (const css of manifest['src/entry.ts'].css ?? []) {
+  const link = document.createElement('link'); link.rel = 'stylesheet'; link.href = base + css; document.head.append(link);
+}
+await import(base + manifest['src/entry.ts'].file);
+</script></body></html>
