@@ -30,6 +30,7 @@ export interface AppElements {
   onMassingVisibilityChange(callback: (visible: boolean) => void): void;
   onSolarSettingsChange(callback: (settings: SolarSettings) => void): void;
   onSolarVisibilityChange(callback: (visible: boolean) => void): void;
+  onSolarPathVisibilityChange(callback: (visible: boolean) => void): void;
   onBackgroundChange(callback: (color: string) => void): void;
   onSectionLineSettingsChange(callback: (settings: SectionLineSettings) => void): void;
   setBrand(name: string, markUrl: string): void;
@@ -175,6 +176,8 @@ export function createApp(mount: HTMLElement): AppElements {
   const northControl = mountNorthControl(northHost, angle => solarPanel.setNorthAngle(angle));
   let onSolarSettings = (_settings: SolarSettings) => {};
   let onSolarVisibility = (_visible: boolean) => {};
+  let onSolarPathVisibility = (_visible: boolean) => {};
+  solarPanel.onPathChange(visible => onSolarPathVisibility(solarActive && visible));
   solarPanel.onChange(settings => onSolarSettings(settings));
   let onMassingVisibility = (_visible: boolean) => {};
   let onSimulationVisibility = (_visible: boolean) => {};
@@ -198,6 +201,7 @@ export function createApp(mount: HTMLElement): AppElements {
     onMassingVisibility(viewerVisible);
     onSolarVisibility(solarActive);
     onSolarSettings(solarPanel.settings());
+    onSolarPathVisibility(solarActive && solarPanel.pathVisible());
     onSimulationVisibility(tab.id === 'tab-simulation');
   };
   const requested = new URLSearchParams(location.search).get('section');
@@ -277,6 +281,10 @@ export function createApp(mount: HTMLElement): AppElements {
     onSolarVisibilityChange(callback) {
       onSolarVisibility = callback;
       callback(solarActive);
+    },
+    onSolarPathVisibilityChange(callback) {
+      onSolarPathVisibility = callback;
+      callback(solarActive && solarPanel.pathVisible());
     },
     setBrand(name, markUrl) {
       brandName.textContent = name;

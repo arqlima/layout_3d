@@ -12,7 +12,9 @@ function mount(location) {
     .map(name => ({ name, id: `solar-${name}`, type: name === 'date' ? 'date' : 'number', value: '',
       get valueAsNumber() { return Number(this.value); }, checkValidity: () => true,
       addEventListener(_event, callback) { this.change = callback; } }));
-  const elements = { '.solar-note': {}, '.solar-status': {} };
+  const elements = { '.solar-note': {}, '.solar-status': {}, '#solar-path': {
+    checked: false, addEventListener(_event, callback) { this.change = callback; },
+  } };
   const container = { innerHTML: '', querySelectorAll: () => inputs, querySelector: selector => elements[selector] || null };
   return { panel: mountSolarPanel(container, location), inputs, elements };
 }
@@ -29,6 +31,16 @@ locked.panel.setNorthAngle(45);
 assert.equal(locked.panel.settings().northAngle, 45);
 assert.match(locked.elements['.solar-note'].textContent, /KMZ/);
 const manual = mount({ latitude: 0, longitude: 0, locked: false });
+assert.equal(manual.panel.pathVisible(), false, 'Solar path is off by default');
+let pathVisible = null;
+manual.panel.onPathChange(value => { pathVisible = value; });
+manual.elements['#solar-path'].checked = true;
+manual.elements['#solar-path'].change();
+assert.equal(pathVisible, true, 'Checkbox activates the solar path independently of lighting');
+assert.equal(manual.panel.pathVisible(), true);
+manual.elements['#solar-path'].checked = false;
+manual.elements['#solar-path'].change();
+assert.equal(pathVisible, false, 'Checkbox deactivates the solar path');
 const longitude = manual.inputs.find(input => input.name === 'longitude');
 assert.equal(longitude.disabled, false);
 longitude.value = '10';

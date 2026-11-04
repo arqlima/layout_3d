@@ -17,6 +17,11 @@ export function defaultSolarSettings(): SolarSettings {
     latitude: -20.4697, longitude: -54.6201, utcOffset: -4, date, minutes: 900, northAngle: 0 };
 }
 
+/** Full civil day sampled every five minutes, including the closing midnight. */
+export function solarDayPath(settings: SolarSettings): ReturnType<typeof solarDirection>[] {
+  return Array.from({ length: 289 }, (_, index) => solarDirection({ ...settings, minutes: index === 288 ? 0 : index * 5 }));
+}
+
 /** NOAA approximation. World axes: east +X, up +Y, north -Z (Rhino +Y).
  * https://gml.noaa.gov/grad/solcalc/solareqns.PDF
  */

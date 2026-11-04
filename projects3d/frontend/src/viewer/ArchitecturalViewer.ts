@@ -13,6 +13,7 @@ import { createCapGeometry, sectionPlane } from './sectionGeometry';
 import { isSectionState, isSectionLineSettings, DEFAULT_SECTION_LINES, type SectionState, type SectionLineSettings } from '../types/section';
 import { createSectionOutline, applySectionOutlineSettings } from './sectionLines';
 import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
+import { SolarPath } from './SolarPath';
 
 type Renderable = THREE.Mesh | THREE.Line | THREE.Points;
 type ObjectMaterial = THREE.Material | THREE.Material[];
@@ -54,6 +55,7 @@ export class ArchitecturalViewer {
   private readonly shadowGround = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000),
     new THREE.ShadowMaterial({ color: '#000000', opacity: 0.24 }));
   private solarSettings: SolarSettings | null = null;
+  private solarPath: SolarPath | null = null;
   private readonly solarMaterials = new Map<THREE.Material, THREE.MeshStandardMaterial>();
   private readonly scene = new THREE.Scene();
   private readonly perspectiveCamera = new THREE.PerspectiveCamera(45, 1, 0.1, 500);
@@ -236,7 +238,21 @@ export class ArchitecturalViewer {
     if (this.sun.target.parent !== this.scene) this.scene.add(this.sun.target);
     this.configureSunShadow(modelRadius * 1.1);
     this.shadowGround.scale.setScalar(Math.max(1, modelRadius * 6 / 2000));
+    if (!settings && this.solarPath) this.solarPath.root.visible = false;
+    if (settings && this.solarPath?.root.visible) this.solarPath.update(settings, bounds);
     this.applyAppearance();
+  }
+
+  setSolarPathVisible(visible: boolean): void {
+    if (!this.solarPath && visible) {
+      this.solarPath = new SolarPath();
+      this.scene.add(this.solarPath.root);
+    }
+    if (!this.solarPath) return;
+    this.solarPath.root.visible = visible && this.solarSettings != null;
+    if (this.solarPath.root.visible) {
+      this.solarPath.update(this.solarSettings!, this.content ? new THREE.Box3().setFromObject(this.content) : new THREE.Box3());
+    }
   }
 
   private prepareModelShadows(model: THREE.Object3D): void {
@@ -723,6 +739,7 @@ export class ArchitecturalViewer {
   }
 
   dispose(): void {
+    this.solarPath?.dispose();
     this.sectionTool?.dispose();
     this.measurement?.dispose();
     cancelAnimationFrame(this.frameId);

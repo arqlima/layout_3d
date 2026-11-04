@@ -292,6 +292,11 @@ válido, usa +Y do projeto Rhino. O botão de reset no canto superior direito do
 indicador e a tecla Home restauram esse norte inicial e atualizam a iluminação.
 A seta acompanha a câmera; o ângulo exibido é relativo a +Y do Rhino.
 As configurações permanecem durante a sessão da página.
+Em **Estudo solar → Mostrar faixa solar**, ative ou oculte a faixa anual
+aproximada entre os solstícios, a trajetória da data selecionada e o marcador
+do horário atual. O guia acompanha as coordenadas e a orientação do norte;
+fica oculto ao sair da aba. Detalhes: [docs/solar-path-validation.md](docs/solar-path-validation.md).
+
 No Estudo solar, cliques no modelo não selecionam objetos; a navegação da câmera
 continua disponível. A seleção volta a funcionar no Estudo de massa.
 Testes adicionais: `node scripts/test-solar.mjs` e `node scripts/test-north.mjs`

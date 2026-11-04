@@ -52,6 +52,46 @@ assert.equal(opaque.map, texture);
 assert.equal(opaque.polygonOffsetFactor, 1);
 assert.deepEqual(meshes[0].geometry.boundingBox, null, 'Shadow preparation leaves geometry untouched');
 viewer.prepareSelection(model);
+const pathSettings = { exposure: 0.8, shadowIntensity: 80, sunIntensity: 120, latitude: -20,
+  longitude: -54, utcOffset: -4, date: '2026-10-27', minutes: 720, northAngle: 0 };
+viewer.setSolarSettings(pathSettings);
+viewer.setSolarPathVisible(true);
+const overlay = viewer.solarPath;
+assert.equal(overlay.root.visible, true);
+assert.equal(overlay.root.parent, viewer.scene);
+assert.equal(overlay.marker.visible, true);
+assert.ok(overlay.dayGeometry.getAttribute('position').count > 0);
+assert.ok(overlay.bandGeometry.getAttribute('position').count > 0);
+for (const geometry of [overlay.bandGeometry, overlay.dayGeometry]) {
+  const position = geometry.getAttribute('position');
+  for (let index = 0; index < position.count; index++) {
+    const point = new THREE.Vector3().fromBufferAttribute(position, index);
+    assert.ok(point.toArray().every(Number.isFinite), 'Overlay coordinates are finite');
+    assert.ok(point.y >= 0, 'Solar overlay is clipped to the horizon');
+    assert.ok(Math.abs(point.length() - 1) < 1e-6, 'Band follows the celestial dome');
+  }
+}
+const cachedDay = overlay.dayGeometry.getAttribute('position');
+viewer.setSolarSettings({ ...pathSettings, minutes: 0 });
+assert.equal(overlay.marker.visible, false, 'Night hides the current sun marker');
+assert.equal(overlay.ray.visible, false);
+assert.equal(overlay.dayGeometry.getAttribute('position'), cachedDay, 'Time changes reuse path geometry');
+viewer.setSolarSettings({ ...pathSettings, latitude: 90, date: '2026-12-21' });
+assert.equal(overlay.dayGeometry.getAttribute('position').count, 0, 'Polar night has no daily path');
+viewer.setSolarSettings({ ...pathSettings, latitude: 90, date: '2026-06-21' });
+assert.ok(overlay.dayGeometry.getAttribute('position').count > 0, 'Polar summer restores the complete path');
+viewer.setSolarPathVisible(false);
+assert.equal(overlay.root.visible, false);
+viewer.setSolarPathVisible(true);
+assert.equal(viewer.solarPath, overlay, 'Toggling reuses the same overlay');
+viewer.setSolarSettings(null);
+assert.equal(overlay.root.visible, false, 'Disabling solar settings hides the overlay');
+let disposed = false;
+overlay.bandGeometry.addEventListener('dispose', () => { disposed = true; });
+overlay.dispose();
+assert.equal(overlay.root.parent, null);
+assert.equal(disposed, true, 'Overlay releases GPU resources');
+viewer.solarPath = null;
 for (const settings of [null, { exposure: 0.8, shadowIntensity: 80, sunIntensity: 120, latitude: -20, longitude: -54, utcOffset: -4, date: '2026-10-27', minutes: 390, northAngle: 0 }]) {
   viewer.setSolarSettings(settings);
   assert.deepEqual(meshes.map(mesh => mesh.castShadow), [true, false, false, true], 'Solar settings preserve transparent caster exclusion');

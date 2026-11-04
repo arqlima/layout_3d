@@ -1,15 +1,18 @@
 import { defaultSolarSettings, solarDirection, type SolarSettings } from '../data/solar';
 
-export function mountSolarPanel(container: HTMLElement, location?: { latitude: number | null; longitude: number | null; locked: boolean }): { settings(): SolarSettings; setNorthAngle(angle: number): void; onChange(callback: (settings: SolarSettings) => void): void } {
+export function mountSolarPanel(container: HTMLElement, location?: { latitude: number | null; longitude: number | null; locked: boolean }): { settings(): SolarSettings; setNorthAngle(angle: number): void; onChange(callback: (settings: SolarSettings) => void): void; pathVisible(): boolean; onPathChange(callback: (visible: boolean) => void): void } {
   let settings = defaultSolarSettings();
   if (location?.latitude != null && location.longitude != null) {
     settings = { ...settings, latitude: location.latitude, longitude: location.longitude };
   }
   let notify = (_settings: SolarSettings) => {};
+  let notifyPath = (_visible: boolean) => {};
   container.innerHTML = `
     <div class="solar-controls">
       <div class="detail-label">ILUMINAÇÃO E SOMBRAS</div>
       <h2>Estudo solar</h2>
+      <label class="solar-path-toggle" for="solar-path"><input id="solar-path" type="checkbox" /> Mostrar faixa solar</label>
+      <p class="solar-path-legend">Faixa translúcida: percurso anual aproximado entre os solstícios. Linha dourada: data selecionada. Ponto: sol no horário escolhido. Círculo: horizonte.</p>
       <label class="solar-field" for="solar-exposure"><span>Exposição <output for="solar-exposure"></output></span>
         <input id="solar-exposure" name="exposure" type="range" min="0.2" max="2" step="0.01" value="0.8" />
         <small><span>0,2</span><span>2</span></small></label>
@@ -33,7 +36,9 @@ export function mountSolarPanel(container: HTMLElement, location?: { latitude: n
       <p class="solar-note">Gire a seta N à direita para definir o norte do projeto. A iluminação também será usada no Estudo de massa.</p>
     </div>
     <div class="sidebar-footer"><span>ESTUDO SOLAR</span><span>VISUALIZADOR 3D</span></div>`;
-  const inputs = [...container.querySelectorAll<HTMLInputElement>('input')];
+  const pathToggle = container.querySelector<HTMLInputElement>('#solar-path')!;
+  pathToggle.addEventListener('change', () => notifyPath(pathToggle.checked));
+  const inputs = [...container.querySelectorAll<HTMLInputElement>('input[name]')];
   if (location?.latitude != null && location.longitude != null) {
     container.querySelector<HTMLElement>('.solar-note')!.textContent = location.locked
       ? 'Coordenadas obtidas do KMZ. Para alterar a localização, substitua ou remova o KMZ no cadastro.'
@@ -68,6 +73,8 @@ export function mountSolarPanel(container: HTMLElement, location?: { latitude: n
   }
   updateLabels();
   return {
+    pathVisible: () => pathToggle.checked,
+    onPathChange(callback) { notifyPath = callback; },
     settings: () => ({ ...settings }),
     setNorthAngle(angle) {
       settings = { ...settings, northAngle: angle };

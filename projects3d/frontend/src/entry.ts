@@ -46,6 +46,7 @@ async function start(): Promise<void> {
   ui.onSectionLineSettingsChange(settings => viewer.setSectionLineSettings(settings));
   ui.onSolarSettingsChange(settings => viewer.setSolarSettings(settings));
   ui.onSolarVisibilityChange(visible => viewer.setSelectionEnabled(!visible));
+  ui.onSolarPathVisibilityChange(visible => viewer.setSolarPathVisible(visible));
   viewer.setActive(massingVisible);
   ui.setViewActions((view) => viewer.setStandardView(view), (mode) => viewer.setProjectionMode(mode));
   ui.fitButton.addEventListener('click', () => viewer.fitToContent());
