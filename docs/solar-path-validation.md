@@ -34,8 +34,9 @@ Para substituir uma cena, abra a posição desejada, faça os ajustes e clique e
 horário, coordenadas, fuso, orientação do norte e iluminação, junto com os
 demais dados da cena. O armazenamento continua sendo no navegador e por projeto.
 
-Ao abrir uma cena com faixa visível, a aplicação entra na aba **Estudo solar**
-e sincroniza seus controles, incluindo o indicador de norte. As coordenadas
+Ao abrir uma cena, a aplicação mantém a aba atual e restaura a faixa também
+no **Estudo de massa**, sincronizando os controles solares e o indicador de
+norte. As coordenadas
 de um KMZ cadastrado continuam prevalecendo. Cenas anteriores, sem informação
 solar, continuam aceitas e ocultam uma faixa que estivesse visível.
 

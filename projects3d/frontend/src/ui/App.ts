@@ -355,10 +355,8 @@ export function createApp(mount: HTMLElement): AppElements {
       });
       if (scene.viewer.solar) {
         northControl.setAngle(scene.viewer.solar.settings.northAngle);
-        if (scene.viewer.solar.pathVisible && !solarActive) {
-          activateTab(tabs.find(tab => tab.id === 'tab-solar')!);
-        }
       }
+      onSolarPathVisibility(scene.viewer.solar?.pathVisible ?? false);
       presentationSettings.setSectionLineSettings(scene.viewer.sectionLines ?? DEFAULT_SECTION_LINES);
       layerPanel?.restore(scene.viewer.selectionMode, scene.viewer.hideUnchecked, scene.areaExclusions);
       elevationControl?.setRange(...scene.viewer.elevation);
