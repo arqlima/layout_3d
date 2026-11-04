@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { stripTypeScriptTypes } from 'node:module';
 
 const source = await readFile(new URL('../src/data/solar.ts', import.meta.url), 'utf8');
-const { solarDirection, defaultSolarSettings } = await import(`data:text/javascript;base64,${Buffer.from(stripTypeScriptTypes(source)).toString('base64')}`);
+const { solarDirection, defaultSolarSettings, solarDayPath } = await import(`data:text/javascript;base64,${Buffer.from(stripTypeScriptTypes(source)).toString('base64')}`);
 const defaults = defaultSolarSettings();
 assert.equal(defaults.exposure, 0.8);
 assert.equal(defaults.shadowIntensity, 80);
@@ -36,4 +36,15 @@ const fullTurn = solarDirection({ ...settings, minutes: 480, northAngle: 360 });
 assert.ok(Math.abs(fullTurn.x - morning.x) < 1e-10);
 assert.ok(Math.abs(fullTurn.z - morning.z) < 1e-10);
 assert.throws(() => solarDirection({ ...settings, northAngle: NaN }));
+assert.equal(typeof solarDayPath, 'function', 'Solar overlay needs a full-day path independent of the time slider');
+const path = solarDayPath(settings);
+assert.equal(path.length, 289, 'Five-minute samples include midnight at both ends');
+assert.ok(path.some(point => point.y > 0.99));
+assert.ok(path.some(point => point.y < 0));
+assert.deepEqual(solarDayPath({ ...settings, minutes: 100 }), path, 'Selected time does not reshape the daily path');
+const rotatedPath = solarDayPath({ ...settings, northAngle: 90 });
+assert.ok(Math.abs(rotatedPath[96].x + path[96].z) < 1e-10, 'Path follows model north');
+for (const latitude of [-90, 90]) {
+  assert.ok(solarDayPath({ ...settings, latitude }).every(point => Object.values(point).every(Number.isFinite)));
+}
 console.log('Solar tests passed: defaults, equinox, east/west, night, seasons, UTC, poles, leap years and invalid input.');
