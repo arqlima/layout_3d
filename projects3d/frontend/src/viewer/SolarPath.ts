@@ -22,6 +22,11 @@ export class SolarPath {
   private radius = 60;
   private scalePercent = 50;
 
+  setOpacity(percent: number): void {
+    if (!Number.isFinite(percent) || percent < 0 || percent > 100) return;
+    this.bandMaterial.opacity = percent / 100;
+  }
+
   setScale(percent: number): void {
     if (!Number.isFinite(percent) || percent < 5 || percent > 200) return;
     this.scalePercent = percent;

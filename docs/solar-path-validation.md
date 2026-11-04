@@ -20,6 +20,12 @@ o modelo, a câmera e a iluminação são preservados. O tamanho escolhido conti
 valendo ao alterar o horário/data e ao ocultar/mostrar a faixa, até recarregar
 a página. Pode ser ajustado mesmo com a faixa oculta.
 
+O controle **Opacidade da faixa**, abaixo do tamanho, ajusta o preenchimento
+anual de **0% a 100%**, com padrão de **12%**. A linha diária, o marcador do
+sol e o horizonte mantêm sua aparência. O ajuste é imediato, pode ser feito
+com a faixa oculta e é preservado durante a sessão ao alterar data, horário,
+tamanho ou visibilidade. Em 0%, apenas o preenchimento fica transparente.
+
 A geometria usa o mesmo cálculo solar já empregado pela iluminação, com
 latitude, longitude, fuso e orientação do norte. As trajetórias usam amostras
 de cinco minutos do dia completo, independentemente dos limites do slider de
@@ -69,4 +75,16 @@ Cobertura percentual não medida.
 - `node scripts/test-location.mjs`: tamanho inicial de 50%, callback do slider
   e percentual exibido aprovados.
 - TypeScript, build, vinculação dos módulos, testes solares e de seleção,
+  `manage.py check` e os 51 testes Django passaram novamente.
+
+## Controle de opacidade
+
+- RED: `node scripts/test-shadows.mjs` falhou com
+  `TypeError: viewer.setSolarPathOpacity is not a function`; checkpoint `3162ce2`.
+- GREEN: mesmo comando aprovado; padrão de 12%, conversão percentual,
+  extremos 0% e 100%, rejeição de valores inválidos, preservação da linha
+  diária e manutenção do ajuste ao mudar data, horário e visibilidade.
+- `node scripts/test-location.mjs`: callback e percentual exibido pelo slider,
+  padrão e limites aprovados.
+- TypeScript, build, vinculação dos módulos, testes de seleção,
   `manage.py check` e os 51 testes Django passaram novamente.

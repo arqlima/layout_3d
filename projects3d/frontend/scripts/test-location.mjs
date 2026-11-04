@@ -12,7 +12,9 @@ function mount(location) {
     .map(name => ({ name, id: `solar-${name}`, type: name === 'date' ? 'date' : 'number', value: '',
       get valueAsNumber() { return Number(this.value); }, checkValidity: () => true,
       addEventListener(_event, callback) { this.change = callback; } }));
-  const elements = { '.solar-note': {}, '.solar-status': {}, '#solar-path-size-value': {}, '#solar-path-size': {
+  const elements = { '.solar-note': {}, '.solar-status': {}, '#solar-path-opacity-value': {}, '#solar-path-opacity': {
+    valueAsNumber: 12, addEventListener(_event, callback) { this.change = callback; },
+  }, '#solar-path-size-value': {}, '#solar-path-size': {
     valueAsNumber: 50, addEventListener(_event, callback) { this.change = callback; },
   }, '#solar-path': {
     checked: false, addEventListener(_event, callback) { this.change = callback; },
@@ -35,6 +37,18 @@ assert.match(locked.elements['.solar-note'].textContent, /KMZ/);
 const manual = mount({ latitude: 0, longitude: 0, locked: false });
 assert.equal(manual.panel.pathVisible(), false, 'Solar path is off by default');
 assert.equal(manual.panel.pathScale(), 50, 'Solar overlay starts at a smaller size');
+assert.equal(manual.panel.pathOpacity(), 12, 'Opacity starts at 12 percent');
+let opacity = null;
+manual.panel.onPathOpacityChange(percent => { opacity = percent; });
+for (const percent of [0, 65, 100]) {
+  manual.elements['#solar-path-opacity'].valueAsNumber = percent;
+  manual.elements['#solar-path-opacity'].change();
+  assert.equal(opacity, percent, 'Opacity slider notifies the viewer');
+  assert.equal(manual.elements['#solar-path-opacity-value'].value, `${percent}%`);
+}
+manual.elements['#solar-path-opacity'].valueAsNumber = 101;
+manual.elements['#solar-path-opacity'].change();
+assert.equal(opacity, 100, 'Invalid opacity does not notify the viewer');
 let size = null;
 manual.panel.onPathScaleChange(percent => { size = percent; });
 manual.elements['#solar-path-size'].valueAsNumber = 25;

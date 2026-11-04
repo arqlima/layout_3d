@@ -57,6 +57,7 @@ export class ArchitecturalViewer {
   private solarSettings: SolarSettings | null = null;
   private solarPath: SolarPath | null = null;
   private solarPathScale = 50;
+  private solarPathOpacity = 12;
   private readonly solarMaterials = new Map<THREE.Material, THREE.MeshStandardMaterial>();
   private readonly scene = new THREE.Scene();
   private readonly perspectiveCamera = new THREE.PerspectiveCamera(45, 1, 0.1, 500);
@@ -248,6 +249,7 @@ export class ArchitecturalViewer {
     if (!this.solarPath && visible) {
       this.solarPath = new SolarPath();
       this.solarPath.setScale(this.solarPathScale ?? 50);
+      this.solarPath.setOpacity(this.solarPathOpacity ?? 12);
       this.scene.add(this.solarPath.root);
     }
     if (!this.solarPath) return;
@@ -261,6 +263,12 @@ export class ArchitecturalViewer {
     if (!Number.isFinite(percent) || percent < 5 || percent > 200) return;
     this.solarPathScale = percent;
     this.solarPath?.setScale(percent);
+  }
+
+  setSolarPathOpacity(percent: number): void {
+    if (!Number.isFinite(percent) || percent < 0 || percent > 100) return;
+    this.solarPathOpacity = percent;
+    this.solarPath?.setOpacity(percent);
   }
 
   private prepareModelShadows(model: THREE.Object3D): void {

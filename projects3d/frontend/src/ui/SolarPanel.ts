@@ -1,6 +1,18 @@
 import { defaultSolarSettings, solarDirection, type SolarSettings } from '../data/solar';
 
-export function mountSolarPanel(container: HTMLElement, location?: { latitude: number | null; longitude: number | null; locked: boolean }): { settings(): SolarSettings; setNorthAngle(angle: number): void; onChange(callback: (settings: SolarSettings) => void): void; pathVisible(): boolean; onPathChange(callback: (visible: boolean) => void): void; pathScale(): number; onPathScaleChange(callback: (percent: number) => void): void } {
+interface SolarPanel {
+  settings(): SolarSettings;
+  setNorthAngle(angle: number): void;
+  onChange(callback: (settings: SolarSettings) => void): void;
+  pathVisible(): boolean;
+  onPathChange(callback: (visible: boolean) => void): void;
+  pathScale(): number;
+  onPathScaleChange(callback: (percent: number) => void): void;
+  pathOpacity(): number;
+  onPathOpacityChange(callback: (percent: number) => void): void;
+}
+
+export function mountSolarPanel(container: HTMLElement, location?: { latitude: number | null; longitude: number | null; locked: boolean }): SolarPanel {
   let settings = defaultSolarSettings();
   if (location?.latitude != null && location.longitude != null) {
     settings = { ...settings, latitude: location.latitude, longitude: location.longitude };
@@ -8,6 +20,7 @@ export function mountSolarPanel(container: HTMLElement, location?: { latitude: n
   let notify = (_settings: SolarSettings) => {};
   let notifyPath = (_visible: boolean) => {};
   let notifyScale = (_percent: number) => {};
+  let notifyOpacity = (_percent: number) => {};
   container.innerHTML = `
     <div class="solar-controls">
       <div class="detail-label">ILUMINAÇÃO E SOMBRAS</div>
@@ -16,6 +29,9 @@ export function mountSolarPanel(container: HTMLElement, location?: { latitude: n
       <label class="solar-field solar-path-size" for="solar-path-size"><span>Tamanho da faixa <output id="solar-path-size-value" for="solar-path-size">50%</output></span>
         <input id="solar-path-size" type="range" min="5" max="200" step="5" value="50" />
         <small><span>5%</span><span>200%</span></small></label>
+      <label class="solar-field" for="solar-path-opacity"><span>Opacidade da faixa <output id="solar-path-opacity-value" for="solar-path-opacity">12%</output></span>
+        <input id="solar-path-opacity" type="range" min="0" max="100" step="1" value="12" />
+        <small><span>0%</span><span>100%</span></small></label>
       <p class="solar-path-legend">Faixa translúcida: percurso anual aproximado entre os solstícios. Linha dourada: data selecionada. Ponto: sol no horário escolhido. Círculo: horizonte.</p>
       <label class="solar-field" for="solar-exposure"><span>Exposição <output for="solar-exposure"></output></span>
         <input id="solar-exposure" name="exposure" type="range" min="0.2" max="2" step="0.01" value="0.8" />
@@ -50,6 +66,13 @@ export function mountSolarPanel(container: HTMLElement, location?: { latitude: n
     notifyScale(percent);
   });
   const inputs = [...container.querySelectorAll<HTMLInputElement>('input[name]')];
+  const pathOpacity = container.querySelector<HTMLInputElement>('#solar-path-opacity')!;
+  pathOpacity.addEventListener('input', () => {
+    const percent = pathOpacity.valueAsNumber;
+    if (!Number.isFinite(percent) || percent < 0 || percent > 100) return;
+    container.querySelector<HTMLOutputElement>('#solar-path-opacity-value')!.value = `${percent}%`;
+    notifyOpacity(percent);
+  });
   if (location?.latitude != null && location.longitude != null) {
     container.querySelector<HTMLElement>('.solar-note')!.textContent = location.locked
       ? 'Coordenadas obtidas do KMZ. Para alterar a localização, substitua ou remova o KMZ no cadastro.'
@@ -84,6 +107,8 @@ export function mountSolarPanel(container: HTMLElement, location?: { latitude: n
   }
   updateLabels();
   return {
+    pathOpacity: () => pathOpacity.valueAsNumber,
+    onPathOpacityChange(callback) { notifyOpacity = callback; },
     pathScale: () => pathSize.valueAsNumber,
     onPathScaleChange(callback) { notifyScale = callback; },
     pathVisible: () => pathToggle.checked,
