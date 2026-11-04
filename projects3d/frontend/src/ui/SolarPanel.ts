@@ -38,7 +38,7 @@ export function mountSolarPanel(container: HTMLElement, location?: { latitude: n
       <h2>Estudo solar</h2>
       <section class="annual-exposure" aria-label="Mapa de exposição anual">
         <h3>Exposição anual</h3>
-        <p>Horas estimadas de sol direto por ano, com sombras entre os objetos opacos visíveis.</p>
+        <p>Horas estimadas de sol direto por ano nas geometrias fora de REP. REP visível participa apenas das sombras.</p>
         <button id="solar-exposure-calculate" type="button" disabled>Calcular mapa anual</button>
         <button id="solar-exposure-cancel" type="button" hidden>Cancelar</button>
         <label class="solar-path-toggle"><input id="solar-exposure-map" type="checkbox" disabled /> Mostrar mapa em gradiente</label>

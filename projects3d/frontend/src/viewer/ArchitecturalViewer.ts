@@ -296,7 +296,12 @@ export class ArchitecturalViewer {
     if (!this.annualExposure.root.parent) this.scene.add(this.annualExposure.root);
     this.exposureKey = this.annualExposureKey();
     const sources = this.selectionEntries.filter(entry => entry.object instanceof THREE.Mesh && this.isVisible(entry.object))
-      .map(entry => ({ object: entry.object as THREE.Mesh, material: entry.original }));
+      .map(entry => ({
+        object: entry.object as THREE.Mesh,
+        material: entry.original,
+        receiveExposure: entry.use !== 'REP'
+          && !isRepLayer(entry.layerIndex === null ? entry.object.name : this.layers[entry.layerIndex].name),
+      }));
     this.annualExposure.root.visible = false;
     try {
       const result = await this.annualExposure.calculate(sources, { ...this.solarSettings }, controller.signal, progress);

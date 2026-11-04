@@ -162,6 +162,28 @@ assert.equal(viewer.annualExposure.root.visible, false, 'Stale results cannot be
 viewer.section = {};
 await assert.rejects(viewer.calculateAnnualExposure(() => {}), /corte/);
 viewer.section = null;
+const originalLayers = viewer.layers;
+const savedEntries = viewer.selectionEntries.map(entry => ({ layerIndex: entry.layerIndex, use: entry.use, name: entry.object.name }));
+viewer.layers = [{ name: 'rep-entorno-COM' }];
+viewer.selectionEntries[0].layerIndex = 0;
+viewer.selectionEntries[1].use = 'REP';
+viewer.selectionEntries[2].object.name = 'REP';
+const originalCalculation = viewer.annualExposure.calculate;
+let sourcesForRepTest;
+viewer.annualExposure.calculate = async sources => {
+  sourcesForRepTest = sources;
+  return { year: '2026', points: 1, maxHours: 4000, skipped: 0 };
+};
+await viewer.calculateAnnualExposure(() => {});
+assert.deepEqual(sourcesForRepTest.map(source => source.receiveExposure), [false, false, false, true],
+  'REP group, CSV use and standalone REP are blockers only; ordinary meshes receive exposure');
+viewer.annualExposure.calculate = originalCalculation;
+viewer.layers = originalLayers;
+viewer.selectionEntries.forEach((entry, index) => {
+  entry.layerIndex = savedEntries[index].layerIndex;
+  entry.use = savedEntries[index].use;
+  entry.object.name = savedEntries[index].name;
+});
 viewer.annualExposure.dispose();
 viewer.content = new THREE.Group();
 viewer.setSolarSettings(null);

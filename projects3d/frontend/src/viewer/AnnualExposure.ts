@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { annualSunSamples, type SolarSettings } from '../data/solar';
 
 interface Surface {
+  receiveExposure: boolean;
   a: THREE.Vector3;
   b: THREE.Vector3;
   c: THREE.Vector3;
@@ -18,6 +19,7 @@ interface Node {
 }
 
 export interface ExposureSource {
+  receiveExposure?: boolean;
   object: THREE.Mesh;
   material: THREE.Material | THREE.Material[];
 }
@@ -60,7 +62,7 @@ export class AnnualExposure {
     const samples = annualSunSamples(settings);
     const faces: Surface[] = [];
     let skipped = 0, totalArea = 0, processed = 0;
-    for (const { object, material } of sources) {
+    for (const { object, material, receiveExposure = true } of sources) {
       signal.throwIfAborted();
       if (object instanceof THREE.InstancedMesh || object instanceof THREE.SkinnedMesh || object.morphTargetInfluences?.some(value => value !== 0)) {
         skipped++; continue;
@@ -84,14 +86,15 @@ export class AnnualExposure {
         const triangle = new THREE.Triangle(a, b, c);
         const area = triangle.getArea();
         if (area > 0) {
-          faces.push({ a, b, c, normal, area, center: triangle.getMidpoint(new THREE.Vector3()) });
-          totalArea += area;
+          faces.push({ a, b, c, normal, area, receiveExposure, center: triangle.getMidpoint(new THREE.Vector3()) });
+          if (receiveExposure) totalArea += area;
         }
         if (faces.length > 200000) throw new Error('Modelo com mais de 200 mil triângulos opacos. Simplifique o modelo para calcular a exposição.');
         if (++processed % 5000 === 0) { await pause(); signal.throwIfAborted(); }
       }
     }
-    if (!faces.length) throw new Error('Não há superfícies opacas estáticas visíveis para analisar.');
+    const receivers = faces.filter(face => face.receiveExposure);
+    if (!receivers.length) throw new Error('Não há superfícies opacas estáticas visíveis fora de REP para analisar.');
     progress(5);
     await pause();
     signal.throwIfAborted();
@@ -103,7 +106,7 @@ export class AnnualExposure {
     const spacing = Math.sqrt(totalArea / targetSamples) * 2;
     const cache = new Map<string, number>();
     const triangles: Array<{ vertices: THREE.Vector3[]; normal: THREE.Vector3 }> = [];
-    for (const face of faces) {
+    for (const face of receivers) {
       const pending: THREE.Vector3[][] = [[face.a, face.b, face.c]];
       while (pending.length) {
         const vertices = pending.pop()!;

@@ -13,6 +13,12 @@ marcado pode ser exibido novamente.
 
 O mapa mostra **horas estimadas de sol direto por ano nas superfícies**,
 considerando orientação das faces e oclusões geométricas.
+Geometrias REP não recebem gradiente nem entram na área usada para definir
+a resolução das superfícies analisadas. REP opaco e visível continua como
+obstáculo para o cálculo das sombras. A identificação segue a convenção já
+usada pelo visualizador: grupo/uso REP na layer, uso REP nos dados ou nome
+isolado REP. Com apenas superfícies REP, o cálculo informa que não há
+superfícies elegíveis. Cenas salvas aplicam essa regra ao recalcular.
 Azul indica menos horas; vermelho indica mais. A escala vai de zero ao total
 de horas acima do horizonte nos períodos amostrados para aquele local/ano.
 Não representa temperatura, energia em kWh, radiação difusa, reflexão,
@@ -127,3 +133,15 @@ estudo geométrico aproximado, com as amostragens informadas acima.
   `manage.py check` e 51 testes Django aprovados.
 - Sem validação visual em navegador; o renderer de exportação é simulado nos
   testes e a geometria solar usa Three.js real.
+
+## Exclusão de REP como superfície analisada
+
+- RED: `node scripts/test-annual-exposure.mjs` falhou em
+  `REP blockers must not receive the exposure gradient`; checkpoint `42be5b3`.
+- GREEN: mesmo comando passou; REP não recebe a malha, continua bloqueando
+  sol sobre outras superfícies e modelos apenas REP não geram resultado.
+- `node scripts/test-shadows.mjs`: classificação real de entradas do viewer
+  por layer REP, uso REP e nome isolado REP aprovada.
+- `npm.cmd test`, teste do painel solar, TypeScript/build, vinculação dos
+  módulos, `manage.py check` e os 51 testes Django passaram.
+- Sem validação visual em navegador nesta alteração.
