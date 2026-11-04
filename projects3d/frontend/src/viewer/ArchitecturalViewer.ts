@@ -17,6 +17,13 @@ import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
 type Renderable = THREE.Mesh | THREE.Line | THREE.Points;
 type ObjectMaterial = THREE.Material | THREE.Material[];
 
+interface SelectionSnapshot {
+  object: Renderable | null;
+  objects: Set<Renderable> | null;
+  layers: boolean[];
+  usages: Set<UsageCode>;
+}
+
 interface SelectionEntry {
   object: Renderable;
   original: ObjectMaterial;
@@ -71,6 +78,8 @@ export class ArchitecturalViewer {
   private readonly mutedMaterials = new Set<THREE.Material>();
   private selectedObject: Renderable | null = null;
   private selectedObjects: Set<Renderable> | null = null;
+  private selectionHistory: SelectionSnapshot[] = [];
+  private active = true;
   private selectionEnabled = true;
   private selectionMode: SelectionMode = 'name';
   private hideUnchecked = false;
@@ -122,6 +131,7 @@ export class ArchitecturalViewer {
   }
 
   setActive(active: boolean): void {
+    this.active = active;
     cancelAnimationFrame(this.frameId);
     if (!active) this.sectionTool?.cancelDrawing();
     if (!active) this.measurement?.setEnabled(false);
@@ -139,6 +149,7 @@ export class ArchitecturalViewer {
 
   /** Ponto de entrada para uma cena convertida a partir de um modelo Rhino. */
   setContent(content: THREE.Object3D, objectData?: Map<string, ObjectRecord>): void {
+    this.selectionHistory = [];
     this.beforeSectionDrawing = null;
     this.setSection(null, false);
     this.measurement?.setEnabled(false);
@@ -353,6 +364,7 @@ export class ArchitecturalViewer {
     if (state.layers.length !== this.layers.length || state.layers.some((layer, index) => layer.name !== this.layers[index].name)) {
       throw new Error('A cena salva pertence a uma versão diferente das layers deste modelo.');
     }
+    this.selectionHistory = [];
     this.beforeSectionDrawing = null;
     this.sectionTool?.stopDrawing();
     this.setSectionLineSettings(state.sectionLines ?? DEFAULT_SECTION_LINES);
@@ -420,6 +432,7 @@ export class ArchitecturalViewer {
   }
 
   setActiveUsages(usages: ReadonlySet<UsageCode>): void {
+    this.selectionHistory = [];
     if (this.selectionMode === 'group') return;
     if (this.selectionMode === 'use') {
       for (const layer of this.layers) {
@@ -441,12 +454,14 @@ export class ArchitecturalViewer {
 
   setElevationRange(base: number, top: number): void {
     if (!Number.isFinite(base) || !Number.isFinite(top) || base > top) return;
+    this.selectionHistory = [];
     this.elevationBase = base;
     this.elevationTop = top;
     this.applyVisibilityFilters();
   }
 
   setSelectionMode(mode: SelectionMode): void {
+    this.selectionHistory = [];
     this.selectionMode = mode;
     this.selectedObject = null;
     this.selectedObjects = null;
@@ -473,6 +488,7 @@ export class ArchitecturalViewer {
   }
 
   setLayersChecked(indices: number[], checked: boolean): void {
+    const previous = this.captureSelection();
     const targets = new Set(indices.flatMap(index => matchingLayers(this.layers, index, this.selectionMode).map(layer => layer.index)));
     for (const index of targets) {
       const layer = this.layers[index];
@@ -487,6 +503,7 @@ export class ArchitecturalViewer {
     this.selectedObject = null;
     this.selectedObjects = null;
     this.applyAppearance();
+    this.rememberSelection(previous);
     this.onSelectionChange(null);
   }
 
@@ -514,10 +531,48 @@ export class ArchitecturalViewer {
 
   clearSelection(): void {
     if (!this.selectedObject && this.selectedObjects == null) return;
+    const previous = this.captureSelection();
     this.selectedObject = null;
     this.selectedObjects = null;
     this.applyAppearance();
+    this.rememberSelection(previous);
     this.onSelectionChange(null);
+  }
+
+  private captureSelection(): SelectionSnapshot {
+    return {
+      object: this.selectedObject,
+      objects: this.selectedObjects == null ? null : new Set(this.selectedObjects),
+      layers: this.layers.map(layer => layer.visible),
+      usages: new Set(this.activeUsages),
+    };
+  }
+
+  private rememberSelection(previous: SelectionSnapshot): void {
+    const current = this.captureSelection();
+    if (previous.object === current.object
+      && (previous.objects === null) === (current.objects === null)
+      && (previous.objects?.size ?? 0) === (current.objects?.size ?? 0)
+      && [...previous.objects ?? []].every(object => current.objects?.has(object))
+      && previous.layers.every((visible, index) => visible === current.layers[index])
+      && previous.usages.size === current.usages.size
+      && [...previous.usages].every(use => current.usages.has(use))) return;
+    this.selectionHistory ??= [];
+    this.selectionHistory.push(previous);
+    if (this.selectionHistory.length > 100) this.selectionHistory.shift();
+  }
+
+  undoSelection(): boolean {
+    if (this.selectionEnabled === false || this.measurement?.enabled) return false;
+    const previous = this.selectionHistory?.pop();
+    if (!previous) return false;
+    this.selectedObject = previous.object;
+    this.selectedObjects = previous.objects;
+    this.layers.forEach((layer, index) => { layer.visible = previous.layers[index]; });
+    this.activeUsages = previous.usages;
+    this.applyAppearance();
+    this.notifySelection();
+    return true;
   }
 
   setSelectionEnabled(enabled: boolean): void {
@@ -858,6 +913,7 @@ export class ArchitecturalViewer {
   }
 
   private clearSelectionEntries(): void {
+    this.selectionHistory = [];
     this.selectedObject = null;
     this.selectedObjects = null;
     this.solarMaterials.forEach(material => material.dispose());
@@ -909,6 +965,7 @@ export class ArchitecturalViewer {
       if (this.selectionMode === 'use' && category.use === 'Sem uso') return;
     }
     const objects = action === 'replace' ? new Set<Renderable>() : new Set(this.selectedObjects ?? []);
+    const previous = this.captureSelection();
     const matches = layer ? new Set(matchingLayers(this.layers, layer.index, this.selectionMode).map(item => item.index)) : new Set();
     const sameSelection = (candidate: Renderable) => {
       const entry = byObject.get(candidate);
@@ -944,6 +1001,7 @@ export class ArchitecturalViewer {
       else this.activeUsages.delete('REP');
     }
     this.applyAppearance();
+    this.rememberSelection(previous);
     this.notifySelection();
   }
 
@@ -1028,9 +1086,18 @@ export class ArchitecturalViewer {
   }
 
   private readonly onPointerCancel = (): void => { this.pointerStart = null; };
-  private readonly onKeyDown = (event: KeyboardEvent): void => {
+  private readonly onKeyDown = (event: KeyboardEvent): void => this.handleKeyDown(event);
+
+  private handleKeyDown(event: KeyboardEvent): void {
+    if (this.active === false) return;
+    const target = event.target as HTMLElement | null;
+    if (event.defaultPrevented || target?.closest?.('input, textarea, select, [contenteditable]:not([contenteditable="false"])')) return;
+    if ((event.ctrlKey || event.metaKey) && !event.shiftKey && !event.altKey && event.key.toLowerCase() === 'z') {
+      if (this.undoSelection()) event.preventDefault();
+      return;
+    }
     if (event.key === 'Escape') this.clearSelection();
-  };
+  }
 
   private readLayers(content: THREE.Object3D): void {
     this.layers = [];
