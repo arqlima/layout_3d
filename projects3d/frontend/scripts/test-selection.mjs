@@ -59,6 +59,12 @@ Object.assign(viewer, {
 viewer.readLayers(model);
 viewer.prepareSelection(model);
 viewer.applyVisibilityFilters();
+viewer.setModelAppearance({ overrideColor: true, color: '#abcdef', overrideEdges: true, edgeColor: '#123456' });
+assert.equal(meshes[0].material.color.getHexString(), 'abcdef', 'Color override applies to non-REP geometry');
+assert.equal(meshes[0].children[0].material.color.getHexString(), '123456', 'Edge override uses its independent color');
+assert.equal(viewer.selectionEntries.find(entry => entry.object === meshes[0]).original.color.getHexString(), 'ffffff', 'Overrides preserve original materials');
+viewer.setModelAppearance({ overrideColor: false, color: '#abcdef', overrideEdges: false, edgeColor: '#123456' });
+assert.equal(meshes[0].material, viewer.selectionEntries.find(entry => entry.object === meshes[0]).original, 'Disabling restores original material identity');
 viewer.select(meshes[0]);
 viewer.select(meshes[1], 'add');
 assert.deepEqual([...viewer.getMarkedObjects().keys()].sort(), ['object-0', 'object-1'], 'Shift adds across layers');
