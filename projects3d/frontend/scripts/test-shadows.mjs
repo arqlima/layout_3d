@@ -57,6 +57,17 @@ const pathSettings = { exposure: 0.8, shadowIntensity: 80, sunIntensity: 120, la
 viewer.setSolarSettings(pathSettings);
 viewer.setSolarPathVisible(true);
 const overlay = viewer.solarPath;
+const originalPosition = overlay.root.position.clone();
+viewer.setSolarPathScale(100);
+const fullScale = overlay.root.scale.x;
+viewer.setSolarPathScale(25);
+assert.equal(overlay.root.scale.x, fullScale / 4, 'Solar band size is adjustable independently of the model');
+assert.deepEqual(overlay.root.position, originalPosition, 'Sizing preserves the band center');
+viewer.setSolarSettings({ ...pathSettings, minutes: 800 });
+assert.equal(overlay.root.scale.x, fullScale / 4, 'Time changes preserve the chosen size');
+viewer.setSolarPathScale(NaN);
+viewer.setSolarPathScale(0);
+assert.equal(overlay.root.scale.x, fullScale / 4, 'Invalid sizes are ignored');
 assert.equal(overlay.root.visible, true);
 assert.equal(overlay.root.parent, viewer.scene);
 assert.equal(overlay.marker.visible, true);
