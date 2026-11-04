@@ -574,6 +574,16 @@ assert.deepEqual(viewer.captureState(), beforeIncompatible, 'incompatible scenes
 const { SavedSceneStore, isSavedScene, SCENE_COUNT } = await import(await moduleUrl(resolve(root, 'src/data/savedScenes.ts')));
 const scene = { version: 1, viewer: savedView, areaExclusions: { excludeUncovered: true, excludeParking: false } };
 assert.equal(isSavedScene(scene), true);
+const solarScene = structuredClone(scene);
+solarScene.viewer.solar = {
+  settings: { exposure: 0.8, shadowIntensity: 80, sunIntensity: 120, latitude: -20,
+    longitude: -54, utcOffset: -4, date: '2026-11-04', minutes: 900, northAngle: 30 },
+  pathVisible: true, scale: 25, opacity: 65,
+};
+assert.equal(isSavedScene(solarScene), true, 'Scenes accept the complete solar band state');
+const invalidSolarScene = structuredClone(solarScene);
+invalidSolarScene.viewer.solar.opacity = 101;
+assert.equal(isSavedScene(invalidSolarScene), false, 'Scenes reject invalid solar opacity');
 const invalidMultiple = structuredClone(scene);
 invalidMultiple.viewer.selectedObjects = [{ id: null, index: -1 }];
 assert.equal(isSavedScene(invalidMultiple), false, 'Invalid saved multiple selections are rejected');
