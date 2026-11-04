@@ -226,8 +226,9 @@ elevação e as áreas têm duas casas decimais; áreas incluem a unidade m².
 Para validar esses formatos, execute `node scripts/test-indicators.mjs` em
 `projects3d/frontend`.
 
-No Estudo de massa, **Imprimir** acima da barra de cenas exporta somente o modelo
-3D para PNG, na câmera e nos filtros atuais. O fundo transparente vem ativado;
+No Estudo de massa, **Imprimir** acima da barra de cenas exporta a vista 3D
+para PNG, incluindo mapa de exposição e faixa solar quando visíveis, na câmera
+e nos filtros atuais. O fundo transparente vem ativado;
 desative-o para incluir a cor de fundo da vista. As opções de 4K, 6K e 8K indicam
 o limite do lado maior, preservando a proporção e respeitando os limites da GPU
 e de memória. A renderização usa um canvas separado, sem redimensionar a tela ou
@@ -299,8 +300,12 @@ fica oculto ao sair da aba. Detalhes: [docs/solar-path-validation.md](docs/solar
 
 Em **Estudo solar → Exposição anual → Calcular mapa anual**, estime as horas
 de sol direto ao longo do ano da data selecionada, com sombras dos objetos
-opacos visíveis. O mapa é exibido por 1.500 pontos coloridos nas superfícies,
-com legenda, progresso e cancelamento. Usa dias representativos de cada mês,
+opacos visíveis. O mapa é exibido como um gradiente contínuo nas superfícies,
+com legenda, progresso e cancelamento. Ao ocultá-lo, as cores originais voltam.
+O mapa visível pode ser guardado em uma cena; sua abertura recalcula o resultado
+com os parâmetros salvos, mantendo a aba atual. Aguarde o cálculo antes de
+salvar a cena ou gerar PNG.
+Usa dias representativos de cada mês,
 sem dados meteorológicos. Métodos, limites e testes:
 [docs/annual-exposure-validation.md](docs/annual-exposure-validation.md).
 

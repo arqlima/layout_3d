@@ -37,6 +37,7 @@ export interface AppElements {
   onAnnualExposureCalculate(callback: (progress: (percent: number) => void) => Promise<ExposureResult>): void;
   onAnnualExposureVisibilityChange(callback: (visible: boolean) => void): void;
   invalidateAnnualExposure(): void;
+  restoreAnnualExposure(): Promise<void>;
   onBackgroundChange(callback: (color: string) => void): void;
   onSectionLineSettingsChange(callback: (settings: SectionLineSettings) => void): void;
   setBrand(name: string, markUrl: string): void;
@@ -306,6 +307,7 @@ export function createApp(mount: HTMLElement): AppElements {
     onAnnualExposureCalculate(callback) { solarPanel.onExposureCalculate(callback); },
     onAnnualExposureVisibilityChange(callback) { onAnnualExposureVisibility = callback; },
     invalidateAnnualExposure() { solarPanel.invalidateExposure(); },
+    restoreAnnualExposure() { return solarPanel.restoreExposure(); },
     setBrand(name, markUrl) {
       brandName.textContent = name;
       brand.setAttribute('aria-label', name);

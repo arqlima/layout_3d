@@ -48,20 +48,14 @@ function obstructed(ray: THREE.Ray, tree: Node, hit: THREE.Vector3): boolean {
   return obstructed(ray, tree.left!, hit) || obstructed(ray, tree.right!, hit);
 }
 
-function fraction(index: number, base: number): number {
-  let result = 0, factor = 1 / base;
-  while (index > 0) { result += (index % base) * factor; index = Math.floor(index / base); factor /= base; }
-  return result;
-}
-
 const pause = () => new Promise<void>(resolve => setTimeout(resolve, 0));
 
-/** Point-sampled annual direct sunlight; never modifies source meshes/materials. */
+/** Vertex-sampled sunlight interpolated only inside each surface triangle. */
 export class AnnualExposure {
   readonly root = new THREE.Group();
 
   async calculate(sources: ExposureSource[], settings: SolarSettings,
-    signal: AbortSignal, progress: (percent: number) => void, pointCount = 1500): Promise<ExposureResult> {
+    signal: AbortSignal, progress: (percent: number) => void, targetSamples = 1500): Promise<ExposureResult> {
     this.clear();
     const samples = annualSunSamples(settings);
     const faces: Surface[] = [];
@@ -103,47 +97,90 @@ export class AnnualExposure {
     signal.throwIfAborted();
     const tree = await buildTree([...faces], signal);
     const epsilon = Math.max(1e-6, tree.bounds.getSize(new THREE.Vector3()).length() * 1e-6);
-    const positions: number[] = [], colors: number[] = [];
+    const positions: number[] = [], values: number[] = [];
     const ray = new THREE.Ray(), hit = new THREE.Vector3();
-    const color = new THREE.Color();
     const maxHours = samples.reduce((sum, sample) => sum + sample.hours, 0);
-    let faceIndex = 0, areaEnd = faces[0].area;
-    for (let index = 0; index < pointCount; index++) {
-      signal.throwIfAborted();
-      const targetArea = totalArea * (index + 0.5) / pointCount;
-      while (targetArea > areaEnd && faceIndex < faces.length - 1) areaEnd += faces[++faceIndex].area;
-      const face = faces[faceIndex];
-      const u = Math.sqrt(fraction(index + 1, 2)), v = fraction(index + 1, 3);
-      const point = face.a.clone().multiplyScalar(1 - u).addScaledVector(face.b, u * (1 - v)).addScaledVector(face.c, u * v);
-      ray.origin.copy(point).addScaledVector(face.normal, epsilon);
+    const spacing = Math.sqrt(totalArea / targetSamples) * 2;
+    const cache = new Map<string, number>();
+    const triangles: Array<{ vertices: THREE.Vector3[]; normal: THREE.Vector3 }> = [];
+    for (const face of faces) {
+      const pending: THREE.Vector3[][] = [[face.a, face.b, face.c]];
+      while (pending.length) {
+        const vertices = pending.pop()!;
+        const lengths = vertices.map((vertex, index) => vertex.distanceToSquared(vertices[(index + 1) % 3]));
+        const edge = lengths.indexOf(Math.max(...lengths));
+        if (lengths[edge] > spacing * spacing) {
+          const a = vertices[edge], b = vertices[(edge + 1) % 3], c = vertices[(edge + 2) % 3];
+          const midpoint = a.clone().add(b).multiplyScalar(.5);
+          pending.push([a, midpoint, c], [midpoint, b, c]);
+        } else triangles.push({ vertices, normal: face.normal });
+        if (triangles.length + pending.length > 250000) throw new Error('Superfícies complexas demais para o gradiente. Simplifique o modelo.');
+      }
+      if (triangles.length % 1000 === 0) { await pause(); signal.throwIfAborted(); }
+    }
+    const valueAt = (point: THREE.Vector3, normal: THREE.Vector3): number => {
+      // Separate normals keep roof/facade corners sharp even at shared positions.
+      const key = [...point.toArray().map(value => Math.round(value / epsilon)),
+        ...normal.toArray().map(value => Math.round(value * 100000))].join(',');
+      const cached = cache.get(key);
+      if (cached !== undefined) return cached;
+      if (cache.size >= 25000) throw new Error('O gradiente exige mais de 25 mil amostras. Simplifique o modelo para calcular.');
+      ray.origin.copy(point).addScaledVector(normal, epsilon);
       let hours = 0;
       for (const sample of samples) {
         ray.direction.set(sample.direction.x, sample.direction.y, sample.direction.z);
-        if (face.normal.dot(ray.direction) > 1e-6 && !obstructed(ray, tree, hit)) hours += sample.hours;
+        if (normal.dot(ray.direction) > 1e-6 && !obstructed(ray, tree, hit)) hours += sample.hours;
       }
-      positions.push(...ray.origin.toArray());
-      color.setHSL((1 - hours / Math.max(1, maxHours)) * (2 / 3), 1, 0.5);
-      colors.push(...color.toArray());
-      if (index % 20 === 0) { progress(5 + Math.round(index / pointCount * 95)); await pause(); }
+      const value = hours / Math.max(1, maxHours);
+      cache.set(key, value);
+      return value;
+    };
+    for (let index = 0; index < triangles.length; index++) {
+      signal.throwIfAborted();
+      const { vertices, normal } = triangles[index];
+      for (const point of vertices) {
+        positions.push(...point.toArray());
+        values.push(valueAt(point, normal));
+      }
+      if (index % 20 === 0) { progress(5 + Math.round(index / triangles.length * 95)); await pause(); }
     }
     signal.throwIfAborted();
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    geometry.setAttribute('exposure', new THREE.Float32BufferAttribute(values, 1));
     const material = new THREE.ShaderMaterial({
-      vertexColors: true, depthWrite: false,
-      vertexShader: 'varying vec3 exposureColor; void main() { exposureColor = color; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); gl_PointSize = 7.0; }',
-      fragmentShader: 'varying vec3 exposureColor; void main() { if (distance(gl_PointCoord, vec2(0.5)) > 0.5) discard; gl_FragColor = vec4(exposureColor, 1.0);\n#include <colorspace_fragment>\n}',
+      side: THREE.DoubleSide, depthWrite: false,
+      polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2,
+      vertexShader: `attribute float exposure;
+        varying float solarExposure;
+        void main() {
+          solarExposure = exposure;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }`,
+      fragmentShader: `varying float solarExposure;
+        void main() {
+          float t = clamp(solarExposure, 0.0, 1.0) * 4.0;
+          vec3 color;
+          if (t < 1.0) color = mix(vec3(0.,0.,1.), vec3(0.,1.,1.), t);
+          else if (t < 2.0) color = mix(vec3(0.,1.,1.), vec3(0.,1.,0.), t - 1.0);
+          else if (t < 3.0) color = mix(vec3(0.,1.,0.), vec3(1.,1.,0.), t - 2.0);
+          else color = mix(vec3(1.,1.,0.), vec3(1.,0.,0.), t - 3.0);
+          gl_FragColor = vec4(color, 1.0);
+          #include <colorspace_fragment>
+        }`,
     });
-    this.root.name = 'Exposição solar anual por amostras';
-    this.root.add(new THREE.Points(geometry, material));
+    this.root.name = 'Gradiente de exposição solar anual';
+    this.root.userData.includeInImageExport = true;
+    const overlay = new THREE.Mesh(geometry, material);
+    overlay.renderOrder = 10;
+    this.root.add(overlay);
     progress(100);
-    return { year: settings.date.slice(0, 4), points: pointCount, maxHours, skipped };
+    return { year: settings.date.slice(0, 4), points: cache.size, maxHours, skipped };
   }
 
   clear(): void {
     for (const child of [...this.root.children]) {
-      if (child instanceof THREE.Points) {
+      if (child instanceof THREE.Mesh) {
         child.geometry.dispose();
         const materials = Array.isArray(child.material) ? child.material : [child.material];
         materials.forEach(material => material.dispose());

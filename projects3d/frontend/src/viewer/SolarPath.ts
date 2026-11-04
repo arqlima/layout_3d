@@ -35,6 +35,7 @@ export class SolarPath {
 
   constructor() {
     this.root.name = 'Faixa solar';
+    this.root.userData.includeInImageExport = true;
     this.root.visible = false;
     const horizon = new THREE.BufferGeometry().setFromPoints(Array.from({ length: 129 }, (_, index) => {
       const angle = index / 128 * Math.PI * 2;

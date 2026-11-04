@@ -3,6 +3,7 @@ import type { SolarSceneState } from '../types/scenes';
 import type { ExposureResult } from '../viewer/AnnualExposure';
 
 interface SolarPanel {
+  restoreExposure(): Promise<void>;
   onExposureCalculate(callback: (progress: (percent: number) => void) => Promise<ExposureResult>): void;
   onExposureVisibilityChange(callback: (visible: boolean) => void): void;
   exposureVisible(): boolean;
@@ -40,10 +41,10 @@ export function mountSolarPanel(container: HTMLElement, location?: { latitude: n
         <p>Horas estimadas de sol direto por ano, com sombras entre os objetos opacos visíveis.</p>
         <button id="solar-exposure-calculate" type="button" disabled>Calcular mapa anual</button>
         <button id="solar-exposure-cancel" type="button" hidden>Cancelar</button>
-        <label class="solar-path-toggle"><input id="solar-exposure-map" type="checkbox" disabled /> Mostrar mapa por pontos</label>
+        <label class="solar-path-toggle"><input id="solar-exposure-map" type="checkbox" disabled /> Mostrar mapa em gradiente</label>
         <div id="solar-exposure-legend" hidden><div class="annual-exposure-gradient"></div><div class="annual-exposure-scale"><span>0 h/ano</span><span id="solar-exposure-max"></span></div></div>
         <p id="solar-exposure-status" role="status" aria-live="polite"></p>
-        <small>Amostragem: 12 dias representativos, intervalos de 1 hora e 1.500 pontos nas superfícies. Sem nuvens ou dados meteorológicos; não representa energia em kWh.</small>
+        <small>12 dias representativos, intervalos de 1 hora e amostras nas superfícies. O gradiente interpola os resultados; a suavização não aumenta a precisão. Sem nuvens ou dados meteorológicos.</small>
       </section>
       <label class="solar-path-toggle" for="solar-path"><input id="solar-path" type="checkbox" /> Mostrar faixa solar</label>
       <label class="solar-field solar-path-size" for="solar-path-size"><span>Tamanho da faixa <output id="solar-path-size-value" for="solar-path-size">50%</output></span>
@@ -100,7 +101,7 @@ export function mountSolarPanel(container: HTMLElement, location?: { latitude: n
     invalidateExposure();
     exposureStatus.textContent = 'Cálculo cancelado.';
   });
-  exposureButton.addEventListener('click', async () => {
+  const runExposure = async () => {
     const revision = ++exposureRevision;
     exposureButton.disabled = true;
     exposureCancel.hidden = false;
@@ -112,18 +113,20 @@ export function mountSolarPanel(container: HTMLElement, location?: { latitude: n
       const result = await calculateExposure(percent => {
         if (revision === exposureRevision) exposureStatus.textContent = `Calculando exposição anual: ${percent}%`;
       });
-      if (revision !== exposureRevision) return;
+      if (revision !== exposureRevision) throw new Error('Restauração do mapa interrompida por uma alteração nos parâmetros.');
       exposureToggle.disabled = false;
       exposureToggle.checked = true;
       exposureLegend.hidden = false;
       container.querySelector<HTMLElement>('#solar-exposure-max')!.textContent = `${Math.round(result.maxHours).toLocaleString('pt-BR')} h/ano`;
-      exposureStatus.textContent = `${result.year} · ${result.points.toLocaleString('pt-BR')} pontos · Azul: menos sol; vermelho: mais sol.${result.skipped ? ` ${result.skipped} objeto(s) sem suporte foram ignorados.` : ''}`;
+      exposureStatus.textContent = `${result.year} · ${result.points.toLocaleString('pt-BR')} amostras · Azul: menos sol; vermelho: mais sol.${result.skipped ? ` ${result.skipped} objeto(s) sem suporte foram ignorados.` : ''}`;
     } catch (error) {
       if (revision === exposureRevision) exposureStatus.textContent = error instanceof Error && error.name !== 'AbortError' ? error.message : 'Cálculo cancelado.';
+      throw error;
     } finally {
       if (revision === exposureRevision) { exposureButton.disabled = false; exposureCancel.hidden = true; }
     }
-  });
+  };
+  exposureButton.addEventListener('click', () => runExposure().catch(() => {}));
   pathToggle.addEventListener('change', () => notifyPath(pathToggle.checked));
   const pathSize = container.querySelector<HTMLInputElement>('#solar-path-size')!;
   pathSize.addEventListener('input', () => {
@@ -174,6 +177,7 @@ export function mountSolarPanel(container: HTMLElement, location?: { latitude: n
   }
   updateLabels();
   return {
+    restoreExposure: runExposure,
     onExposureCalculate(callback) { calculateExposure = callback; exposureButton.disabled = false; },
     onExposureVisibilityChange(callback) { notifyExposure = callback; },
     exposureVisible: () => exposureToggle.checked,

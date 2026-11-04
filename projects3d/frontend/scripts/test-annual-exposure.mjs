@@ -21,6 +21,9 @@ assert.equal(progress, 100);
 assert.equal(result.year, '2026');
 assert.ok(result.points > 0);
 assert.ok(exposure.root.children[0] instanceof THREE.Mesh, 'Exposure is a continuous surface mesh instead of points');
+assert.ok(exposure.root.children[0].geometry.getAttribute('position').count > ground.geometry.getAttribute('position').count, 'Large surfaces are subdivided to resolve shadow gradients');
+assert.equal(exposure.root.children[0].material.transparent, false, 'Heatmap fully replaces the original surface colors');
+assert.ok(exposure.root.children[0].renderOrder > ground.renderOrder, 'Heatmap renders after original model materials');
 const sunnyValues = exposure.root.children[0].geometry.getAttribute('exposure');
 for (let index = 0; index < sunnyValues.count; index++) assert.ok(sunnyValues.getX(index) > .99, 'Open upward surfaces receive all sampled sunlight');
 assert.equal(ground.material, material, 'Calculation preserves model materials');
@@ -38,6 +41,19 @@ for (let index = 0; index < points.count; index++) {
   }
 }
 assert.ok(shaded > 0, 'Ground is represented in the area-weighted samples');
+const box = new THREE.Mesh(new THREE.BoxGeometry(10, 10, 10), material);
+await exposure.calculate([input(box)], settings, new AbortController().signal, () => {}, 100);
+const cornerPositions = exposure.root.children[0].geometry.getAttribute('position');
+const cornerValues = exposure.root.children[0].geometry.getAttribute('exposure');
+const corners = new Map();
+for (let index = 0; index < cornerPositions.count; index++) {
+  const point = new THREE.Vector3().fromBufferAttribute(cornerPositions, index);
+  const key = point.toArray().join(',');
+  const list = corners.get(key) ?? [];
+  list.push(cornerValues.getX(index));
+  corners.set(key, list);
+}
+assert.ok([...corners.values()].some(list => Math.max(...list) - Math.min(...list) > .1), 'Roof/facade values stay separate at shared corner positions');
 const cancelled = new AbortController();
 const inProgress = new AbortController();
 await assert.rejects(exposure.calculate([input(ground)], settings, inProgress.signal, percent => {

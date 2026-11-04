@@ -113,13 +113,14 @@ async function start(): Promise<void> {
     updateUsageTotals();
     mountSceneToolbar(ui.sceneToolbar, `layout3d:scenes:v1:${JSON.stringify([projectConfig.objectDataUrl, projectConfig.modelUrl])}`,
       () => ({ version: 1, viewer: viewer.captureState(), areaExclusions: { ...areaExclusions } }),
-      scene => {
+      async scene => {
         viewer.restoreState(scene.viewer);
         selectionMode = scene.viewer.selectionMode;
         areaExclusions = { ...scene.areaExclusions };
         viewer.setAreaExclusions(areaExclusions);
         ui.restoreSceneControls(scene);
         updateUsageTotals();
+        if (scene.viewer.annualExposure) await ui.restoreAnnualExposure();
       },
     );
   } catch (error: unknown) {

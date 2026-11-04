@@ -64,7 +64,8 @@ export async function exportScenePng(
 
     const background = scene.background;
     const fog = scene.fog;
-    const helpers = scene.children.filter(child => child !== content && !(child instanceof THREE.Light));
+    const helpers = scene.children.filter(child => child !== content && !(child instanceof THREE.Light)
+      && child.userData.includeInImageExport !== true);
     const helperVisibility = helpers.map(child => child.visible);
     try {
       if (options.transparent) { scene.background = null; scene.fog = null; }

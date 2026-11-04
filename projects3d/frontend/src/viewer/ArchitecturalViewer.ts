@@ -399,14 +399,17 @@ export class ArchitecturalViewer {
 
   exportImage(options: ImageExportOptions): Promise<ExportedImage> {
     if (!this.content) return Promise.reject(new Error('Carregue o modelo antes de exportar.'));
+    if (this.exposureAbort) return Promise.reject(new Error('Aguarde o cálculo do mapa de exposição terminar antes de exportar.'));
     return exportScenePng(this.scene, this.camera, this.content, this.renderer,
       { width: this.container.clientWidth, height: this.container.clientHeight }, options);
   }
 
   captureState(): ViewerSnapshot {
     if (this.sectionTool?.drawing) throw new Error('Conclua ou cancele o desenho do corte antes de salvar uma cena.');
+    if (this.exposureAbort) throw new Error('Aguarde o cálculo do mapa de exposição terminar antes de salvar a cena.');
     const index = this.selectionEntries.findIndex(entry => entry.object === this.selectedObject);
     return {
+      ...(this.annualExposure?.root.visible && this.exposureKey === this.annualExposureKey() ? { annualExposure: true } : {}),
       ...(this.solarSettings ? { solar: {
         settings: { ...this.solarSettings },
         pathVisible: this.solarPath?.root.visible ?? false,
@@ -444,6 +447,9 @@ export class ArchitecturalViewer {
     if (state.layers.length !== this.layers.length || state.layers.some((layer, index) => layer.name !== this.layers[index].name)) {
       throw new Error('A cena salva pertence a uma versão diferente das layers deste modelo.');
     }
+    this.setAnnualExposureVisible(false);
+    this.exposureKey = '';
+    this.exposureInvalidated?.();
     this.selectionHistory = [];
     this.beforeSectionDrawing = null;
     this.sectionTool?.stopDrawing();

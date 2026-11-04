@@ -8,7 +8,7 @@ export function mountImageExport(
   dialog.className = 'sim-export-dialog image-export-dialog';
   dialog.setAttribute('aria-label', 'Imprimir imagem do modelo 3D');
   dialog.innerHTML = `<h2>Imprimir imagem 3D</h2>
-    <p>Exporte somente o modelo, sem os menus. A câmera, as layers, as cotas e a seleção atuais serão mantidas.</p>
+    <p>Exporte a vista sem os menus, incluindo o mapa de exposição e a faixa solar quando visíveis. A câmera, as layers, as cotas e a seleção atuais serão mantidas.</p>
     <label>Resolução <select class="image-export-resolution"><option value="4096">4K · até 4.096 px</option><option value="6144">6K · até 6.144 px</option><option value="8192">8K · até 8.192 px</option></select></label>
     <label class="hide-unchecked"><input class="image-export-transparent" type="checkbox" role="switch" checked /> Fundo transparente</label>
     <p class="sim-help">PNG em alta resolução, na proporção da vista. O tamanho final respeita a capacidade do navegador.</p>

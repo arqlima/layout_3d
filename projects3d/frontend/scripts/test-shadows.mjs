@@ -146,7 +146,7 @@ let exposureInvalidated = false;
 viewer.onAnnualExposureInvalidated(() => { exposureInvalidated = true; });
 viewer.setSolarSettings(pathSettings);
 const annualResult = await viewer.calculateAnnualExposure(() => {});
-assert.equal(annualResult.points, 1500);
+assert.ok(annualResult.points > 0);
 assert.equal(viewer.annualExposure.root.visible, true, 'Annual calculation displays the point map');
 viewer.setAnnualExposureVisible(false);
 assert.equal(viewer.annualExposure.root.visible, false);

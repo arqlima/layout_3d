@@ -2,7 +2,7 @@ import type { SavedScene } from '../types/scenes';
 import { SavedSceneStore, SCENE_COUNT } from '../data/savedScenes';
 
 export function mountSceneToolbar(
-  host: HTMLElement, key: string, capture: () => SavedScene, restore: (scene: SavedScene) => void,
+  host: HTMLElement, key: string, capture: () => SavedScene, restore: (scene: SavedScene) => void | Promise<void>,
 ): void {
   let storage: Storage | null = null;
   try { storage = window.localStorage; } catch { /* O navegador pode bloquear a persistência. */ }
@@ -11,6 +11,7 @@ export function mountSceneToolbar(
   const update = host.querySelector<HTMLButtonElement>('#update-scene')!;
   const status = host.querySelector<HTMLElement>('.scene-feedback')!;
   const buttons: HTMLButtonElement[] = [];
+  let busy = false;
   slots.replaceChildren();
   const render = () => {
     buttons.forEach((button, index) => {
@@ -20,8 +21,9 @@ export function mountSceneToolbar(
       button.setAttribute('aria-label', label);
       button.setAttribute('aria-pressed', String(store.active === index));
       button.classList.toggle('is-saved', saved);
+      button.disabled = busy;
     });
-    update.disabled = store.active === null;
+    update.disabled = busy || store.active === null;
     const label = store.active === null ? 'Selecione uma cena para atualizar' : `Atualizar cena ${store.active + 1} com a visualização atual`;
     update.title = label;
     update.setAttribute('aria-label', label);
@@ -34,21 +36,27 @@ export function mountSceneToolbar(
     button.type = 'button';
     button.className = 'scene-shortcut scene-slot';
     button.textContent = String(index + 1);
-    button.onclick = () => {
+    button.onclick = async () => {
+      if (busy) return;
+      busy = true;
+      render();
       try {
         const scene = store.get(index);
         if (scene) {
-          restore(scene);
+          store.active = null;
+          feedback(scene.viewer.annualExposure ? `Abrindo cena ${index + 1}: recalculando mapa de exposição…` : `Abrindo cena ${index + 1}…`);
+          await restore(scene);
           store.active = index;
           feedback(`Cena ${index + 1} aberta`);
         } else feedback(`Cena ${index + 1} salva`, store.save(index, capture()));
-        render();
       } catch (error) { feedback(error instanceof Error ? error.message : 'Não foi possível abrir a cena.'); }
+      finally { busy = false; render(); }
     };
     slots.append(button);
     buttons.push(button);
   }
   update.onclick = () => {
+    if (busy) return;
     try {
       const persistent = store.update(capture());
       feedback(`Cena ${store.active! + 1} atualizada`, persistent);

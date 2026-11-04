@@ -12,6 +12,8 @@ export function isSavedScene(value: unknown): value is SavedScene {
   const camera = state?.camera;
   const vector = (value: unknown) => Array.isArray(value) && value.length === 3 && value.every(Number.isFinite);
   if (scene.version !== 1 || !state || !camera || !scene.areaExclusions) return false;
+  if (state.annualExposure !== undefined && typeof state.annualExposure !== 'boolean') return false;
+  if (state.annualExposure && (!state.solar || state.section)) return false;
   if (state.section != null && !isSectionState(state.section)) return false;
   if (state.sectionLines !== undefined && !isSectionLineSettings(state.sectionLines)) return false;
   if (state.solar !== undefined) {

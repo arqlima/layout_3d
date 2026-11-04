@@ -99,4 +99,8 @@ assert.match(manual.elements['#solar-exposure-status'].textContent, /2026/);
 manual.panel.invalidateExposure();
 assert.equal(manual.panel.exposureVisible(), false, 'Changed parameters invalidate displayed results');
 assert.equal(manual.elements['#solar-exposure-map'].disabled, true);
+await manual.panel.restoreExposure();
+assert.equal(manual.panel.exposureVisible(), true, 'Scene restoration recalculates the map and synchronizes its controls');
+manual.panel.onExposureCalculate(async () => { throw new Error('map failure'); });
+await assert.rejects(manual.panel.restoreExposure(), /map failure/, 'Restore failures reach the scene toolbar');
 console.log('Location panel tests passed: KMZ lock, manual editing, project coordinates and legacy fallback.');

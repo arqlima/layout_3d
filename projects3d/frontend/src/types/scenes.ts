@@ -12,6 +12,7 @@ export interface SolarSceneState {
 }
 
 export interface ViewerSnapshot {
+  annualExposure?: boolean;
   solar?: SolarSceneState;
   section?: SectionState | null;
   sectionLines?: SectionLineSettings;
