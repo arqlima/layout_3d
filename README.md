@@ -201,6 +201,12 @@ O código editável está em `projects3d/frontend/src/`: `viewer/` concentra Thr
 `novo_input/` permanece como referência original; seus arquivos privados não são
 copiados para os estáticos.
 
+Na **engrenagem de configurações**, **Sobrepor cor** aplica uma cor uniforme
+às superfícies fora de REP e **Sobrescrever arestas** permite escolher outra
+cor para suas linhas e arestas. Cada opção tem seletor e campos R/G/B próprios.
+As caixas e cores são salvas nas cenas; ao desativar, os materiais originais
+voltam. Detalhes e testes: [docs/model-appearance-validation.md](docs/model-appearance-validation.md).
+
 Com Node.js 22.12+ e pnpm no PATH:
 
 ```powershell

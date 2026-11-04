@@ -44,6 +44,7 @@ async function start(): Promise<void> {
   viewer.mountSections(ui.viewport.parentElement!, document.querySelector<HTMLButtonElement>('#create-section')!);
   ui.onBackgroundChange(color => viewer.setBackgroundColor(color));
   ui.onSectionLineSettingsChange(settings => viewer.setSectionLineSettings(settings));
+  ui.onModelAppearanceChange(settings => viewer.setModelAppearance(settings));
   ui.onSolarSettingsChange(settings => viewer.setSolarSettings(settings));
   ui.onSolarVisibilityChange(visible => viewer.setSelectionEnabled(!visible));
   ui.onSolarPathVisibilityChange(visible => viewer.setSolarPathVisible(visible));

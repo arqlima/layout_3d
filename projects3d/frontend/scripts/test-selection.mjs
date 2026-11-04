@@ -59,12 +59,26 @@ Object.assign(viewer, {
 viewer.readLayers(model);
 viewer.prepareSelection(model);
 viewer.applyVisibilityFilters();
+const contextLayerName = viewer.layers[2].name;
+viewer.layers[2].name = 'REP-contexto-COM';
+const repSurfaceMaterial = meshes[2].material;
+const repEdgeMaterial = meshes[2].children[0].material;
 viewer.setModelAppearance({ overrideColor: true, color: '#abcdef', overrideEdges: true, edgeColor: '#123456' });
 assert.equal(meshes[0].material.color.getHexString(), 'abcdef', 'Color override applies to non-REP geometry');
 assert.equal(meshes[0].children[0].material.color.getHexString(), '123456', 'Edge override uses its independent color');
 assert.equal(viewer.selectionEntries.find(entry => entry.object === meshes[0]).original.color.getHexString(), 'ffffff', 'Overrides preserve original materials');
+assert.equal(meshes[2].material, repSurfaceMaterial, 'REP surface preserves its original material');
+assert.equal(meshes[2].children[0].material, repEdgeMaterial, 'REP edges preserve their original material');
 viewer.setModelAppearance({ overrideColor: false, color: '#abcdef', overrideEdges: false, edgeColor: '#123456' });
+viewer.layers[2].name = contextLayerName;
 assert.equal(meshes[0].material, viewer.selectionEntries.find(entry => entry.object === meshes[0]).original, 'Disabling restores original material identity');
+const inheritedRepName = meshes[2].name;
+meshes[2].name = 'REP';
+viewer.setModelAppearance({ overrideColor: true, color: '#aabbcc', overrideEdges: true, edgeColor: '#112233' });
+assert.equal(meshes[2].material, repSurfaceMaterial, 'Standalone REP geometry keeps its original appearance');
+assert.equal(meshes[2].children[0].material, repEdgeMaterial, 'REP status is inherited by child edges');
+meshes[2].name = inheritedRepName;
+viewer.setModelAppearance({ overrideColor: false, color: '#ffffff', overrideEdges: false, edgeColor: '#263238' });
 viewer.select(meshes[0]);
 viewer.select(meshes[1], 'add');
 assert.deepEqual([...viewer.getMarkedObjects().keys()].sort(), ['object-0', 'object-1'], 'Shift adds across layers');
@@ -526,6 +540,16 @@ viewer.select(meshes[0]);
 viewer.setElevationRange(0, 15);
 viewer.setHideUnchecked(true);
 const savedView = viewer.captureState();
+const overriddenView = structuredClone(savedView);
+overriddenView.modelAppearance = { overrideColor: true, color: '#eeeeee', overrideEdges: true, edgeColor: '#222222' };
+viewer.restoreState(overriddenView);
+assert.deepEqual(viewer.captureState().modelAppearance, overriddenView.modelAppearance, 'Scenes restore color and edge settings independently');
+assert.equal(meshes[0].material.color.getHexString(), 'eeeeee');
+assert.equal(meshes[0].children[0].material.color.getHexString(), '222222');
+const legacyAppearance = structuredClone(savedView);
+delete legacyAppearance.modelAppearance;
+viewer.restoreState(legacyAppearance);
+assert.equal(viewer.captureState().modelAppearance.overrideColor, false, 'Legacy scenes restore original colors');
 const savedTotals = [...viewer.getMarkedObjects().keys()];
 viewer.setSelectionMode('name');
 viewer.setAllLayersVisible(false);
@@ -580,6 +604,11 @@ assert.deepEqual(viewer.captureState(), beforeIncompatible, 'incompatible scenes
 const { SavedSceneStore, isSavedScene, SCENE_COUNT } = await import(await moduleUrl(resolve(root, 'src/data/savedScenes.ts')));
 const scene = { version: 1, viewer: savedView, areaExclusions: { excludeUncovered: true, excludeParking: false } };
 assert.equal(isSavedScene(scene), true);
+const appearanceScene = structuredClone(scene);
+appearanceScene.viewer.modelAppearance = structuredClone(overriddenView.modelAppearance);
+assert.equal(isSavedScene(appearanceScene), true);
+appearanceScene.viewer.modelAppearance.color = '#invalid';
+assert.equal(isSavedScene(appearanceScene), false, 'Malformed saved override colors are rejected');
 const solarScene = structuredClone(scene);
 solarScene.viewer.solar = {
   settings: { exposure: 0.8, shadowIntensity: 80, sunIntensity: 120, latitude: -20,
@@ -596,6 +625,11 @@ assert.equal(isSavedScene(invalidMultiple), false, 'Invalid saved multiple selec
 const persisted = new Map();
 const storage = { getItem: key => persisted.get(key) ?? null, setItem: (key, value) => persisted.set(key, value) };
 const scenes = new SavedSceneStore(storage, 'project-A');
+const appearancePersistence = new SavedSceneStore(storage, 'appearance-project');
+appearanceScene.viewer.modelAppearance = structuredClone(overriddenView.modelAppearance);
+appearancePersistence.save(0, appearanceScene);
+assert.deepEqual(new SavedSceneStore(storage, 'appearance-project').get(0).viewer.modelAppearance,
+  overriddenView.modelAppearance, 'Surface and edge overrides survive reopening browser storage');
 assert.equal(scenes.active, null);
 assert.throws(() => scenes.update(scene));
 assert.equal(scenes.save(0, scene), true);

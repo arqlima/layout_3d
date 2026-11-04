@@ -2,6 +2,7 @@ import type { SavedScene } from '../types/scenes';
 import { USAGE_CODES } from '../types/model';
 import { isSectionState, isSectionLineSettings } from '../types/section';
 import { solarDirection } from './solar';
+import { isModelAppearanceSettings } from '../types/appearance';
 
 export const SCENE_COUNT = 10;
 
@@ -12,6 +13,7 @@ export function isSavedScene(value: unknown): value is SavedScene {
   const camera = state?.camera;
   const vector = (value: unknown) => Array.isArray(value) && value.length === 3 && value.every(Number.isFinite);
   if (scene.version !== 1 || !state || !camera || !scene.areaExclusions) return false;
+  if (state.modelAppearance !== undefined && !isModelAppearanceSettings(state.modelAppearance)) return false;
   if (state.annualExposure !== undefined && typeof state.annualExposure !== 'boolean') return false;
   if (state.annualExposure && (!state.solar || state.section)) return false;
   if (state.section != null && !isSectionState(state.section)) return false;

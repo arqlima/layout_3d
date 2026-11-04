@@ -4,8 +4,11 @@ import { stripTypeScriptTypes } from 'node:module';
 
 const settingsSource = stripTypeScriptTypes(await readFile(new URL('../src/types/section.ts', import.meta.url), 'utf8'));
 const settingsUrl = `data:text/javascript;base64,${Buffer.from(settingsSource).toString('base64')}`;
+const appearanceSource = stripTypeScriptTypes(await readFile(new URL('../src/types/appearance.ts', import.meta.url), 'utf8'));
+const appearanceUrl = `data:text/javascript;base64,${Buffer.from(appearanceSource).toString('base64')}`;
 const source = stripTypeScriptTypes(await readFile(new URL('../src/ui/PresentationSettings.ts', import.meta.url), 'utf8'))
-  .replace("from '../types/section'", `from '${settingsUrl}'`);
+  .replace("from '../types/section'", `from '${settingsUrl}'`)
+  .replace("from '../types/appearance'", `from '${appearanceUrl}'`);
 const { mountPresentationSettings } = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
 class Element {
   handlers = new Map(); style = {}; value = '';
@@ -17,18 +20,42 @@ class Element {
 }
 const button = new Element(), panel = new Element(), theme = new Element(), color = new Element();
 const lineVisible = new Element(), lineColor = new Element(), lineWidth = new Element();
+const modelToggle = new Element(), edgeToggle = new Element(), modelColor = new Element(), edgeColor = new Element();
+modelToggle.checked = false; edgeToggle.checked = false; modelColor.value = '#ffffff'; edgeColor.value = '#263238';
+const modelRgb = ['255', '255', '255'].map(value => Object.assign(new Element(), { value }));
+const edgeRgb = ['38', '50', '56'].map(value => Object.assign(new Element(), { value }));
 lineVisible.checked = true; lineColor.value = '#3f4a4d'; lineWidth.value = '1';
 theme.value = 'light'; color.value = '#a3a3a3';
 const channels = ['163', '163', '163'].map(value => Object.assign(new Element(), { value }));
 const host = {
   querySelector: selector => ({ '.presentation-settings-toggle': button, '#presentation-settings': panel,
     '#presentation-theme': theme, '#presentation-background': color,
-    '#section-lines-visible': lineVisible, '#section-lines-color': lineColor, '#section-lines-width': lineWidth })[selector],
-  querySelectorAll: () => channels,
+    '#section-lines-visible': lineVisible, '#section-lines-color': lineColor, '#section-lines-width': lineWidth,
+    '#model-override-color': modelToggle, '#model-override-edges': edgeToggle, '#model-color': modelColor, '#model-edge-color': edgeColor })[selector],
+  querySelectorAll: selector => selector === '[data-model-color-channel]' ? modelRgb : selector === '[data-model-edge-channel]' ? edgeRgb : channels,
 };
 globalThis.document = { documentElement: { dataset: {} } };
 globalThis.window = { innerWidth: 900, innerHeight: 700 };
 const control = mountPresentationSettings(host);
+const appearanceChanges = [];
+control.onModelAppearanceChange(value => appearanceChanges.push(value));
+modelToggle.checked = true; modelToggle.fire('change');
+modelColor.value = '#aabbcc'; modelColor.fire('input');
+assert.deepEqual(modelRgb.map(input => input.value), ['170', '187', '204']);
+edgeToggle.checked = true; edgeToggle.fire('change');
+edgeRgb[0].value = '255'; edgeRgb[0].fire('input');
+assert.equal(edgeColor.value, '#ff3238');
+assert.deepEqual(appearanceChanges.at(-1), { overrideColor: true, color: '#aabbcc', overrideEdges: true, edgeColor: '#ff3238' });
+const appearanceCount = appearanceChanges.length;
+for (const invalid of ['', '256', '-1', '1.5']) {
+  modelRgb[0].value = invalid; modelRgb[0].fire('input');
+  assert.equal(appearanceChanges.length, appearanceCount);
+}
+control.setModelAppearance({ overrideColor: false, color: '#010203', overrideEdges: true, edgeColor: '#040506' });
+assert.deepEqual(modelRgb.map(input => input.value), ['1', '2', '3']);
+assert.deepEqual(edgeRgb.map(input => input.value), ['4', '5', '6']);
+assert.equal(modelToggle.checked, false);
+assert.equal(appearanceChanges.length, appearanceCount, 'Restoring a scene updates controls without feedback loops');
 const lineChanges = [];
 control.onSectionLineSettingsChange(value => lineChanges.push(value));
 assert.deepEqual(lineChanges, [{ visible: true, color: '#3f4a4d', width: 1 }]);

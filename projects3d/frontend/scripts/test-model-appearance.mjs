@@ -1,0 +1,42 @@
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import { stripTypeScriptTypes } from 'node:module';
+import * as THREE from 'three';
+
+const settingsCode = stripTypeScriptTypes(await readFile(new URL('../src/types/appearance.ts', import.meta.url), 'utf8'));
+const settingsUrl = `data:text/javascript;base64,${Buffer.from(settingsCode).toString('base64')}`;
+const source = stripTypeScriptTypes(await readFile(new URL('../src/viewer/ModelAppearance.ts', import.meta.url), 'utf8'))
+  .replace("'three'", JSON.stringify(import.meta.resolve('three'))).replace("'../types/appearance'", JSON.stringify(settingsUrl));
+const { ModelAppearance } = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
+const { isModelAppearanceSettings } = await import(settingsUrl);
+const settings = { overrideColor: true, color: '#abcdef', overrideEdges: false, edgeColor: '#123456' };
+const texture = new THREE.Texture();
+const original = new THREE.MeshStandardMaterial({ color: '#008800', map: texture,
+  emissive: '#550000', vertexColors: true, opacity: .4, transparent: true, depthWrite: false });
+const edges = new THREE.LineBasicMaterial({ color: '#666666', opacity: .75, transparent: true });
+const appearance = new ModelAppearance();
+appearance.configure(settings);
+const override = appearance.apply(original, false);
+assert.equal(override.color.getHexString(), 'abcdef');
+assert.equal(override.map, null);
+assert.equal(override.vertexColors, false);
+assert.equal(override.emissive.getHexString(), '000000');
+assert.equal(override.opacity, .4);
+assert.equal(override.transparent, true);
+assert.equal(override.depthWrite, false);
+assert.equal(original.color.getHexString(), '008800');
+assert.equal(original.map, texture);
+assert.equal(appearance.apply(original, false), override, 'Repeated application reuses the material copy');
+assert.equal(appearance.apply(edges, true), edges, 'Surface override leaves edges independent');
+let disposed = false;
+override.addEventListener('dispose', () => { disposed = true; });
+appearance.configure({ ...settings, overrideColor: false, overrideEdges: true });
+assert.equal(disposed, true, 'Changing settings releases cached material copies');
+assert.equal(appearance.apply(original, false), original);
+assert.equal(appearance.apply(edges, true).color.getHexString(), '123456');
+assert.equal(edges.color.getHexString(), '666666');
+assert.equal(isModelAppearanceSettings(settings), true);
+assert.equal(isModelAppearanceSettings({ ...settings, color: 'red' }), false);
+assert.equal(isModelAppearanceSettings({ ...settings, overrideEdges: 'true' }), false);
+appearance.clear();
+console.log('Model appearance tests passed: independent colors/edges, textures, vertex colors, emissive, transparency, source preservation, caching, cleanup and validation.');

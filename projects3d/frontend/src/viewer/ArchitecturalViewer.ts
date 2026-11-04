@@ -15,6 +15,8 @@ import { createSectionOutline, applySectionOutlineSettings } from './sectionLine
 import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
 import { SolarPath } from './SolarPath';
 import { AnnualExposure, type ExposureResult } from './AnnualExposure';
+import { ModelAppearance } from './ModelAppearance';
+import { DEFAULT_MODEL_APPEARANCE, isModelAppearanceSettings, type ModelAppearanceSettings } from '../types/appearance';
 
 type Renderable = THREE.Mesh | THREE.Line | THREE.Points;
 type ObjectMaterial = THREE.Material | THREE.Material[];
@@ -63,6 +65,7 @@ export class ArchitecturalViewer {
   private exposureAbort: AbortController | null = null;
   private exposureKey = '';
   private exposureInvalidated = () => {};
+  private modelAppearance: ModelAppearance | null = null;
 
   private readonly solarMaterials = new Map<THREE.Material, THREE.MeshStandardMaterial>();
   private readonly scene = new THREE.Scene();
@@ -251,6 +254,23 @@ export class ArchitecturalViewer {
     this.applyAppearance();
   }
 
+  setModelAppearance(settings: ModelAppearanceSettings): void {
+    if (!isModelAppearanceSettings(settings)) return;
+    this.modelAppearance ??= new ModelAppearance();
+    this.modelAppearance.configure(settings);
+    this.applyAppearance();
+  }
+
+  private isRepEntry(entry: SelectionEntry): boolean {
+    if (entry.use === 'REP' || (entry.layerIndex !== null && isRepLayer(this.layers[entry.layerIndex].name))) return true;
+    let object: THREE.Object3D | null = entry.object;
+    while (object && object !== this.content) {
+      if (isRepLayer(object.name)) return true;
+      object = object.parent;
+    }
+    return false;
+  }
+
   setSolarPathVisible(visible: boolean): void {
     if (!this.solarPath && visible) {
       this.solarPath = new SolarPath();
@@ -414,6 +434,7 @@ export class ArchitecturalViewer {
     if (this.exposureAbort) throw new Error('Aguarde o cálculo do mapa de exposição terminar antes de salvar a cena.');
     const index = this.selectionEntries.findIndex(entry => entry.object === this.selectedObject);
     return {
+      modelAppearance: { ...(this.modelAppearance?.settings ?? DEFAULT_MODEL_APPEARANCE) },
       ...(this.annualExposure?.root.visible && this.exposureKey === this.annualExposureKey() ? { annualExposure: true } : {}),
       ...(this.solarSettings ? { solar: {
         settings: { ...this.solarSettings },
@@ -458,6 +479,7 @@ export class ArchitecturalViewer {
     this.selectionHistory = [];
     this.beforeSectionDrawing = null;
     this.sectionTool?.stopDrawing();
+    this.setModelAppearance(state.modelAppearance ?? DEFAULT_MODEL_APPEARANCE);
     this.setSolarPathVisible(false);
     if (state.solar) {
       this.setSolarPathScale(state.solar.scale);
@@ -1020,6 +1042,7 @@ export class ArchitecturalViewer {
   }
 
   private clearSelectionEntries(): void {
+    this.modelAppearance?.clear();
     this.selectionHistory = [];
     this.selectedObject = null;
     this.selectedObjects = null;
@@ -1152,6 +1175,12 @@ export class ArchitecturalViewer {
         entry.object.material = Array.isArray(entry.object.material)
           ? entry.object.material.map(material => this.solarMaterial(material))
           : this.solarMaterial(entry.object.material);
+      }
+      if (this.modelAppearance && !this.isRepEntry(entry)) {
+        const edge = entry.object instanceof THREE.Line;
+        entry.object.material = Array.isArray(entry.object.material)
+          ? entry.object.material.map(material => this.modelAppearance!.apply(material, edge))
+          : this.modelAppearance.apply(entry.object.material, edge);
       }
     }
     this.syncSectionAppearance();

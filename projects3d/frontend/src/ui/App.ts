@@ -18,6 +18,7 @@ import type { ExposureResult } from '../viewer/AnnualExposure';
 import { mountNorthControl } from './NorthControl';
 import { mountPresentationSettings } from './PresentationSettings';
 import { DEFAULT_SECTION_LINES, type SectionLineSettings } from '../types/section';
+import { DEFAULT_MODEL_APPEARANCE, type ModelAppearanceSettings } from '../types/appearance';
 
 export interface AppElements {
   viewport: HTMLDivElement;
@@ -40,6 +41,7 @@ export interface AppElements {
   restoreAnnualExposure(): Promise<void>;
   onBackgroundChange(callback: (color: string) => void): void;
   onSectionLineSettingsChange(callback: (settings: SectionLineSettings) => void): void;
+  onModelAppearanceChange(callback: (settings: ModelAppearanceSettings) => void): void;
   setBrand(name: string, markUrl: string): void;
   setSceneInfo(title: string, subtitle: string, status: string): void;
   setSelection(selection: ObjectSelection | null, record?: ObjectRecord): void;
@@ -269,6 +271,7 @@ export function createApp(mount: HTMLElement): AppElements {
     setInitialNorthAngle(angle) { northControl.setInitialAngle(angle); },
     onBackgroundChange(callback) { presentationSettings.onBackgroundChange(callback); },
     onSectionLineSettingsChange(callback) { presentationSettings.onSectionLineSettingsChange(callback); },
+    onModelAppearanceChange(callback) { presentationSettings.onModelAppearanceChange(callback); },
     viewport,
     fitButton,
     homeButton,
@@ -361,6 +364,7 @@ export function createApp(mount: HTMLElement): AppElements {
     updateLayers(layers) { layerPanel?.update(layers); },
     setSelectionTotals(totals) { updateSelectionSummary(totals); },
     restoreSceneControls(scene) {
+      presentationSettings.setModelAppearance(scene.viewer.modelAppearance ?? DEFAULT_MODEL_APPEARANCE);
       solarPanel.restore(scene.viewer.solar ?? {
         settings: solarPanel.settings(), pathVisible: false,
         scale: solarPanel.pathScale(), opacity: solarPanel.pathOpacity(),

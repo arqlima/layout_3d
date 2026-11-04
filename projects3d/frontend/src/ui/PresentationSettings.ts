@@ -1,4 +1,5 @@
 import { DEFAULT_SECTION_LINES, isSectionLineSettings, type SectionLineSettings } from '../types/section';
+import { DEFAULT_MODEL_APPEARANCE, isModelAppearanceSettings, type ModelAppearanceSettings } from '../types/appearance';
 
 export function mountPresentationSettings(host: HTMLElement) {
   host.innerHTML = `
@@ -20,6 +21,16 @@ export function mountPresentationSettings(host: HTMLElement) {
           <label>B<input type="number" min="0" max="255" step="1" value="163" data-channel="2" aria-label="Azul (0 a 255)" /></label>
         </div>
       </fieldset>
+      <fieldset><legend>Cor do modelo · exceto REP</legend>
+        <label class="presentation-line-toggle"><input id="model-override-color" type="checkbox" /> Sobrepor cor</label>
+        <label class="presentation-color">Cor <input id="model-color" type="color" value="#ffffff" aria-label="Cor de sobreposição do modelo" /></label>
+        <div class="presentation-rgb">${['R', 'G', 'B'].map((label, index) => `<label>${label}<input type="number" min="0" max="255" step="1" value="255" data-model-color-channel="${index}" aria-label="${label} da cor do modelo (0 a 255)" /></label>`).join('')}</div>
+      </fieldset>
+      <fieldset><legend>Arestas · exceto REP</legend>
+        <label class="presentation-line-toggle"><input id="model-override-edges" type="checkbox" /> Sobrescrever arestas</label>
+        <label class="presentation-color">Cor <input id="model-edge-color" type="color" value="#263238" aria-label="Cor de sobreposição das arestas" /></label>
+        <div class="presentation-rgb">${['R', 'G', 'B'].map((label, index) => `<label>${label}<input type="number" min="0" max="255" step="1" value="${[38, 50, 56][index]}" data-model-edge-channel="${index}" aria-label="${label} das arestas (0 a 255)" /></label>`).join('')}</div>
+      </fieldset>
       <fieldset><legend>Linhas de corte</legend>
         <label class="presentation-line-toggle"><input id="section-lines-visible" type="checkbox" checked /> Exibir linhas</label>
         <label class="presentation-color">Cor <input id="section-lines-color" type="color" value="#3f4a4d" aria-label="Cor das linhas de corte" /></label>
@@ -38,6 +49,35 @@ export function mountPresentationSettings(host: HTMLElement) {
   const lineWidth = host.querySelector<HTMLInputElement>('#section-lines-width')!;
   let sectionLines: SectionLineSettings = { ...DEFAULT_SECTION_LINES };
   let notifySectionLines = (_settings: SectionLineSettings) => {};
+  let appearance: ModelAppearanceSettings = { ...DEFAULT_MODEL_APPEARANCE };
+  let notifyAppearance = (_settings: ModelAppearanceSettings) => {};
+  const overrideColor = host.querySelector<HTMLInputElement>('#model-override-color')!;
+  const overrideEdges = host.querySelector<HTMLInputElement>('#model-override-edges')!;
+  const changeAppearance = (change: Partial<ModelAppearanceSettings>) => {
+    const next = { ...appearance, ...change };
+    if (!isModelAppearanceSettings(next)) return;
+    appearance = next;
+    notifyAppearance({ ...next });
+  };
+  const bindRgb = (id: string, channelSelector: string, update: (color: string) => void) => {
+    const picker = host.querySelector<HTMLInputElement>(id)!;
+    const rgb = [...host.querySelectorAll<HTMLInputElement>(channelSelector)];
+    const sync = (next: string) => {
+      picker.value = next;
+      rgb.forEach((input, index) => { input.value = String(parseInt(next.slice(1 + index * 2, 3 + index * 2), 16)); });
+    };
+    picker.addEventListener('input', () => { sync(picker.value); update(picker.value); });
+    for (const input of rgb) input.addEventListener('input', () => {
+      if (!rgb.every(channel => channel.checkValidity() && Number.isInteger(channel.valueAsNumber))) return;
+      const next = `#${rgb.map(channel => channel.valueAsNumber.toString(16).padStart(2, '0')).join('')}`;
+      sync(next); update(next);
+    });
+    return sync;
+  };
+  const syncModelColor = bindRgb('#model-color', '[data-model-color-channel]', color => changeAppearance({ color }));
+  const syncEdgeColor = bindRgb('#model-edge-color', '[data-model-edge-channel]', edgeColor => changeAppearance({ edgeColor }));
+  overrideColor.addEventListener('change', () => changeAppearance({ overrideColor: overrideColor.checked }));
+  overrideEdges.addEventListener('change', () => changeAppearance({ overrideEdges: overrideEdges.checked }));
   let background = color.value;
   let notify = (_color: string) => {};
   document.documentElement.dataset.presentationTheme = theme.value;
@@ -73,6 +113,17 @@ export function mountPresentationSettings(host: HTMLElement) {
   lineColor.addEventListener('input', updateSectionLines);
   lineWidth.addEventListener('input', updateSectionLines);
   return {
+    onModelAppearanceChange(callback: (settings: ModelAppearanceSettings) => void) {
+      notifyAppearance = callback; notifyAppearance({ ...appearance });
+    },
+    setModelAppearance(settings: ModelAppearanceSettings) {
+      if (!isModelAppearanceSettings(settings)) return;
+      appearance = { ...settings };
+      overrideColor.checked = settings.overrideColor;
+      overrideEdges.checked = settings.overrideEdges;
+      syncModelColor(settings.color);
+      syncEdgeColor(settings.edgeColor);
+    },
     onBackgroundChange(callback: (color: string) => void) { notify = callback; notify(background); },
     onSectionLineSettingsChange(callback: (settings: SectionLineSettings) => void) {
       notifySectionLines = callback; notifySectionLines({ ...sectionLines });

@@ -3,6 +3,7 @@ import type { AreaExclusions, UsageCode } from './model';
 import type { ProjectionMode } from './view';
 import type { SectionState, SectionLineSettings } from './section';
 import type { SolarSettings } from '../data/solar';
+import type { ModelAppearanceSettings } from './appearance';
 
 export interface SolarSceneState {
   settings: SolarSettings;
@@ -12,6 +13,7 @@ export interface SolarSceneState {
 }
 
 export interface ViewerSnapshot {
+  modelAppearance?: ModelAppearanceSettings;
   annualExposure?: boolean;
   solar?: SolarSceneState;
   section?: SectionState | null;
