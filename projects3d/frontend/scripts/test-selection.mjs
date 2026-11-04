@@ -76,6 +76,38 @@ viewer.select(meshes[0]);
 assert.deepEqual([...viewer.getMarkedObjects().keys()], ['object-0'], 'Plain click replaces a multiple selection even on its current object');
 viewer.clearSelection();
 viewer.setAllLayersVisible(true);
+viewer.selectionHistory = [];
+viewer.select(meshes[0]);
+viewer.select(meshes[1], 'add');
+const beforeAccident = [...viewer.getMarkedObjects().keys()].sort();
+const layersBeforeAccident = viewer.getLayers().map(layer => layer.visible);
+clickUndoSetup();
+function clickUndoSetup() {
+  viewer.select(meshes[2]);
+  assert.equal(viewer.undoSelection(), true, 'Undo restores the selection before an accidental click');
+  assert.deepEqual([...viewer.getMarkedObjects().keys()].sort(), beforeAccident);
+  assert.deepEqual(viewer.getLayers().map(layer => layer.visible), layersBeforeAccident);
+  viewer.select(meshes[1], 'add');
+  viewer.undoSelection();
+  assert.deepEqual([...viewer.getMarkedObjects().keys()], ['object-0'], 'Unchanged selections do not consume undo steps');
+  viewer.select(meshes[1], 'add');
+  viewer.clearSelection();
+  viewer.undoSelection();
+  assert.deepEqual([...viewer.getMarkedObjects().keys()].sort(), beforeAccident, 'Undo recovers a cleared selection');
+  let prevented = false;
+  const key = { key: 'z', ctrlKey: true, preventDefault() { prevented = true; } };
+  viewer.handleKeyDown({ ...key, target: { closest: () => ({}) } });
+  assert.equal(prevented, false, 'Editing retains native undo');
+  viewer.handleKeyDown({ ...key, target: null, shiftKey: true });
+  assert.equal(prevented, false, 'Ctrl+Shift+Z is not selection undo');
+  viewer.handleKeyDown({ ...key, target: null });
+  assert.equal(prevented, true, 'Ctrl+Z consumes a successful selection undo');
+  assert.deepEqual([...viewer.getMarkedObjects().keys()], ['object-0']);
+  viewer.setSelectionMode('group');
+  assert.equal(viewer.undoSelection(), false, 'Changing modes resets selection history');
+  viewer.setSelectionMode('name');
+  viewer.setAllLayersVisible(true);
+}
 let pointerHit = meshes[0];
 Object.assign(viewer, {
   selectionEnabled: true, pointer: new THREE.Vector2(),
