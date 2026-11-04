@@ -41,6 +41,15 @@ for (let index = 0; index < points.count; index++) {
   }
 }
 assert.ok(shaded > 0, 'Ground is represented in the area-weighted samples');
+await exposure.calculate([input(ground), { ...input(roof), receiveExposure: false }], settings, new AbortController().signal, () => {}, 100);
+const analyzedPositions = exposure.root.children[0].geometry.getAttribute('position');
+const analyzedValues = exposure.root.children[0].geometry.getAttribute('exposure');
+for (let index = 0; index < analyzedPositions.count; index++) {
+  assert.ok(analyzedPositions.getY(index) < .0005, 'REP blockers must not receive the exposure gradient');
+  assert.ok(analyzedValues.getX(index) < .01, 'REP geometry still casts shadows on analyzed surfaces');
+}
+await assert.rejects(exposure.calculate([{ ...input(roof), receiveExposure: false }], settings,
+  new AbortController().signal, () => {}, 100), /superfícies/, 'A model with only REP cannot produce an exposure map');
 const box = new THREE.Mesh(new THREE.BoxGeometry(10, 10, 10), material);
 await exposure.calculate([input(box)], settings, new AbortController().signal, () => {}, 100);
 const cornerPositions = exposure.root.children[0].geometry.getAttribute('position');
