@@ -375,6 +375,13 @@ h1 em { color: #9bbcad; }
 .solar-path-toggle { display: flex; align-items: center; gap: 10px; font-size: 13px; cursor: pointer; }
 .solar-path-toggle input { width: 16px; height: 16px; accent-color: #d99428; }
 .solar-path-size { margin-top: 18px; margin-bottom: 12px; }
+.annual-exposure { padding: 16px; margin-bottom: 24px; border: 1px solid #49615d; border-radius: 8px; }
+.annual-exposure h3 { margin: 0 0 10px; font-size: 15px; }
+.annual-exposure p, .annual-exposure small { font-size: 11px; line-height: 1.6; color: #bdcdc6; }
+.annual-exposure button { padding: 8px 10px; margin: 4px 4px 14px 0; border: 1px solid #71877f; border-radius: 5px; background: #263d35; color: #eef5f0; cursor: pointer; }
+.annual-exposure button:disabled { opacity: .5; cursor: default; }
+.annual-exposure-gradient { height: 12px; margin-top: 14px; border-radius: 3px; background: linear-gradient(to right, #00f, #0ff, #0f0, #ff0, #f00); }
+.annual-exposure-scale { display: flex; justify-content: space-between; color: #eef5f0; font-size: 10px; }
 .solar-path-legend { margin: 10px 0 26px; color: #9baeb3; font-size: 11px; line-height: 1.6; }
 .is-solar .usage-filter, .is-solar .elevation-filter, .is-solar .selection-hint { display: none; }
 .north-control { position: absolute; z-index: 3; top: 154px; right: 25px; width: 125px; padding: 12px 8px; border: 1px solid #4a625f; border-radius: 6px; background: #172126e8; color: #dce9e2; text-align: center; }

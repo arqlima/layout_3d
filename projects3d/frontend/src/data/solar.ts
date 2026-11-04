@@ -22,6 +22,27 @@ export function solarDayPath(settings: SolarSettings): ReturnType<typeof solarDi
   return Array.from({ length: 289 }, (_, index) => solarDirection({ ...settings, minutes: index === 288 ? 0 : index * 5 }));
 }
 
+export interface AnnualSunSample {
+  direction: ReturnType<typeof solarDirection>;
+  hours: number;
+}
+
+/** Twelve representative days, hourly midpoints, weighted by days per month. */
+export function annualSunSamples(settings: SolarSettings): AnnualSunSample[] {
+  solarDirection(settings);
+  const year = Number(settings.date.slice(0, 4));
+  const samples: AnnualSunSample[] = [];
+  for (let month = 1; month <= 12; month++) {
+    const hours = new Date(Date.UTC(year, month, 0)).getUTCDate();
+    const date = `${year}-${String(month).padStart(2, '0')}-15`;
+    for (let hour = 0; hour < 24; hour++) {
+      const direction = solarDirection({ ...settings, date, minutes: hour * 60 + 30 });
+      if (direction.y > 0) samples.push({ direction, hours });
+    }
+  }
+  return samples;
+}
+
 /** NOAA approximation. World axes: east +X, up +Y, north -Z (Rhino +Y).
  * https://gml.noaa.gov/grad/solcalc/solareqns.PDF
  */

@@ -142,6 +142,27 @@ for (const size of [0.01, 11, 100, 10000]) {
   assert.ok(Math.abs(shadow.bias * (camera.far - camera.near)) <= 0.05, 'Depth bias is limited in scene units');
   assert.equal(shadow.needsUpdate, true);
 }
+let exposureInvalidated = false;
+viewer.onAnnualExposureInvalidated(() => { exposureInvalidated = true; });
+viewer.setSolarSettings(pathSettings);
+const annualResult = await viewer.calculateAnnualExposure(() => {});
+assert.equal(annualResult.points, 1500);
+assert.equal(viewer.annualExposure.root.visible, true, 'Annual calculation displays the point map');
+viewer.setAnnualExposureVisible(false);
+assert.equal(viewer.annualExposure.root.visible, false);
+viewer.setAnnualExposureVisible(true);
+assert.equal(viewer.annualExposure.root.visible, true, 'Completed results can be shown again');
+viewer.setSolarSettings({ ...pathSettings, date: '2026-06-21', minutes: 900 });
+assert.equal(exposureInvalidated, false, 'Annual results do not depend on selected month or time');
+viewer.setSolarSettings({ ...pathSettings, northAngle: 30 });
+assert.equal(exposureInvalidated, true, 'Changing north invalidates the annual analysis');
+assert.equal(viewer.annualExposure.root.visible, false);
+viewer.setAnnualExposureVisible(true);
+assert.equal(viewer.annualExposure.root.visible, false, 'Stale results cannot be shown');
+viewer.section = {};
+await assert.rejects(viewer.calculateAnnualExposure(() => {}), /corte/);
+viewer.section = null;
+viewer.annualExposure.dispose();
 viewer.content = new THREE.Group();
 viewer.setSolarSettings(null);
 assert.ok(Number.isFinite(viewer.sun.shadow.camera.far), 'Empty models have a finite fallback');

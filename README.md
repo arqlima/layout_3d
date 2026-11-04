@@ -297,6 +297,13 @@ aproximada entre os solstícios, a trajetória da data selecionada e o marcador
 do horário atual. O guia acompanha as coordenadas e a orientação do norte;
 fica oculto ao sair da aba. Detalhes: [docs/solar-path-validation.md](docs/solar-path-validation.md).
 
+Em **Estudo solar → Exposição anual → Calcular mapa anual**, estime as horas
+de sol direto ao longo do ano da data selecionada, com sombras dos objetos
+opacos visíveis. O mapa é exibido por 1.500 pontos coloridos nas superfícies,
+com legenda, progresso e cancelamento. Usa dias representativos de cada mês,
+sem dados meteorológicos. Métodos, limites e testes:
+[docs/annual-exposure-validation.md](docs/annual-exposure-validation.md).
+
 No Estudo solar, cliques no modelo não selecionam objetos; a navegação da câmera
 continua disponível. A seleção volta a funcionar no Estudo de massa.
 Testes adicionais: `node scripts/test-solar.mjs` e `node scripts/test-north.mjs`

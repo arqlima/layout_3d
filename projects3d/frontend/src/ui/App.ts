@@ -14,6 +14,7 @@ import { mountProjectPanels } from './ProjectPanels';
 import { iconMarkup } from './icons';
 import { mountSolarPanel } from './SolarPanel';
 import type { SolarSettings } from '../data/solar';
+import type { ExposureResult } from '../viewer/AnnualExposure';
 import { mountNorthControl } from './NorthControl';
 import { mountPresentationSettings } from './PresentationSettings';
 import { DEFAULT_SECTION_LINES, type SectionLineSettings } from '../types/section';
@@ -33,6 +34,9 @@ export interface AppElements {
   onSolarPathVisibilityChange(callback: (visible: boolean) => void): void;
   onSolarPathScaleChange(callback: (percent: number) => void): void;
   onSolarPathOpacityChange(callback: (percent: number) => void): void;
+  onAnnualExposureCalculate(callback: (progress: (percent: number) => void) => Promise<ExposureResult>): void;
+  onAnnualExposureVisibilityChange(callback: (visible: boolean) => void): void;
+  invalidateAnnualExposure(): void;
   onBackgroundChange(callback: (color: string) => void): void;
   onSectionLineSettingsChange(callback: (settings: SectionLineSettings) => void): void;
   setBrand(name: string, markUrl: string): void;
@@ -179,6 +183,8 @@ export function createApp(mount: HTMLElement): AppElements {
   let onSolarSettings = (_settings: SolarSettings) => {};
   let onSolarVisibility = (_visible: boolean) => {};
   let onSolarPathVisibility = (_visible: boolean) => {};
+  let onAnnualExposureVisibility = (_visible: boolean) => {};
+  solarPanel.onExposureVisibilityChange(visible => onAnnualExposureVisibility(solarActive && visible));
   solarPanel.onPathChange(visible => onSolarPathVisibility(solarActive && visible));
   solarPanel.onChange(settings => onSolarSettings(settings));
   let onMassingVisibility = (_visible: boolean) => {};
@@ -204,6 +210,7 @@ export function createApp(mount: HTMLElement): AppElements {
     onSolarVisibility(solarActive);
     onSolarSettings(solarPanel.settings());
     onSolarPathVisibility(solarActive && solarPanel.pathVisible());
+    onAnnualExposureVisibility(solarActive && solarPanel.exposureVisible());
     onSimulationVisibility(tab.id === 'tab-simulation');
   };
   const requested = new URLSearchParams(location.search).get('section');
@@ -296,6 +303,9 @@ export function createApp(mount: HTMLElement): AppElements {
       solarPanel.onPathOpacityChange(callback);
       callback(solarPanel.pathOpacity());
     },
+    onAnnualExposureCalculate(callback) { solarPanel.onExposureCalculate(callback); },
+    onAnnualExposureVisibilityChange(callback) { onAnnualExposureVisibility = callback; },
+    invalidateAnnualExposure() { solarPanel.invalidateExposure(); },
     setBrand(name, markUrl) {
       brandName.textContent = name;
       brand.setAttribute('aria-label', name);

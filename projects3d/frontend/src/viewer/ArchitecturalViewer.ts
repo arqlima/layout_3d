@@ -14,6 +14,7 @@ import { isSectionState, isSectionLineSettings, DEFAULT_SECTION_LINES, type Sect
 import { createSectionOutline, applySectionOutlineSettings } from './sectionLines';
 import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
 import { SolarPath } from './SolarPath';
+import { AnnualExposure, type ExposureResult } from './AnnualExposure';
 
 type Renderable = THREE.Mesh | THREE.Line | THREE.Points;
 type ObjectMaterial = THREE.Material | THREE.Material[];
@@ -58,6 +59,11 @@ export class ArchitecturalViewer {
   private solarPath: SolarPath | null = null;
   private solarPathScale = 50;
   private solarPathOpacity = 12;
+  private annualExposure: AnnualExposure | null = null;
+  private exposureAbort: AbortController | null = null;
+  private exposureKey = '';
+  private exposureInvalidated = () => {};
+
   private readonly solarMaterials = new Map<THREE.Material, THREE.MeshStandardMaterial>();
   private readonly scene = new THREE.Scene();
   private readonly perspectiveCamera = new THREE.PerspectiveCamera(45, 1, 0.1, 500);
@@ -269,6 +275,42 @@ export class ArchitecturalViewer {
     if (!Number.isFinite(percent) || percent < 0 || percent > 100) return;
     this.solarPathOpacity = percent;
     this.solarPath?.setOpacity(percent);
+  }
+
+  onAnnualExposureInvalidated(callback: () => void): void { this.exposureInvalidated = callback; }
+
+  private annualExposureKey(): string {
+    const settings = this.solarSettings;
+    return JSON.stringify([settings?.date.slice(0, 4), settings?.latitude, settings?.longitude,
+      settings?.utcOffset, settings?.northAngle, this.section,
+      this.selectionEntries.filter(entry => entry.object instanceof THREE.Mesh && this.isVisible(entry.object)).map(entry => entry.object.uuid)]);
+  }
+
+  async calculateAnnualExposure(progress: (percent: number) => void): Promise<ExposureResult> {
+    if (!this.solarSettings || !this.content) throw new Error('Carregue o modelo e configure o estudo solar.');
+    if (this.section) throw new Error('Desative o corte antes de calcular a exposição anual.');
+    this.exposureAbort?.abort();
+    const controller = new AbortController();
+    this.exposureAbort = controller;
+    this.annualExposure ??= new AnnualExposure();
+    if (!this.annualExposure.root.parent) this.scene.add(this.annualExposure.root);
+    this.exposureKey = this.annualExposureKey();
+    const sources = this.selectionEntries.filter(entry => entry.object instanceof THREE.Mesh && this.isVisible(entry.object))
+      .map(entry => ({ object: entry.object as THREE.Mesh, material: entry.original }));
+    this.annualExposure.root.visible = false;
+    try {
+      const result = await this.annualExposure.calculate(sources, { ...this.solarSettings }, controller.signal, progress);
+      controller.signal.throwIfAborted();
+      this.annualExposure.root.visible = true;
+      return result;
+    } finally {
+      if (this.exposureAbort === controller) this.exposureAbort = null;
+    }
+  }
+
+  setAnnualExposureVisible(visible: boolean): void {
+    if (!visible) this.exposureAbort?.abort();
+    if (this.annualExposure) this.annualExposure.root.visible = visible && this.exposureKey === this.annualExposureKey();
   }
 
   private prepareModelShadows(model: THREE.Object3D): void {
@@ -765,9 +807,17 @@ export class ArchitecturalViewer {
         if (child instanceof LineSegments2) child.material.opacity = opacity;
       }
     }
+    if (this.exposureKey && this.exposureKey !== this.annualExposureKey()) {
+      this.exposureAbort?.abort();
+      if (this.annualExposure) this.annualExposure.root.visible = false;
+      this.exposureKey = '';
+      this.exposureInvalidated?.();
+    }
   }
 
   dispose(): void {
+    this.exposureAbort?.abort();
+    this.annualExposure?.dispose();
     this.solarPath?.dispose();
     this.sectionTool?.dispose();
     this.measurement?.dispose();

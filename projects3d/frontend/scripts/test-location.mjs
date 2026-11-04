@@ -21,6 +21,10 @@ function mount(location) {
   }, '#solar-path': {
     checked: false, addEventListener(_event, callback) { this.change = callback; },
   } };
+  for (const id of ['solar-exposure-calculate', 'solar-exposure-cancel', 'solar-exposure-map', 'solar-exposure-status', 'solar-exposure-legend', 'solar-exposure-max']) {
+    elements[`#${id}`] = { disabled: true, checked: false, hidden: true,
+      addEventListener(_event, callback) { this.action = callback; } };
+  }
   const container = { innerHTML: '', querySelectorAll: () => inputs, querySelector: selector => elements[selector] || null };
   return { panel: mountSolarPanel(container, location), inputs, elements };
 }
@@ -87,4 +91,12 @@ locked.panel.restore({ ...solarSaved, settings: { ...solarSaved.settings, latitu
 assert.equal(locked.panel.settings().latitude, -20, 'Saved scenes retain the authoritative KMZ location');
 assert.equal(locked.panel.settings().longitude, -54);
 assert.equal(mount().panel.settings().latitude, -20.4697, 'Legacy projects retain the existing fallback');
+manual.panel.onExposureCalculate(async progress => { progress(50); return { year: '2026', points: 1500, maxHours: 4300, skipped: 0 }; });
+await manual.elements['#solar-exposure-calculate'].action();
+assert.equal(manual.panel.exposureVisible(), true, 'Completed calculation activates the map');
+assert.equal(manual.elements['#solar-exposure-legend'].hidden, false);
+assert.match(manual.elements['#solar-exposure-status'].textContent, /2026/);
+manual.panel.invalidateExposure();
+assert.equal(manual.panel.exposureVisible(), false, 'Changed parameters invalidate displayed results');
+assert.equal(manual.elements['#solar-exposure-map'].disabled, true);
 console.log('Location panel tests passed: KMZ lock, manual editing, project coordinates and legacy fallback.');

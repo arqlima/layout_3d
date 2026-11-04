@@ -43,6 +43,7 @@ assert.ok(annual.length > 100);
 assert.ok(annual.every(sample => sample.direction.y > 0 && sample.hours > 0));
 assert.ok(annual.reduce((hours, sample) => hours + sample.hours, 0) > 4000);
 assert.deepEqual(annualSunSamples({ ...settings, minutes: 0, date: '2026-12-01' }), annual, 'Annual samples depend on year, not selected day or time');
+assert.ok(annualSunSamples({ ...settings, date: '2024-01-01' }).some(sample => sample.hours === 29), 'Leap years weight February with 29 days');
 const path = solarDayPath(settings);
 assert.equal(path.length, 289, 'Five-minute samples include midnight at both ends');
 assert.ok(path.some(point => point.y > 0.99));

@@ -1,7 +1,12 @@
 import { defaultSolarSettings, solarDirection, type SolarSettings } from '../data/solar';
 import type { SolarSceneState } from '../types/scenes';
+import type { ExposureResult } from '../viewer/AnnualExposure';
 
 interface SolarPanel {
+  onExposureCalculate(callback: (progress: (percent: number) => void) => Promise<ExposureResult>): void;
+  onExposureVisibilityChange(callback: (visible: boolean) => void): void;
+  exposureVisible(): boolean;
+  invalidateExposure(): void;
   restore(state: SolarSceneState): void;
   settings(): SolarSettings;
   setNorthAngle(angle: number): void;
@@ -23,10 +28,23 @@ export function mountSolarPanel(container: HTMLElement, location?: { latitude: n
   let notifyPath = (_visible: boolean) => {};
   let notifyScale = (_percent: number) => {};
   let notifyOpacity = (_percent: number) => {};
+  let calculateExposure = async (_progress: (percent: number) => void): Promise<ExposureResult> => { throw new Error('Carregue o modelo.'); };
+  let notifyExposure = (_visible: boolean) => {};
+  let exposureRevision = 0;
   container.innerHTML = `
     <div class="solar-controls">
       <div class="detail-label">ILUMINAÇÃO E SOMBRAS</div>
       <h2>Estudo solar</h2>
+      <section class="annual-exposure" aria-label="Mapa de exposição anual">
+        <h3>Exposição anual</h3>
+        <p>Horas estimadas de sol direto por ano, com sombras entre os objetos opacos visíveis.</p>
+        <button id="solar-exposure-calculate" type="button" disabled>Calcular mapa anual</button>
+        <button id="solar-exposure-cancel" type="button" hidden>Cancelar</button>
+        <label class="solar-path-toggle"><input id="solar-exposure-map" type="checkbox" disabled /> Mostrar mapa por pontos</label>
+        <div id="solar-exposure-legend" hidden><div class="annual-exposure-gradient"></div><div class="annual-exposure-scale"><span>0 h/ano</span><span id="solar-exposure-max"></span></div></div>
+        <p id="solar-exposure-status" role="status" aria-live="polite"></p>
+        <small>Amostragem: 12 dias representativos, intervalos de 1 hora e 1.500 pontos nas superfícies. Sem nuvens ou dados meteorológicos; não representa energia em kWh.</small>
+      </section>
       <label class="solar-path-toggle" for="solar-path"><input id="solar-path" type="checkbox" /> Mostrar faixa solar</label>
       <label class="solar-field solar-path-size" for="solar-path-size"><span>Tamanho da faixa <output id="solar-path-size-value" for="solar-path-size">50%</output></span>
         <input id="solar-path-size" type="range" min="5" max="200" step="5" value="50" />
@@ -59,6 +77,53 @@ export function mountSolarPanel(container: HTMLElement, location?: { latitude: n
     </div>
     <div class="sidebar-footer"><span>ESTUDO SOLAR</span><span>VISUALIZADOR 3D</span></div>`;
   const pathToggle = container.querySelector<HTMLInputElement>('#solar-path')!;
+  const exposureButton = container.querySelector<HTMLButtonElement>('#solar-exposure-calculate')!;
+  const exposureCancel = container.querySelector<HTMLButtonElement>('#solar-exposure-cancel')!;
+  const exposureToggle = container.querySelector<HTMLInputElement>('#solar-exposure-map')!;
+  const exposureStatus = container.querySelector<HTMLElement>('#solar-exposure-status')!;
+  const exposureLegend = container.querySelector<HTMLElement>('#solar-exposure-legend')!;
+  const invalidateExposure = () => {
+    exposureRevision++;
+    exposureToggle.checked = false;
+    exposureToggle.disabled = true;
+    exposureLegend.hidden = true;
+    exposureCancel.hidden = true;
+    exposureButton.disabled = false;
+    exposureStatus.textContent = 'Modelo ou parâmetros alterados. Calcule o mapa novamente.';
+  };
+  exposureToggle.addEventListener('change', () => {
+    notifyExposure(exposureToggle.checked);
+    exposureLegend.hidden = !exposureToggle.checked;
+  });
+  exposureCancel.addEventListener('click', () => {
+    notifyExposure(false);
+    invalidateExposure();
+    exposureStatus.textContent = 'Cálculo cancelado.';
+  });
+  exposureButton.addEventListener('click', async () => {
+    const revision = ++exposureRevision;
+    exposureButton.disabled = true;
+    exposureCancel.hidden = false;
+    exposureToggle.disabled = true;
+    exposureToggle.checked = false;
+    exposureLegend.hidden = true;
+    exposureStatus.textContent = 'Preparando superfícies…';
+    try {
+      const result = await calculateExposure(percent => {
+        if (revision === exposureRevision) exposureStatus.textContent = `Calculando exposição anual: ${percent}%`;
+      });
+      if (revision !== exposureRevision) return;
+      exposureToggle.disabled = false;
+      exposureToggle.checked = true;
+      exposureLegend.hidden = false;
+      container.querySelector<HTMLElement>('#solar-exposure-max')!.textContent = `${Math.round(result.maxHours).toLocaleString('pt-BR')} h/ano`;
+      exposureStatus.textContent = `${result.year} · ${result.points.toLocaleString('pt-BR')} pontos · Azul: menos sol; vermelho: mais sol.${result.skipped ? ` ${result.skipped} objeto(s) sem suporte foram ignorados.` : ''}`;
+    } catch (error) {
+      if (revision === exposureRevision) exposureStatus.textContent = error instanceof Error && error.name !== 'AbortError' ? error.message : 'Cálculo cancelado.';
+    } finally {
+      if (revision === exposureRevision) { exposureButton.disabled = false; exposureCancel.hidden = true; }
+    }
+  });
   pathToggle.addEventListener('change', () => notifyPath(pathToggle.checked));
   const pathSize = container.querySelector<HTMLInputElement>('#solar-path-size')!;
   pathSize.addEventListener('input', () => {
@@ -109,6 +174,10 @@ export function mountSolarPanel(container: HTMLElement, location?: { latitude: n
   }
   updateLabels();
   return {
+    onExposureCalculate(callback) { calculateExposure = callback; exposureButton.disabled = false; },
+    onExposureVisibilityChange(callback) { notifyExposure = callback; },
+    exposureVisible: () => exposureToggle.checked,
+    invalidateExposure,
     restore(state) {
       settings = { ...state.settings };
       // The project location remains authoritative when supplied by a KMZ.

@@ -49,6 +49,9 @@ async function start(): Promise<void> {
   ui.onSolarPathVisibilityChange(visible => viewer.setSolarPathVisible(visible));
   ui.onSolarPathScaleChange(percent => viewer.setSolarPathScale(percent));
   ui.onSolarPathOpacityChange(percent => viewer.setSolarPathOpacity(percent));
+  ui.onAnnualExposureCalculate(progress => viewer.calculateAnnualExposure(progress));
+  ui.onAnnualExposureVisibilityChange(visible => viewer.setAnnualExposureVisible(visible));
+  viewer.onAnnualExposureInvalidated(() => ui.invalidateAnnualExposure());
   viewer.setActive(massingVisible);
   ui.setViewActions((view) => viewer.setStandardView(view), (mode) => viewer.setProjectionMode(mode));
   ui.fitButton.addEventListener('click', () => viewer.fitToContent());
