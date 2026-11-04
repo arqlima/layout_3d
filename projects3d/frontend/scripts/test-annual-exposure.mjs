@@ -19,22 +19,21 @@ let progress = 0;
 const result = await exposure.calculate([input(ground)], settings, new AbortController().signal, value => { progress = value; }, 100);
 assert.equal(progress, 100);
 assert.equal(result.year, '2026');
-assert.equal(result.points, 100);
-const sunnyColor = exposure.root.children[0].geometry.getAttribute('color');
-for (let index = 0; index < sunnyColor.count; index++) {
-  assert.ok(sunnyColor.getX(index) > .99 && sunnyColor.getZ(index) < .01, 'Unobstructed upward surfaces receive all sampled sunlight');
-}
+assert.ok(result.points > 0);
+assert.ok(exposure.root.children[0] instanceof THREE.Mesh, 'Exposure is a continuous surface mesh instead of points');
+const sunnyValues = exposure.root.children[0].geometry.getAttribute('exposure');
+for (let index = 0; index < sunnyValues.count; index++) assert.ok(sunnyValues.getX(index) > .99, 'Open upward surfaces receive all sampled sunlight');
 assert.equal(ground.material, material, 'Calculation preserves model materials');
 const roof = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), material);
 roof.rotation.x = -Math.PI / 2;
 roof.position.y = .001;
 await exposure.calculate([input(ground), input(roof)], settings, new AbortController().signal, () => {}, 100);
 const points = exposure.root.children[0].geometry.getAttribute('position');
-const colors = exposure.root.children[0].geometry.getAttribute('color');
+const values = exposure.root.children[0].geometry.getAttribute('exposure');
 let shaded = 0;
 for (let index = 0; index < points.count; index++) {
   if (points.getY(index) < .0005) {
-    assert.ok(colors.getZ(index) > .9 && colors.getX(index) < .01, 'An opaque roof blocks direct sunlight at the ground');
+    assert.ok(values.getX(index) < .01, 'An opaque roof blocks direct sunlight at the ground');
     shaded++;
   }
 }
