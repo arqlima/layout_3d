@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Onde trabalhar — guia do layout_3d</title>
+  <style>
+    :root { color-scheme: light; --bg:#f3f5f8; --paper:#fff; --ink:#192c3d; --muted:#526474; --line:#d8e1e9; --blue:#1859b7; --green:#167153; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif; }
+    main { max-width:1120px; margin:auto; padding:48px 24px 64px; }
+    h1,h2,h3,p { margin-top:0; }
+    h1 { font-size:clamp(30px,5vw,48px); line-height:1.15; letter-spacing:-1.5px; margin-bottom:16px; }
+    h2 { font-size:25px; line-height:1.25; margin-bottom:20px; }
+    h3 { font-size:18px; margin-bottom:8px; }
+    a { color:var(--blue); text-underline-offset:3px; }
+    .eyebrow { color:var(--blue); text-transform:uppercase; font-size:12px; letter-spacing:2px; font-weight:750; }
+    .intro { color:var(--muted); max-width:800px; font-size:18px; }
+    .answer { background:#e8f5ee; border:1px solid #b4d8c4; border-left:5px solid var(--green); padding:24px; border-radius:12px; margin:28px 0; }
+    .answer p:last-child, .card p:last-child { margin-bottom:0; }
+    nav { display:flex; flex-wrap:wrap; gap:10px; margin:24px 0 36px; }
+    nav a { padding:7px 14px; border:1px solid var(--line); border-radius:24px; background:var(--paper); text-decoration:none; }
+    section { margin-top:40px; scroll-margin-top:20px; }
+    .card { background:var(--paper); border:1px solid var(--line); border-radius:14px; padding:24px; }
+    .repo { border-top:5px solid var(--blue); }
+    .badge { display:inline-block; font-size:12px; font-weight:750; padding:3px 10px; border-radius:20px; background:#e9f0fd; color:var(--blue); margin-bottom:12px; }
+    .tree { list-style:none; padding:0; margin:20px 0 0; }
+    .tree li { border-left:2px solid var(--line); margin-left:9px; padding:10px 0 10px 20px; }
+    .tree li small { display:block; color:var(--muted); }
+    .tree li.focus { border-color:var(--green); background:#eef8f2; border-radius:0 8px 8px 0; }
+    code { font: .9em/1.5 Consolas,"Courier New",monospace; overflow-wrap:anywhere; }
+    .path { display:block; padding:12px 14px; background:#eaf0f5; border-radius:8px; margin:12px 0; }
+    .grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+    .flow { display:flex; align-items:center; gap:12px; margin-top:20px; flex-wrap:wrap; }
+    .flow span { flex:1; min-width:160px; background:#eaf0f5; border-radius:8px; padding:14px; text-align:center; }
+    .flow b { color:var(--blue); }
+    .note { color:var(--muted); font-size:14px; margin-top:16px; }
+    table { width:100%; border-collapse:collapse; font-size:15px; }
+    th,td { text-align:left; padding:14px 12px; border-bottom:1px solid var(--line); vertical-align:top; }
+    th { background:#eaf0f5; }
+    .table-scroll { overflow-x:auto; }
+    ol { padding-left:22px; }
+    li + li { margin-top:8px; }
+    .warning { border-left:4px solid #aa6c12; padding-left:16px; }
+    footer { color:var(--muted); font-size:13px; margin-top:40px; border-top:1px solid var(--line); padding-top:18px; }
+    @media(max-width:700px) { main { padding:28px 16px; } .grid { grid-template-columns:1fr; } .card { padding:18px; } .flow { flex-direction:column; align-items:stretch; } .flow b { text-align:center; transform:rotate(90deg); } }
+    @media print { body { background:white; } main { padding:0; } nav { display:none; } .card { break-inside:avoid; } a { color:inherit; } }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <p class="eyebrow">Seu guia de trabalho · 04/11/2026</p>
+    <h1>Uma pasta principal.<br>Dois repositórios diferentes.</h1>
+    <p class="intro">Onde editar, onde salvar no GitHub e como continuar os próximos projetos sem confundir o sistema atual com o visualizador original.</p>
+  </header>
+
+  <div class="answer">
+    <h2>Para continuar este sistema, abra <code>layout_3d</code>.</h2>
+    <p>Edite o visualizador em <code>projects3d/frontend/src/</code>. Foi ali que o Ctrl+Z foi implementado. <strong>Você não precisa voltar ao <code>novo_input/Visualizacao_3d</code> para desenvolver o sistema atual.</strong></p>
+    <code class="path">C:\Users\adriano.lima\Documents\projeto_apresentacao\layout_3d</code>
+    <p>Abra essa <strong>pasta</strong> no VS Code. Este HTML é um guia; o código da aplicação fica nas pastas abaixo.</p>
+  </div>
+
+  <nav aria-label="Seções do guia">
+    <a href="#mapa">Mapa das pastas</a><a href="#rotina">Onde editar</a><a href="#git">Como salvar</a><a href="#novos">Próximos projetos</a>
+  </nav>
+
+  <section id="mapa">
+    <h2>01 · O mapa real do projeto</h2>
+    <div class="card repo">
+      <span class="badge">REPOSITÓRIO PRINCIPAL · branch main</span>
+      <h3><code>layout_3d/</code></h3>
+      <p>Sistema Django com cadastro, contas e apresentação dos modelos. GitHub: <a href="https://github.com/arqlima/layout_3d">arqlima/layout_3d</a>.</p>
+      <ul class="tree">
+        <li><code>accounts/</code><small>Login, cadastro e contas dos usuários.</small></li>
+        <li><code>projects3d/</code><small>Cadastro de projetos, arquivos enviados, páginas e regras do sistema.</small></li>
+        <li class="focus"><strong><code>projects3d/frontend/src/</code></strong><small>EDITE AQUI o visualizador atual: seleção, Ctrl+Z, cortes, câmera, interface e estilos.</small></li>
+        <li><code>projects3d/static/projects3d/viewer/</code><small>Build gerado a partir do frontend. O Django entrega estes arquivos ao navegador; alterações são feitas no código-fonte e recompiladas.</small></li>
+        <li><code>media/</code><small>Arquivos enviados pelos cadastros. Dados de clientes ficam fora dos commits.</small></li>
+        <li><code>docs/</code><small>Documentação e este guia.</small></li>
+        <li><strong><code>novo_input/Visualizacao_3d/</code></strong><small>OUTRO REPOSITÓRIO · branch master · <a href="https://github.com/arqlima/Visualizacao_3d">arqlima/Visualizacao_3d</a>.<br>Visualizador independente mantido como referência original. Possui código e histórico próprios.</small></li>
+      </ul>
+    </div>
+    <div class="flow" aria-label="Fluxo do visualizador atual">
+      <span>Editar<br><strong>frontend/src</strong></span><b aria-hidden="true">→</b><span>Compilar<br><strong>build</strong></span><b aria-hidden="true">→</b><span>Django serve<br><strong>static/viewer</strong></span><b aria-hidden="true">→</b><span>Usar<br><strong>no navegador</strong></span>
+    </div>
+    <p class="note">Não existe sincronização automática de código entre os dois visualizadores. Editar o original não atualiza a versão integrada ao Django.</p>
+  </section>
+
+  <section id="rotina">
+    <h2>02 · Onde faço cada alteração?</h2>
+    <div class="card table-scroll">
+      <table>
+        <thead><tr><th>Quero fazer…</th><th>Onde trabalhar</th><th>Onde fazer commit</th></tr></thead>
+        <tbody>
+          <tr><td>Seleção, Ctrl+Z, câmera, cortes ou régua</td><td><code>projects3d/frontend/src/viewer/</code></td><td><code>layout_3d</code></td></tr>
+          <tr><td>Interface e aparência do visualizador atual</td><td><code>projects3d/frontend/src/ui/</code> e <code>styles/</code></td><td><code>layout_3d</code></td></tr>
+          <tr><td>Cadastro de projetos, uploads e páginas Django</td><td><code>projects3d/</code> e seus templates</td><td><code>layout_3d</code></td></tr>
+          <tr><td>Login ou usuários</td><td><code>accounts/</code></td><td><code>layout_3d</code></td></tr>
+          <tr><td>Apenas adicionar outro empreendimento ou cliente</td><td>Na aplicação: <strong>Novo projeto</strong></td><td>Cadastro não exige commit de código</td></tr>
+          <tr><td>Manter a versão independente original</td><td>Abrir diretamente <code>novo_input/Visualizacao_3d/</code></td><td><code>Visualizacao_3d</code>; depois atualizar a referência no principal, se necessário</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="git">
+    <h2>03 · Sua rotina de edição e commits</h2>
+    <div class="grid">
+      <article class="card">
+        <span class="badge">ROTINA NORMAL · layout_3d</span>
+        <h3>Desenvolver o sistema atual</h3>
+        <ol>
+          <li>Abra <code>layout_3d</code> no VS Code.</li>
+          <li>Edite os arquivos da funcionalidade.</li>
+          <li>Valide a mudança. Se alterou o frontend, gere o build preservando os arquivos anteriores: em <code>projects3d/frontend</code>, execute <code>npm.cmd run build -- --emptyOutDir false</code>.</li>
+          <li>Em Controle do Código-Fonte, revise os arquivos e prepare-os com <strong>+</strong>. Para o frontend, inclua os fontes e o build necessário.</li>
+          <li>Escreva uma mensagem sobre a mudança e clique em <strong>Commit</strong>.</li>
+          <li>Clique em <strong>Push / Sincronizar</strong> para enviar ao seu GitHub.</li>
+        </ol>
+        <p class="note">Commit salva no computador. Push envia ao GitHub. Pull baixa alterações do repositório remoto.</p>
+      </article>
+      <article class="card">
+        <span class="badge">SOMENTE SE EDITAR O ORIGINAL</span>
+        <h3>Alterar o Visualizacao_3d separado</h3>
+        <ol>
+          <li>Abra a pasta <code>novo_input/Visualizacao_3d</code> em outra janela.</li>
+          <li>Revise, valide, faça <strong>Commit</strong> e <strong>Push</strong> nesse repositório.</li>
+          <li>Volte ao <code>layout_3d</code>. A linha <code>novo_input/Visualizacao_3d</code> pode aparecer alterada.</li>
+          <li>Faça commit dessa referência e envie pelo repositório principal.</li>
+        </ol>
+        <p class="warning">Esse segundo commit registra a versão do repositório separado. Ele não copia as melhorias para <code>projects3d/frontend/src/</code>.</p>
+      </article>
+    </div>
+    <p class="note">O repositório do Andrey está configurado como <code>upstream</code> no projeto principal; seu destino habitual de envio é <code>origin</code>, na conta <code>arqlima</code>.</p>
+  </section>
+
+  <section id="novos">
+    <h2>04 · E nos próximos projetos?</h2>
+    <div class="grid">
+      <article class="card">
+        <span class="badge">NOVO PROJETO ARQUITETÔNICO</span>
+        <h3>Outro modelo, cliente ou empreendimento</h3>
+        <p>Continue usando o mesmo sistema <code>layout_3d</code>. Não precisa criar outro repositório para cada modelo.</p>
+        <ol>
+          <li>Prepare a pasta do empreendimento com o modelo <code>.3dm</code> e os dados <code>.csv</code>.</li>
+          <li>Abra a aplicação, entre em <strong>Novo projeto</strong> e selecione a pasta preparada.</li>
+          <li>Confira os arquivos, o nome e a localização; salve o cadastro.</li>
+          <li>Use o visualizador. As melhorias do sistema passam a atender os projetos cadastrados.</li>
+        </ol>
+        <p class="note">Vídeo, capa, imagens e KMZ são opcionais conforme o cadastro. Sem KMZ, informe latitude e longitude. Alterar os dados do cadastro não exige recompilar o visualizador.</p>
+      </article>
+      <article class="card">
+        <span class="badge">NOVO SISTEMA OU PRODUTO</span>
+        <h3>Outra aplicação com evolução independente</h3>
+        <p>Crie uma pasta e um repositório próprios, fora de <code>layout_3d</code>, quando o novo trabalho tiver código e histórico independentes.</p>
+        <ol>
+          <li>Defina se será uma continuação deste sistema ou outro produto.</li>
+          <li>Se for outro produto, use uma pasta irmã, por exemplo <code>projeto_apresentacao/novo_sistema/</code>.</li>
+          <li>Se aproveitar este sistema, parta do seu repositório principal <code>arqlima/layout_3d</code>.</li>
+          <li>Configure o novo destino no GitHub antes de começar a enviar commits.</li>
+        </ol>
+        <p class="note">Evite colocar um novo repositório dentro de outro por padrão. Modelos de clientes, credenciais e banco local não devem acompanhar os commits.</p>
+      </article>
+    </div>
+  </section>
+  <footer>Guia baseado na estrutura e no README locais em 04/11/2026. Não consulta o GitHub nem exibe o estado de sincronização em tempo real. Pode ser aberto diretamente no navegador, sem instalar nada.</footer>
+</main>
+</body>
+</html>
