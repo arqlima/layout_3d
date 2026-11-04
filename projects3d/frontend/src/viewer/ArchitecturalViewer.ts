@@ -365,6 +365,12 @@ export class ArchitecturalViewer {
     if (this.sectionTool?.drawing) throw new Error('Conclua ou cancele o desenho do corte antes de salvar uma cena.');
     const index = this.selectionEntries.findIndex(entry => entry.object === this.selectedObject);
     return {
+      ...(this.solarSettings ? { solar: {
+        settings: { ...this.solarSettings },
+        pathVisible: this.solarPath?.root.visible ?? false,
+        scale: this.solarPathScale ?? 50,
+        opacity: this.solarPathOpacity ?? 12,
+      } } : {}),
       section: this.section ? { ...this.section } : null,
       sectionLines: { ...(this.sectionLineSettings ?? DEFAULT_SECTION_LINES) },
       camera: {
@@ -399,6 +405,13 @@ export class ArchitecturalViewer {
     this.selectionHistory = [];
     this.beforeSectionDrawing = null;
     this.sectionTool?.stopDrawing();
+    this.setSolarPathVisible(false);
+    if (state.solar) {
+      this.setSolarPathScale(state.solar.scale);
+      this.setSolarPathOpacity(state.solar.opacity);
+      this.setSolarSettings({ ...state.solar.settings });
+      this.setSolarPathVisible(state.solar.pathVisible);
+    }
     this.setSectionLineSettings(state.sectionLines ?? DEFAULT_SECTION_LINES);
     this.selectedObject = null;
     this.selectedObjects = null;

@@ -621,6 +621,41 @@ assert.deepEqual(new SavedSceneStore(storage, 'mixed').get(1), scene, 'one inval
 const blockedStore = new SavedSceneStore({ getItem() { throw new Error('blocked'); }, setItem() { throw new Error('quota'); } }, 'blocked');
 assert.equal(blockedStore.save(0, scene), false, 'storage failure is reported rather than falsely claiming persistence');
 assert.deepEqual(blockedStore.get(0), scene, 'blocked persistence still permits use during the current session');
+Object.assign(viewer, {
+  scene: new THREE.Scene(), sun: new THREE.DirectionalLight(),
+  shadowGround: new THREE.Mesh(new THREE.PlaneGeometry(), new THREE.ShadowMaterial()),
+});
+viewer.setSolarSettings(solarScene.viewer.solar.settings);
+viewer.setSolarPathScale(25);
+viewer.setSolarPathOpacity(65);
+viewer.setSolarPathVisible(true);
+const capturedSolar = viewer.captureState();
+assert.deepEqual(capturedSolar.solar, solarScene.viewer.solar, 'Capture includes the complete visible solar band');
+const capturedSolarScene = { ...scene, viewer: capturedSolar };
+scenes.save(2, capturedSolarScene);
+const persistedSolarScene = new SavedSceneStore(storage, 'project-A').get(2);
+assert.deepEqual(persistedSolarScene, capturedSolarScene, 'Solar scenes survive JSON storage and reopening');
+viewer.setSolarSettings({ ...solarScene.viewer.solar.settings, date: '2026-06-21', northAngle: 180 });
+viewer.setSolarPathScale(100);
+viewer.setSolarPathOpacity(5);
+viewer.setSolarPathVisible(false);
+viewer.restoreState(persistedSolarScene.viewer);
+assert.deepEqual(viewer.captureState().solar, capturedSolar.solar, 'Restoring a scene reconstructs its solar guide and settings');
+assert.equal(viewer.solarPath.root.visible, true);
+assert.equal(viewer.solarPath.bandMaterial.opacity, 0.65);
+viewer.restoreState(savedView);
+assert.equal(viewer.solarPath.root.visible, false, 'Legacy scenes hide a previously visible solar band');
+viewer.setSolarSettings(null);
+for (const mutate of [
+  solar => { solar.scale = 0; },
+  solar => { solar.settings.date = '2026-02-30'; },
+  solar => { solar.settings.northAngle = NaN; },
+  solar => { solar.pathVisible = 'true'; },
+]) {
+  const invalidSolar = structuredClone(solarScene);
+  mutate(invalidSolar.viewer.solar);
+  assert.equal(isSavedScene(invalidSolar), false, 'Malformed solar scenes are rejected');
+}
 console.log('Scene tests passed: cameras, projections, layers, elevation, individual selection, updating, persistence, isolation and invalid storage.');
 
 const { collectSimulationLayers, calculateSimulation, emptySimulation, parseSimulationNumber, SimulationStore, simulationLayerLabel, simulationUsageSections } = await import(await moduleUrl(resolve(root, 'src/data/simulation.ts')));

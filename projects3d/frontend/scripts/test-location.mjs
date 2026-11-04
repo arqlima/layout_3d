@@ -13,9 +13,11 @@ function mount(location) {
       get valueAsNumber() { return Number(this.value); }, checkValidity: () => true,
       addEventListener(_event, callback) { this.change = callback; } }));
   const elements = { '.solar-note': {}, '.solar-status': {}, '#solar-path-opacity-value': {}, '#solar-path-opacity': {
-    valueAsNumber: 12, addEventListener(_event, callback) { this.change = callback; },
+    value: '12', get valueAsNumber() { return Number(this.value); },
+    set valueAsNumber(value) { this.value = String(value); }, addEventListener(_event, callback) { this.change = callback; },
   }, '#solar-path-size-value': {}, '#solar-path-size': {
-    valueAsNumber: 50, addEventListener(_event, callback) { this.change = callback; },
+    value: '50', get valueAsNumber() { return Number(this.value); },
+    set valueAsNumber(value) { this.value = String(value); }, addEventListener(_event, callback) { this.change = callback; },
   }, '#solar-path': {
     checked: false, addEventListener(_event, callback) { this.change = callback; },
   } };
@@ -69,5 +71,20 @@ assert.equal(longitude.disabled, false);
 longitude.value = '10';
 longitude.change();
 assert.equal(manual.panel.settings().longitude, 10);
+const solarSaved = {
+  settings: { ...manual.panel.settings(), date: '2026-06-21', minutes: 720, northAngle: 45 },
+  pathVisible: true, scale: 30, opacity: 70,
+};
+manual.panel.restore(solarSaved);
+assert.deepEqual(manual.panel.settings(), solarSaved.settings, 'Solar scene restores date, time, north and lighting controls');
+assert.equal(manual.panel.pathScale(), 30);
+assert.equal(manual.panel.pathOpacity(), 70);
+assert.equal(manual.panel.pathVisible(), true);
+assert.equal(size, 30);
+assert.equal(opacity, 70);
+assert.equal(pathVisible, true, 'Restoring controls synchronizes the viewer callbacks');
+locked.panel.restore({ ...solarSaved, settings: { ...solarSaved.settings, latitude: 70, longitude: 10 } });
+assert.equal(locked.panel.settings().latitude, -20, 'Saved scenes retain the authoritative KMZ location');
+assert.equal(locked.panel.settings().longitude, -54);
 assert.equal(mount().panel.settings().latitude, -20.4697, 'Legacy projects retain the existing fallback');
 console.log('Location panel tests passed: KMZ lock, manual editing, project coordinates and legacy fallback.');

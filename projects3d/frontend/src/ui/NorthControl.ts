@@ -74,6 +74,7 @@ export function mountNorthControl(host: HTMLElement, onChange: (angle: number) =
   });
   render();
   return {
+    setAngle(next: number) { change(normalizeNorthAngle(next)); },
     setInitialAngle(next: number) { initialAngle = normalizeNorthAngle(next); change(initialAngle); },
     update(state: ViewState) { if (state.groundProjection) projection = state.groundProjection; render(); },
   };

@@ -1,6 +1,7 @@
 import type { SavedScene } from '../types/scenes';
 import { USAGE_CODES } from '../types/model';
 import { isSectionState, isSectionLineSettings } from '../types/section';
+import { solarDirection } from './solar';
 
 export const SCENE_COUNT = 10;
 
@@ -13,6 +14,15 @@ export function isSavedScene(value: unknown): value is SavedScene {
   if (scene.version !== 1 || !state || !camera || !scene.areaExclusions) return false;
   if (state.section != null && !isSectionState(state.section)) return false;
   if (state.sectionLines !== undefined && !isSectionLineSettings(state.sectionLines)) return false;
+  if (state.solar !== undefined) {
+    const solar = state.solar;
+    const inRange = (value: number, min: number, max: number) => Number.isFinite(value) && value >= min && value <= max;
+    if (!solar || typeof solar.pathVisible !== 'boolean'
+      || !inRange(solar.scale, 5, 200) || !inRange(solar.opacity, 0, 100)
+      || !solar.settings || !inRange(solar.settings.exposure, 0.2, 2)
+      || !inRange(solar.settings.shadowIntensity, 0, 100) || !inRange(solar.settings.sunIntensity, 0, 200)) return false;
+    try { solarDirection(solar.settings); } catch { return false; }
+  }
   if (!['perspective', 'orthographic'].includes(camera.projection)
     || !vector(camera.position) || !vector(camera.target) || !vector(camera.up)
     || !camera.up.some(value => value !== 0)

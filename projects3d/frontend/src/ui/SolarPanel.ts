@@ -1,6 +1,8 @@
 import { defaultSolarSettings, solarDirection, type SolarSettings } from '../data/solar';
+import type { SolarSceneState } from '../types/scenes';
 
 interface SolarPanel {
+  restore(state: SolarSceneState): void;
   settings(): SolarSettings;
   setNorthAngle(angle: number): void;
   onChange(callback: (settings: SolarSettings) => void): void;
@@ -107,6 +109,25 @@ export function mountSolarPanel(container: HTMLElement, location?: { latitude: n
   }
   updateLabels();
   return {
+    restore(state) {
+      settings = { ...state.settings };
+      // The project location remains authoritative when supplied by a KMZ.
+      if (location?.locked && location.latitude != null && location.longitude != null) {
+        settings.latitude = location.latitude;
+        settings.longitude = location.longitude;
+      }
+      for (const input of inputs) input.value = String(settings[input.name as keyof SolarSettings]);
+      pathToggle.checked = state.pathVisible;
+      pathSize.value = String(state.scale);
+      pathOpacity.value = String(state.opacity);
+      container.querySelector<HTMLOutputElement>('#solar-path-size-value')!.value = `${state.scale}%`;
+      container.querySelector<HTMLOutputElement>('#solar-path-opacity-value')!.value = `${state.opacity}%`;
+      updateLabels();
+      notify({ ...settings });
+      notifyScale(state.scale);
+      notifyOpacity(state.opacity);
+      notifyPath(state.pathVisible);
+    },
     pathOpacity: () => pathOpacity.valueAsNumber,
     onPathOpacityChange(callback) { notifyOpacity = callback; },
     pathScale: () => pathSize.valueAsNumber,

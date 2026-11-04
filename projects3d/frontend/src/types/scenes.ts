@@ -2,8 +2,17 @@ import type { SelectionMode } from '../data/layerSelection';
 import type { AreaExclusions, UsageCode } from './model';
 import type { ProjectionMode } from './view';
 import type { SectionState, SectionLineSettings } from './section';
+import type { SolarSettings } from '../data/solar';
+
+export interface SolarSceneState {
+  settings: SolarSettings;
+  pathVisible: boolean;
+  scale: number;
+  opacity: number;
+}
 
 export interface ViewerSnapshot {
+  solar?: SolarSceneState;
   section?: SectionState | null;
   sectionLines?: SectionLineSettings;
   camera: {

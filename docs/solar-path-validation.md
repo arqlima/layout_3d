@@ -26,6 +26,19 @@ sol e o horizonte mantêm sua aparência. O ajuste é imediato, pode ser feito
 com a faixa oculta e é preservado durante a sessão ao alterar data, horário,
 tamanho ou visibilidade. Em 0%, apenas o preenchimento fica transparente.
 
+## Salvar a faixa em uma cena
+
+Configure a faixa e clique em uma posição vazia na barra de cenas para salvar.
+Para substituir uma cena, abra a posição desejada, faça os ajustes e clique em
+**Atualizar cena**. São guardados visibilidade, tamanho, opacidade, data,
+horário, coordenadas, fuso, orientação do norte e iluminação, junto com os
+demais dados da cena. O armazenamento continua sendo no navegador e por projeto.
+
+Ao abrir uma cena com faixa visível, a aplicação entra na aba **Estudo solar**
+e sincroniza seus controles, incluindo o indicador de norte. As coordenadas
+de um KMZ cadastrado continuam prevalecendo. Cenas anteriores, sem informação
+solar, continuam aceitas e ocultam uma faixa que estivesse visível.
+
 A geometria usa o mesmo cálculo solar já empregado pela iluminação, com
 latitude, longitude, fuso e orientação do norte. As trajetórias usam amostras
 de cinco minutos do dia completo, independentemente dos limites do slider de
@@ -88,3 +101,17 @@ Cobertura percentual não medida.
   padrão e limites aprovados.
 - TypeScript, build, vinculação dos módulos, testes de seleção,
   `manage.py check` e os 51 testes Django passaram novamente.
+
+## Faixa solar nas cenas
+
+- RED: `npm.cmd test` falhou em `Scenes reject invalid solar opacity`, pois
+  o validador ignorava o estado solar. Checkpoint: `d8a1bb0`.
+- GREEN: `npm.cmd test` passou; captura e restauração exercitam o visualizador
+  real, incluindo recriação da faixa, escala/opacidade, parâmetros solares,
+  persistência JSON após reabrir o armazenamento e compatibilidade legada.
+  Estados solares com opacidade, escala, data ou norte inválidos são rejeitados.
+- `node scripts/test-location.mjs`: restauração dos controles e callbacks,
+  percentuais e preservação das coordenadas bloqueadas por KMZ aprovados.
+- `node scripts/test-north.mjs` e `node scripts/test-shadows.mjs`: aprovados.
+- TypeScript, build, vinculação dos módulos, `manage.py check` e os 51 testes
+  Django aprovados. Sem validação visual em navegador nesta alteração.
