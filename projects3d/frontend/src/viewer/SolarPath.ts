@@ -19,6 +19,14 @@ export class SolarPath {
     new THREE.MeshBasicMaterial({ color: '#ffe5a0', toneMapped: false, fog: false }));
   private readonly ray = new THREE.Line(this.rayGeometry, this.dayMaterial);
   private cacheKey = '';
+  private radius = 60;
+  private scalePercent = 50;
+
+  setScale(percent: number): void {
+    if (!Number.isFinite(percent) || percent < 5 || percent > 200) return;
+    this.scalePercent = percent;
+    this.root.scale.setScalar(this.radius * percent / 100);
+  }
 
   constructor() {
     this.root.name = 'Faixa solar';
@@ -35,7 +43,8 @@ export class SolarPath {
   update(settings: SolarSettings, bounds: THREE.Box3): void {
     const sphere = bounds.isEmpty() ? new THREE.Sphere(new THREE.Vector3(), 30) : bounds.getBoundingSphere(new THREE.Sphere());
     this.root.position.set(sphere.center.x, bounds.isEmpty() ? 0 : bounds.min.y, sphere.center.z);
-    this.root.scale.setScalar(Math.max(10, sphere.radius) * 2);
+    this.radius = Math.max(10, sphere.radius) * 2;
+    this.setScale(this.scalePercent);
     // Time and lighting sliders only move the sun marker; paths are cached.
     const key = JSON.stringify([settings.latitude, settings.longitude, settings.utcOffset, settings.date, settings.northAngle]);
     if (key !== this.cacheKey) {

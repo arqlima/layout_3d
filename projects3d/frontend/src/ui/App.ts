@@ -31,6 +31,7 @@ export interface AppElements {
   onSolarSettingsChange(callback: (settings: SolarSettings) => void): void;
   onSolarVisibilityChange(callback: (visible: boolean) => void): void;
   onSolarPathVisibilityChange(callback: (visible: boolean) => void): void;
+  onSolarPathScaleChange(callback: (percent: number) => void): void;
   onBackgroundChange(callback: (color: string) => void): void;
   onSectionLineSettingsChange(callback: (settings: SectionLineSettings) => void): void;
   setBrand(name: string, markUrl: string): void;
@@ -285,6 +286,10 @@ export function createApp(mount: HTMLElement): AppElements {
     onSolarPathVisibilityChange(callback) {
       onSolarPathVisibility = callback;
       callback(solarActive && solarPanel.pathVisible());
+    },
+    onSolarPathScaleChange(callback) {
+      solarPanel.onPathScaleChange(callback);
+      callback(solarPanel.pathScale());
     },
     setBrand(name, markUrl) {
       brandName.textContent = name;

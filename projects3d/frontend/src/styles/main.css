@@ -374,6 +374,7 @@ h1 em { color: #9bbcad; }
 .solar-status { color: #f5c56a; font-size: 12px; line-height: 1.5; }
 .solar-path-toggle { display: flex; align-items: center; gap: 10px; font-size: 13px; cursor: pointer; }
 .solar-path-toggle input { width: 16px; height: 16px; accent-color: #d99428; }
+.solar-path-size { margin-top: 18px; margin-bottom: 12px; }
 .solar-path-legend { margin: 10px 0 26px; color: #9baeb3; font-size: 11px; line-height: 1.6; }
 .is-solar .usage-filter, .is-solar .elevation-filter, .is-solar .selection-hint { display: none; }
 .north-control { position: absolute; z-index: 3; top: 154px; right: 25px; width: 125px; padding: 12px 8px; border: 1px solid #4a625f; border-radius: 6px; background: #172126e8; color: #dce9e2; text-align: center; }

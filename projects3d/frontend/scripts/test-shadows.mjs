@@ -95,6 +95,7 @@ viewer.setSolarPathVisible(false);
 assert.equal(overlay.root.visible, false);
 viewer.setSolarPathVisible(true);
 assert.equal(viewer.solarPath, overlay, 'Toggling reuses the same overlay');
+assert.equal(overlay.root.scale.x, fullScale / 4, 'Toggling preserves the chosen size');
 viewer.setSolarSettings(null);
 assert.equal(overlay.root.visible, false, 'Disabling solar settings hides the overlay');
 let disposed = false;

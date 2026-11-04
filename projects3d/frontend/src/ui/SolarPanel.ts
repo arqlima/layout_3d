@@ -1,17 +1,21 @@
 import { defaultSolarSettings, solarDirection, type SolarSettings } from '../data/solar';
 
-export function mountSolarPanel(container: HTMLElement, location?: { latitude: number | null; longitude: number | null; locked: boolean }): { settings(): SolarSettings; setNorthAngle(angle: number): void; onChange(callback: (settings: SolarSettings) => void): void; pathVisible(): boolean; onPathChange(callback: (visible: boolean) => void): void } {
+export function mountSolarPanel(container: HTMLElement, location?: { latitude: number | null; longitude: number | null; locked: boolean }): { settings(): SolarSettings; setNorthAngle(angle: number): void; onChange(callback: (settings: SolarSettings) => void): void; pathVisible(): boolean; onPathChange(callback: (visible: boolean) => void): void; pathScale(): number; onPathScaleChange(callback: (percent: number) => void): void } {
   let settings = defaultSolarSettings();
   if (location?.latitude != null && location.longitude != null) {
     settings = { ...settings, latitude: location.latitude, longitude: location.longitude };
   }
   let notify = (_settings: SolarSettings) => {};
   let notifyPath = (_visible: boolean) => {};
+  let notifyScale = (_percent: number) => {};
   container.innerHTML = `
     <div class="solar-controls">
       <div class="detail-label">ILUMINAÇÃO E SOMBRAS</div>
       <h2>Estudo solar</h2>
       <label class="solar-path-toggle" for="solar-path"><input id="solar-path" type="checkbox" /> Mostrar faixa solar</label>
+      <label class="solar-field solar-path-size" for="solar-path-size"><span>Tamanho da faixa <output id="solar-path-size-value" for="solar-path-size">50%</output></span>
+        <input id="solar-path-size" type="range" min="5" max="200" step="5" value="50" />
+        <small><span>5%</span><span>200%</span></small></label>
       <p class="solar-path-legend">Faixa translúcida: percurso anual aproximado entre os solstícios. Linha dourada: data selecionada. Ponto: sol no horário escolhido. Círculo: horizonte.</p>
       <label class="solar-field" for="solar-exposure"><span>Exposição <output for="solar-exposure"></output></span>
         <input id="solar-exposure" name="exposure" type="range" min="0.2" max="2" step="0.01" value="0.8" />
@@ -38,6 +42,13 @@ export function mountSolarPanel(container: HTMLElement, location?: { latitude: n
     <div class="sidebar-footer"><span>ESTUDO SOLAR</span><span>VISUALIZADOR 3D</span></div>`;
   const pathToggle = container.querySelector<HTMLInputElement>('#solar-path')!;
   pathToggle.addEventListener('change', () => notifyPath(pathToggle.checked));
+  const pathSize = container.querySelector<HTMLInputElement>('#solar-path-size')!;
+  pathSize.addEventListener('input', () => {
+    const percent = pathSize.valueAsNumber;
+    if (!Number.isFinite(percent) || percent < 5 || percent > 200) return;
+    container.querySelector<HTMLOutputElement>('#solar-path-size-value')!.value = `${percent}%`;
+    notifyScale(percent);
+  });
   const inputs = [...container.querySelectorAll<HTMLInputElement>('input[name]')];
   if (location?.latitude != null && location.longitude != null) {
     container.querySelector<HTMLElement>('.solar-note')!.textContent = location.locked
@@ -73,6 +84,8 @@ export function mountSolarPanel(container: HTMLElement, location?: { latitude: n
   }
   updateLabels();
   return {
+    pathScale: () => pathSize.valueAsNumber,
+    onPathScaleChange(callback) { notifyScale = callback; },
     pathVisible: () => pathToggle.checked,
     onPathChange(callback) { notifyPath = callback; },
     settings: () => ({ ...settings }),

@@ -12,7 +12,9 @@ function mount(location) {
     .map(name => ({ name, id: `solar-${name}`, type: name === 'date' ? 'date' : 'number', value: '',
       get valueAsNumber() { return Number(this.value); }, checkValidity: () => true,
       addEventListener(_event, callback) { this.change = callback; } }));
-  const elements = { '.solar-note': {}, '.solar-status': {}, '#solar-path': {
+  const elements = { '.solar-note': {}, '.solar-status': {}, '#solar-path-size-value': {}, '#solar-path-size': {
+    valueAsNumber: 50, addEventListener(_event, callback) { this.change = callback; },
+  }, '#solar-path': {
     checked: false, addEventListener(_event, callback) { this.change = callback; },
   } };
   const container = { innerHTML: '', querySelectorAll: () => inputs, querySelector: selector => elements[selector] || null };
@@ -32,6 +34,13 @@ assert.equal(locked.panel.settings().northAngle, 45);
 assert.match(locked.elements['.solar-note'].textContent, /KMZ/);
 const manual = mount({ latitude: 0, longitude: 0, locked: false });
 assert.equal(manual.panel.pathVisible(), false, 'Solar path is off by default');
+assert.equal(manual.panel.pathScale(), 50, 'Solar overlay starts at a smaller size');
+let size = null;
+manual.panel.onPathScaleChange(percent => { size = percent; });
+manual.elements['#solar-path-size'].valueAsNumber = 25;
+manual.elements['#solar-path-size'].change();
+assert.equal(size, 25, 'Size slider notifies the viewer');
+assert.equal(manual.elements['#solar-path-size-value'].value, '25%');
 let pathVisible = null;
 manual.panel.onPathChange(value => { pathVisible = value; });
 manual.elements['#solar-path'].checked = true;

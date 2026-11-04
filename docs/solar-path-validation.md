@@ -13,6 +13,13 @@ está aberta. Ao sair da aba, a faixa fica oculta; ao voltar, a opção marcada 
 respeitada. A iluminação continua funcionando como antes nas outras abas.
 O ponto e o raio desaparecem quando o sol está abaixo do horizonte.
 
+O controle **Tamanho da faixa** ajusta apenas o guia solar, de **5% a 200%**,
+com resposta imediata. O padrão é **50%** (metade do tamanho da primeira
+implementação); **100%** corresponde ao tamanho original. O centro do guia,
+o modelo, a câmera e a iluminação são preservados. O tamanho escolhido continua
+valendo ao alterar o horário/data e ao ocultar/mostrar a faixa, até recarregar
+a página. Pode ser ajustado mesmo com a faixa oculta.
+
 A geometria usa o mesmo cálculo solar já empregado pela iluminação, com
 latitude, longitude, fuso e orientação do norte. As trajetórias usam amostras
 de cinco minutos do dia completo, independentemente dos limites do slider de
@@ -51,3 +58,15 @@ alterar o horário e ocultar o guia novamente.
 Não houve validação visual em navegador. Os testes exercitam geometrias e
 métodos reais sem contexto WebGL; os controles de formulário são simulados.
 Cobertura percentual não medida.
+
+## Controle de tamanho
+
+- RED: `node scripts/test-shadows.mjs` falhou com
+  `TypeError: viewer.setSolarPathScale is not a function`; checkpoint `e024b94`.
+- GREEN: o mesmo teste passou: escala proporcional, centro preservado,
+  manutenção do tamanho após alterar o horário e alternar a visibilidade,
+  rejeição de valores inválidos.
+- `node scripts/test-location.mjs`: tamanho inicial de 50%, callback do slider
+  e percentual exibido aprovados.
+- TypeScript, build, vinculação dos módulos, testes solares e de seleção,
+  `manage.py check` e os 51 testes Django passaram novamente.
