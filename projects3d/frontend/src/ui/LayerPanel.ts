@@ -1,8 +1,11 @@
 import type { LayerInfo } from '../types/layers';
 import { layerKey, layerLabel, type SelectionMode } from '../data/layerSelection';
 import type { AreaExclusions } from '../types/model';
+import { USAGE_CODES, type UsageCode } from '../types/model';
+import { DEFAULT_USAGE_COLORS, type UsageColorSettings } from '../types/usageColors';
 
 export interface LayerPanelActions {
+  onUsageColorsChange?(settings: UsageColorSettings): void;
   onModeChange(mode: SelectionMode): void;
   onHideUncheckedChange(hide: boolean): void;
   onToggleMany(indices: number[], checked: boolean): void;
@@ -11,7 +14,7 @@ export interface LayerPanelActions {
 
 export interface LayerPanel {
   update(layers: LayerInfo[]): void;
-  restore(mode: SelectionMode, hide: boolean, exclusions: AreaExclusions): void;
+  restore(mode: SelectionMode, hide: boolean, exclusions: AreaExclusions, colors?: UsageColorSettings): void;
 }
 
 export function mountLayerPanel(
@@ -27,8 +30,23 @@ export function mountLayerPanel(
   const excludeParking = mount.querySelector<HTMLInputElement>('#exclude-parking')!;
   let layers = initial.filter(layer => layer.objectCount > 0).map(layer => ({ ...layer }));
   let mode: SelectionMode = 'name';
+  let usageColors = structuredClone(DEFAULT_USAGE_COLORS);
+  const colorControl = document.createElement('label');
+  colorControl.className = 'hide-unchecked usage-colors-toggle';
+  const colorToggle = document.createElement('input');
+  colorToggle.type = 'checkbox';
+  colorToggle.setAttribute('role', 'switch');
+  colorControl.append(colorToggle, document.createTextNode('Aplicar cores por uso'));
+  modes.after(colorControl);
+  colorToggle.onchange = () => {
+    usageColors.enabled = colorToggle.checked;
+    actions.onUsageColorsChange?.(structuredClone(usageColors));
+    render();
+  };
 
   const render = () => {
+    colorControl.hidden = mode !== 'use';
+    colorToggle.checked = usageColors.enabled;
     modes.hidden = layers.length === 0;
     mount.querySelector<HTMLElement>('#marked-summary')!.hidden = mode === 'name';
     mount.querySelector<HTMLElement>('#marked-efficiency')!.hidden = mode !== 'group';
@@ -60,7 +78,9 @@ export function mountLayerPanel(
       swatch.className = 'layer-swatch';
       swatch.setAttribute('aria-hidden', 'true');
       const fill = document.createElement('span');
-      fill.style.backgroundColor = layer.color;
+      const use = layerKey(layer, 'use') as UsageCode;
+      const editableColor = mode === 'use' && usageColors.enabled && USAGE_CODES.includes(use);
+      fill.style.backgroundColor = editableColor ? usageColors.colors[use] : layer.color;
       fill.style.opacity = String(layer.opacityMin);
       swatch.append(fill);
       const name = document.createElement('span');
@@ -79,7 +99,23 @@ export function mountLayerPanel(
       count.className = 'layer-count';
       count.textContent = String(members.reduce((total, member) => total + member.objectCount, 0));
       row.append(input, swatch, name, opacity, count);
-      list.append(row);
+      if (editableColor) {
+        const groupRow = document.createElement('div');
+        groupRow.className = 'usage-color-row';
+        const color = document.createElement('input');
+        color.type = 'color';
+        color.className = 'usage-color-input';
+        color.value = usageColors.colors[use];
+        color.setAttribute('aria-label', `Cor de ${layerLabel(layer, mode)}`);
+        color.title = `Cor de ${layerLabel(layer, mode)}`;
+        color.oninput = () => {
+          usageColors.colors[use] = color.value;
+          fill.style.backgroundColor = color.value;
+          actions.onUsageColorsChange?.(structuredClone(usageColors));
+        };
+        groupRow.append(row, color);
+        list.append(groupRow);
+      } else list.append(row);
     }
   };
   for (const button of modes.querySelectorAll<HTMLButtonElement>('button')) {
@@ -107,7 +143,8 @@ export function mountLayerPanel(
   render();
   return {
     update(updated) { layers = updated.filter(layer => layer.objectCount > 0).map(layer => ({ ...layer })); render(); },
-    restore(savedMode, hidden, exclusions) {
+    restore(savedMode, hidden, exclusions, colors = DEFAULT_USAGE_COLORS) {
+      usageColors = structuredClone(colors);
       mode = savedMode;
       hide.checked = hidden;
       excludeUncovered.checked = exclusions.excludeUncovered;

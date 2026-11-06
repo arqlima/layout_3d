@@ -43,6 +43,12 @@ h1 em { color: #8b9c8a; font-weight: 500; font-style: normal; }
 .hide-unchecked input::before { content: ''; display: block; width: 12px; height: 12px; border-radius: 50%; background: #a3b8ae; transition: transform .15s; }
 .hide-unchecked input:checked { background: #437764; border-color: #81b49d; }
 .hide-unchecked input:checked::before { transform: translateX(14px); background: #fff; }
+.usage-colors-toggle { margin: -8px 0 14px; }
+.usage-colors-toggle[hidden] { display: none; }
+.usage-color-row { display: flex; align-items: center; gap: 8px; }
+.usage-color-row .layer-row { flex: 1; min-width: 0; }
+.usage-color-input { flex: 0 0 32px; width: 32px; height: 27px; padding: 2px; border: 1px solid #779087; border-radius: 4px; background: #26373a; cursor: pointer; }
+.usage-color-input:focus-visible { outline: 2px solid #81b49d; outline-offset: 3px; }
 .area-exclusions { margin-top: 15px; }
 .area-exclusions[hidden] { display: none; }
 .area-exclusions .hide-unchecked { margin-top: 9px; }

@@ -91,6 +91,7 @@ async function start(): Promise<void> {
       (visible) => { viewer.setAllLayersVisible(visible); updateUsageTotals(); },
       {
         onModeChange: mode => { selectionMode = mode; viewer.setSelectionMode(mode); updateUsageTotals(); },
+        onUsageColorsChange: settings => viewer.setUsageColors(settings),
         onAreaExclusionsChange: exclusions => {
           areaExclusions = exclusions;
           viewer.setAreaExclusions(exclusions);

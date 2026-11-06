@@ -16,6 +16,7 @@ import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
 import { SolarPath } from './SolarPath';
 import { AnnualExposure, type ExposureResult } from './AnnualExposure';
 import { ModelAppearance } from './ModelAppearance';
+import { DEFAULT_USAGE_COLORS, isUsageColorSettings, type UsageColorSettings } from '../types/usageColors';
 import { DEFAULT_MODEL_APPEARANCE, isModelAppearanceSettings, type ModelAppearanceSettings } from '../types/appearance';
 
 type Renderable = THREE.Mesh | THREE.Line | THREE.Points;
@@ -66,6 +67,8 @@ export class ArchitecturalViewer {
   private exposureKey = '';
   private exposureInvalidated = () => {};
   private modelAppearance: ModelAppearance | null = null;
+  private usageColors: UsageColorSettings = structuredClone(DEFAULT_USAGE_COLORS);
+  private usageMaterials = new Map<UsageCode, ModelAppearance>();
 
   private readonly solarMaterials = new Map<THREE.Material, THREE.MeshStandardMaterial>();
   private readonly scene = new THREE.Scene();
@@ -254,6 +257,14 @@ export class ArchitecturalViewer {
     this.applyAppearance();
   }
 
+  setUsageColors(settings: UsageColorSettings): void {
+    if (!isUsageColorSettings(settings)) return;
+    this.usageMaterials?.forEach(appearance => appearance.clear());
+    this.usageMaterials = new Map();
+    this.usageColors = structuredClone(settings);
+    this.applyAppearance();
+  }
+
   setModelAppearance(settings: ModelAppearanceSettings): void {
     if (!isModelAppearanceSettings(settings)) return;
     this.modelAppearance ??= new ModelAppearance();
@@ -435,6 +446,7 @@ export class ArchitecturalViewer {
     const index = this.selectionEntries.findIndex(entry => entry.object === this.selectedObject);
     return {
       modelAppearance: { ...(this.modelAppearance?.settings ?? DEFAULT_MODEL_APPEARANCE) },
+      usageColors: structuredClone(this.usageColors ?? DEFAULT_USAGE_COLORS),
       ...(this.annualExposure?.root.visible && this.exposureKey === this.annualExposureKey() ? { annualExposure: true } : {}),
       ...(this.solarSettings ? { solar: {
         settings: { ...this.solarSettings },
@@ -480,6 +492,7 @@ export class ArchitecturalViewer {
     this.beforeSectionDrawing = null;
     this.sectionTool?.stopDrawing();
     this.setModelAppearance(state.modelAppearance ?? DEFAULT_MODEL_APPEARANCE);
+    this.setUsageColors(state.usageColors ?? DEFAULT_USAGE_COLORS);
     this.setSolarPathVisible(false);
     if (state.solar) {
       this.setSolarPathScale(state.solar.scale);
@@ -1042,6 +1055,8 @@ export class ArchitecturalViewer {
   }
 
   private clearSelectionEntries(): void {
+    this.usageMaterials?.forEach(appearance => appearance.clear());
+    this.usageMaterials?.clear();
     this.modelAppearance?.clear();
     this.selectionHistory = [];
     this.selectedObject = null;
@@ -1181,6 +1196,18 @@ export class ArchitecturalViewer {
         entry.object.material = Array.isArray(entry.object.material)
           ? entry.object.material.map(material => this.modelAppearance!.apply(material, edge))
           : this.modelAppearance.apply(entry.object.material, edge);
+      }
+      if (this.selectionMode === 'use' && this.usageColors?.enabled && entry.use
+        && visuallyHighlighted && !(entry.object instanceof THREE.Line)) {
+        let appearance = this.usageMaterials.get(entry.use);
+        if (!appearance) {
+          appearance = new ModelAppearance();
+          appearance.configure({ ...DEFAULT_MODEL_APPEARANCE, overrideColor: true, color: this.usageColors.colors[entry.use] });
+          this.usageMaterials.set(entry.use, appearance);
+        }
+        entry.object.material = Array.isArray(entry.object.material)
+          ? entry.object.material.map(material => appearance!.apply(material, false))
+          : appearance.apply(entry.object.material, false);
       }
     }
     this.syncSectionAppearance();

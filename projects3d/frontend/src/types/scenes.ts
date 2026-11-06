@@ -13,6 +13,7 @@ export interface SolarSceneState {
 }
 
 export interface ViewerSnapshot {
+  usageColors?: import('./usageColors').UsageColorSettings;
   modelAppearance?: ModelAppearanceSettings;
   annualExposure?: boolean;
   solar?: SolarSceneState;

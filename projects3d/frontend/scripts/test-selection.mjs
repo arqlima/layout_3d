@@ -59,6 +59,27 @@ Object.assign(viewer, {
 viewer.readLayers(model);
 viewer.prepareSelection(model);
 viewer.applyVisibilityFilters();
+const usageSettings = { enabled: true, colors: { COM: '#32a852', EST: '#789abc', PRIV: '#d94545', VAGAS: '#e5bf38', REP: '#abcabc' } };
+viewer.setUsageColors(usageSettings);
+assert.equal(meshes[0].material.color.getHexString(), 'ffffff', 'Usage colors are scoped to the Uso tab');
+viewer.setSelectionMode('use');
+assert.equal(meshes[0].material.color.getHexString(), 'd94545');
+assert.equal(meshes[1].material.color.getHexString(), 'd94545', 'Different layers of the same use share a color');
+assert.equal(meshes[2].material.color.getHexString(), '32a852', 'Different uses keep independent colors');
+assert.equal(meshes[0].children[0].material.color.getHexString(), 'ffffff', 'Edges retain their appearance');
+viewer.setLayersChecked([0], false);
+assert.notEqual(meshes[0].material.color.getHexString(), 'd94545', 'Unchecked geometry keeps its muted appearance');
+viewer.setLayersChecked([0], true);
+viewer.setUsageColors({ ...usageSettings, enabled: false });
+assert.equal(meshes[0].material, viewer.selectionEntries.find(entry => entry.object === meshes[0]).original);
+viewer.setUsageColors(usageSettings);
+viewer.setSelectionMode('name');
+assert.equal(meshes[0].material.color.getHexString(), 'ffffff', 'Leaving Uso restores the original appearance');
+viewer.setUsageColors({ ...usageSettings, colors: { ...usageSettings.colors, PRIV: 'invalid' } });
+viewer.setSelectionMode('use');
+assert.equal(meshes[0].material.color.getHexString(), 'd94545', 'Invalid palettes are ignored');
+viewer.setUsageColors({ ...usageSettings, enabled: false });
+viewer.setSelectionMode('name');
 const contextLayerName = viewer.layers[2].name;
 viewer.layers[2].name = 'REP-contexto-COM';
 const repSurfaceMaterial = meshes[2].material;
@@ -540,6 +561,14 @@ viewer.select(meshes[0]);
 viewer.setElevationRange(0, 15);
 viewer.setHideUnchecked(true);
 const savedView = viewer.captureState();
+const usageView = { ...structuredClone(savedView), usageColors: structuredClone(usageSettings), selectionMode: 'use' };
+viewer.restoreState(usageView);
+assert.deepEqual(viewer.captureState().usageColors, usageSettings, 'Scenes restore the palette and switch');
+assert.equal(meshes[0].material.color.getHexString(), 'd94545');
+const legacyUsageView = structuredClone(savedView);
+delete legacyUsageView.usageColors;
+viewer.restoreState(legacyUsageView);
+assert.equal(viewer.captureState().usageColors.enabled, false, 'Old scenes disable usage colors');
 const overriddenView = structuredClone(savedView);
 overriddenView.modelAppearance = { overrideColor: true, color: '#eeeeee', overrideEdges: true, edgeColor: '#222222' };
 viewer.restoreState(overriddenView);
@@ -604,6 +633,11 @@ assert.deepEqual(viewer.captureState(), beforeIncompatible, 'incompatible scenes
 const { SavedSceneStore, isSavedScene, SCENE_COUNT } = await import(await moduleUrl(resolve(root, 'src/data/savedScenes.ts')));
 const scene = { version: 1, viewer: savedView, areaExclusions: { excludeUncovered: true, excludeParking: false } };
 assert.equal(isSavedScene(scene), true);
+const usageScene = { ...structuredClone(scene), viewer: usageView };
+assert.equal(isSavedScene(usageScene), true);
+const invalidUsageScene = structuredClone(usageScene);
+invalidUsageScene.viewer.usageColors.colors.PRIV = '#bad';
+assert.equal(isSavedScene(invalidUsageScene), false, 'Invalid saved usage colors are rejected');
 const appearanceScene = structuredClone(scene);
 appearanceScene.viewer.modelAppearance = structuredClone(overriddenView.modelAppearance);
 assert.equal(isSavedScene(appearanceScene), true);
@@ -625,6 +659,9 @@ assert.equal(isSavedScene(invalidMultiple), false, 'Invalid saved multiple selec
 const persisted = new Map();
 const storage = { getItem: key => persisted.get(key) ?? null, setItem: (key, value) => persisted.set(key, value) };
 const scenes = new SavedSceneStore(storage, 'project-A');
+const usageStore = new SavedSceneStore(storage, 'usage-project');
+usageStore.save(0, usageScene);
+assert.deepEqual(new SavedSceneStore(storage, 'usage-project').get(0).viewer.usageColors, usageSettings);
 const appearancePersistence = new SavedSceneStore(storage, 'appearance-project');
 appearanceScene.viewer.modelAppearance = structuredClone(overriddenView.modelAppearance);
 appearancePersistence.save(0, appearanceScene);
@@ -911,3 +948,52 @@ for (const mesh of elevationMeshes.slice(1)) assert.equal(mesh.visible, true, 'E
 elevationViewer.setLayerVisible(1, false);
 assert.equal(elevationMeshes[1].visible, false, 'REP still obeys its layer visibility');
 console.log('REP elevation tests passed: group, usage, standalone layer, bounds, missing CSV and independent visibility.');
+
+// Exercise the actual layer controls using a minimal DOM, without WebGL.
+const { mountLayerPanel } = await import(await moduleUrl(resolve(root, 'src/ui/LayerPanel.ts')));
+const fakeElement = () => ({
+  children: [], style: {}, dataset: {}, attributes: {}, hidden: false,
+  append(...items) { this.children.push(...items); },
+  replaceChildren() { this.children = []; },
+  setAttribute(key, value) { this.attributes[key] = value; },
+  querySelectorAll() { return this.children; },
+  after(element) { this.next = element; },
+});
+const previousDocument = globalThis.document;
+globalThis.document = { createElement: fakeElement, createTextNode: text => ({ textContent: text }) };
+const selectors = Object.fromEntries(['selection-modes', 'layer-list', 'layer-summary', 'hide-unchecked',
+  'exclude-uncovered', 'exclude-parking', 'marked-summary', 'marked-efficiency', 'area-exclusions',
+  'show-layers', 'hide-layers'].map(id => [`#${id}`, fakeElement()]));
+const buttons = ['name', 'use', 'group'].map(mode => Object.assign(fakeElement(), { dataset: { mode } }));
+selectors['#selection-modes'].append(...buttons);
+const colorChanges = [];
+const panel = mountLayerPanel({ querySelector: selector => selectors[selector] }, viewer.getLayers(), () => {}, () => {}, {
+  onModeChange() {}, onHideUncheckedChange() {}, onToggleMany() {}, onAreaExclusionsChange() {},
+  onUsageColorsChange: settings => colorChanges.push(settings),
+});
+const toggleLabel = selectors['#selection-modes'].next;
+assert.equal(toggleLabel.hidden, true);
+buttons[1].onclick();
+assert.equal(toggleLabel.hidden, false, 'Color switch appears in Uso');
+const toggle = toggleLabel.children[0];
+assert.equal(toggle.checked, false);
+toggle.checked = true;
+toggle.onchange();
+const coloredRow = selectors['#layer-list'].children.find(row => row.className === 'usage-color-row');
+const colorInput = coloredRow.children[1];
+assert.equal(colorInput.type, 'color');
+colorInput.value = '#112233';
+colorInput.oninput();
+assert.ok(Object.values(colorChanges.at(-1).colors).includes('#112233'), 'Picker updates the palette');
+assert.equal(colorChanges.at(-1).enabled, true);
+buttons[2].onclick();
+assert.equal(toggleLabel.hidden, true, 'Switch hides outside Uso');
+const callbacksBeforeRestore = colorChanges.length;
+panel.restore('use', false, { excludeUncovered: false, excludeParking: false }, usageSettings);
+assert.equal(toggle.checked, true);
+assert.equal(colorChanges.length, callbacksBeforeRestore, 'Scene restore does not emit changes');
+panel.restore('use', false, { excludeUncovered: false, excludeParking: false });
+assert.equal(toggle.checked, false, 'Old scenes restore the switch as off');
+assert.ok(selectors['#layer-list'].children.every(row => row.className !== 'usage-color-row'));
+globalThis.document = previousDocument;
+console.log('Usage color controls passed: mode, toggle, pickers, callbacks and scene restoration.');

@@ -374,7 +374,7 @@ export function createApp(mount: HTMLElement): AppElements {
       }
       onSolarPathVisibility(scene.viewer.solar?.pathVisible ?? false);
       presentationSettings.setSectionLineSettings(scene.viewer.sectionLines ?? DEFAULT_SECTION_LINES);
-      layerPanel?.restore(scene.viewer.selectionMode, scene.viewer.hideUnchecked, scene.areaExclusions);
+      layerPanel?.restore(scene.viewer.selectionMode, scene.viewer.hideUnchecked, scene.areaExclusions, scene.viewer.usageColors);
       elevationControl?.setRange(...scene.viewer.elevation);
       usageFilter.hidden = scene.viewer.selectionMode !== 'name' || !usageFilter.childElementCount;
     },
