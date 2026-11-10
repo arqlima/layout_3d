@@ -629,10 +629,36 @@ incompatible.layers[0].name = 'different-model-layer';
 const beforeIncompatible = viewer.captureState();
 assert.throws(() => viewer.restoreState(incompatible));
 assert.deepEqual(viewer.captureState(), beforeIncompatible, 'incompatible scenes do not alter the current view');
+const updatedModelScene = structuredClone(savedView);
+updatedModelScene.layers = [savedView.layers[2], { ...savedView.layers[0], visible: false }, { name: 'removed-layer', visible: false }];
+updatedModelScene.selected = { id: 'deleted-object', index: 0 };
+updatedModelScene.selectedObjects = [{ id: 'deleted-object', index: 0 }, { id: null, index: 1 }];
+viewer.restoreState(updatedModelScene, true);
+assert.equal(viewer.getLayers()[0].visible, false, 'Updated models match layer visibility by name');
+assert.equal(viewer.getLayers()[1].visible, beforeIncompatible.layers[1].visible, 'New layers retain their current visibility');
+assert.equal(viewer.selectedObjects.size, 0, 'Updated models never select unrelated objects by old indices');
+assert.ok(viewer.camera.position.distanceTo(new THREE.Vector3(...updatedModelScene.camera.position)) < 1e-9, 'Camera survives layer changes');
+viewer.restoreState(savedView);
 
 const { SavedSceneStore, isSavedScene, SCENE_COUNT } = await import(await moduleUrl(resolve(root, 'src/data/savedScenes.ts')));
 const scene = { version: 1, viewer: savedView, areaExclusions: { excludeUncovered: true, excludeParking: false } };
 assert.equal(isSavedScene(scene), true);
+const { projectSceneKey } = await import(await moduleUrl(resolve(root, 'src/data/projectSceneStorage.ts')));
+const oldSceneKey = 'layout3d:scenes:v1:' + JSON.stringify(['/project/1/data/', '/old-model.3dm']);
+const otherSceneKey = 'layout3d:scenes:v1:' + JSON.stringify(['/project/2/data/', '/other.3dm']);
+const legacyData = new Map([[oldSceneKey, JSON.stringify([scene])], [otherSceneKey, JSON.stringify([scene])]]);
+const migrationStorage = {
+  get length() { return legacyData.size; }, key: index => [...legacyData.keys()][index],
+  getItem: key => legacyData.get(key) ?? null, setItem: (key, value) => legacyData.set(key, value),
+};
+const stableKey = projectSceneKey(migrationStorage, '/project/1/data/', '/new-model.3dm');
+const migrated = new SavedSceneStore(migrationStorage, stableKey).get(0);
+assert.deepEqual(migrated.viewer.camera, scene.viewer.camera, 'Old version scenes are recovered');
+assert.equal(migrated.viewer.modelRevision, '/old-model.3dm');
+assert.equal(projectSceneKey(migrationStorage, '/project/1/data/', '/third.3dm'), stableKey);
+assert.equal(projectSceneKey(migrationStorage, '/project/3/data/', '/new-model.3dm') === stableKey, false);
+assert.ok(legacyData.has(oldSceneKey), 'Migration preserves legacy data');
+assert.equal(new SavedSceneStore(migrationStorage, projectSceneKey(migrationStorage, '/project/3/data/', '/new-model.3dm')).get(0), null);
 const usageScene = { ...structuredClone(scene), viewer: usageView };
 assert.equal(isSavedScene(usageScene), true);
 const invalidUsageScene = structuredClone(usageScene);

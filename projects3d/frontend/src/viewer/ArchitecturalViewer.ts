@@ -481,8 +481,8 @@ export class ArchitecturalViewer {
     };
   }
 
-  restoreState(state: ViewerSnapshot): void {
-    if (state.layers.length !== this.layers.length || state.layers.some((layer, index) => layer.name !== this.layers[index].name)) {
+  restoreState(state: ViewerSnapshot, adaptToUpdatedModel = false): void {
+    if (!adaptToUpdatedModel && (state.layers.length !== this.layers.length || state.layers.some((layer, index) => layer.name !== this.layers[index].name))) {
       throw new Error('A cena salva pertence a uma versão diferente das layers deste modelo.');
     }
     this.setAnnualExposureVisible(false);
@@ -503,7 +503,11 @@ export class ArchitecturalViewer {
     this.setSectionLineSettings(state.sectionLines ?? DEFAULT_SECTION_LINES);
     this.selectedObject = null;
     this.selectedObjects = null;
-    state.layers.forEach((layer, index) => { this.layers[index].visible = layer.visible; });
+    const savedLayers = new Map(state.layers.map(layer => [layer.name, layer.visible]));
+    this.layers.forEach(layer => {
+      const visible = savedLayers.get(layer.name);
+      if (visible !== undefined) layer.visible = visible;
+    });
     this.selectionMode = state.selectionMode;
     this.activeUsages = new Set(state.activeUsages);
     this.hideUnchecked = state.hideUnchecked;
@@ -516,7 +520,7 @@ export class ArchitecturalViewer {
       for (const saved of savedSelection) {
         const entry = saved.id
           ? this.selectionEntries.find(entry => !entry.object.userData.isEdgeHelper && entry.objectId === saved.id)
-          : this.selectionEntries[saved.index];
+          : adaptToUpdatedModel ? undefined : this.selectionEntries[saved.index];
         if (entry && !entry.object.userData.isEdgeHelper && this.isVisible(entry.object)) {
           this.selectedObjects.add(entry.object);
           this.selectedObject = entry.object;

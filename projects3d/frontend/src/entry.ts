@@ -114,9 +114,9 @@ async function start(): Promise<void> {
     }
     updateUsageTotals();
     mountSceneToolbar(ui.sceneToolbar, `layout3d:scenes:v1:${JSON.stringify([projectConfig.objectDataUrl, projectConfig.modelUrl])}`,
-      () => ({ version: 1, viewer: viewer.captureState(), areaExclusions: { ...areaExclusions } }),
+      () => ({ version: 1, viewer: { ...viewer.captureState(), modelRevision: projectConfig.modelUrl! }, areaExclusions: { ...areaExclusions } }),
       async scene => {
-        viewer.restoreState(scene.viewer);
+        viewer.restoreState(scene.viewer, scene.viewer.modelRevision !== projectConfig.modelUrl);
         selectionMode = scene.viewer.selectionMode;
         areaExclusions = { ...scene.areaExclusions };
         viewer.setAreaExclusions(areaExclusions);
@@ -124,6 +124,7 @@ async function start(): Promise<void> {
         updateUsageTotals();
         if (scene.viewer.annualExposure) await ui.restoreAnnualExposure();
       },
+      { url: projectConfig.objectDataUrl, modelUrl: projectConfig.modelUrl },
     );
   } catch (error: unknown) {
     console.warn('Não foi possível carregar o modelo.', error);

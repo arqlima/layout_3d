@@ -1,12 +1,14 @@
 import type { SavedScene } from '../types/scenes';
 import { SavedSceneStore, SCENE_COUNT } from '../data/savedScenes';
+import { projectSceneKey } from '../data/projectSceneStorage';
 
 export function mountSceneToolbar(
   host: HTMLElement, key: string, capture: () => SavedScene, restore: (scene: SavedScene) => void | Promise<void>,
+  project?: { url: string; modelUrl: string | null },
 ): void {
   let storage: Storage | null = null;
   try { storage = window.localStorage; } catch { /* O navegador pode bloquear a persistência. */ }
-  const store = new SavedSceneStore(storage, key);
+  const store = new SavedSceneStore(storage, project ? projectSceneKey(storage, project.url, project.modelUrl) : key);
   const slots = host.querySelector<HTMLElement>('.scene-slots')!;
   const update = host.querySelector<HTMLButtonElement>('#update-scene')!;
   const status = host.querySelector<HTMLElement>('.scene-feedback')!;

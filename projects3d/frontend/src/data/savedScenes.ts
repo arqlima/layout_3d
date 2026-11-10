@@ -14,6 +14,7 @@ export function isSavedScene(value: unknown): value is SavedScene {
   const camera = state?.camera;
   const vector = (value: unknown) => Array.isArray(value) && value.length === 3 && value.every(Number.isFinite);
   if (scene.version !== 1 || !state || !camera || !scene.areaExclusions) return false;
+  if (state.modelRevision !== undefined && typeof state.modelRevision !== 'string') return false;
   if (state.usageColors !== undefined && !isUsageColorSettings(state.usageColors)) return false;
   if (state.modelAppearance !== undefined && !isModelAppearanceSettings(state.modelAppearance)) return false;
   if (state.annualExposure !== undefined && typeof state.annualExposure !== 'boolean') return false;
@@ -50,7 +51,7 @@ export function isSavedScene(value: unknown): value is SavedScene {
   return typeof scene.areaExclusions.excludeUncovered === 'boolean' && typeof scene.areaExclusions.excludeParking === 'boolean';
 }
 
-/** Armazenamento separado por projeto/modelo; nenhuma cena é aplicada automaticamente. */
+/** Armazenamento separado por projeto; nenhuma cena é aplicada automaticamente. */
 export class SavedSceneStore {
   private readonly scenes: Array<SavedScene | null> = Array(SCENE_COUNT).fill(null);
   active: number | null = null;
