@@ -113,7 +113,7 @@ async function start(): Promise<void> {
       usageFilter = ui.setUsageFilter((active) => { viewer.setActiveUsages(active); updateUsageTotals(); });
     }
     updateUsageTotals();
-    mountSceneToolbar(ui.sceneToolbar, `layout3d:scenes:v1:${JSON.stringify([projectConfig.objectDataUrl, projectConfig.modelUrl])}`,
+    imageExport.setScenes(mountSceneToolbar(ui.sceneToolbar, `layout3d:scenes:v1:${JSON.stringify([projectConfig.objectDataUrl, projectConfig.modelUrl])}`,
       () => ({ version: 1, viewer: { ...viewer.captureState(), modelRevision: projectConfig.modelUrl! }, areaExclusions: { ...areaExclusions } }),
       async scene => {
         viewer.restoreState(scene.viewer, scene.viewer.modelRevision !== projectConfig.modelUrl);
@@ -125,7 +125,7 @@ async function start(): Promise<void> {
         if (scene.viewer.annualExposure) await ui.restoreAnnualExposure();
       },
       { url: projectConfig.objectDataUrl, modelUrl: projectConfig.modelUrl },
-    );
+    ));
   } catch (error: unknown) {
     console.warn('Não foi possível carregar o modelo.', error);
     ui.setSceneInfo(projectConfig.name, 'Falha no modelo · cena demonstrativa', 'DEMONSTRAÇÃO');

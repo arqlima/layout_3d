@@ -43,6 +43,7 @@ export interface ViewerSnapshot {
 
 export interface SavedScene {
   version: 1;
+  name?: string;
   viewer: ViewerSnapshot;
   areaExclusions: AreaExclusions;
 }

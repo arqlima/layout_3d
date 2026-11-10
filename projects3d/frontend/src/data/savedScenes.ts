@@ -10,6 +10,7 @@ export const SCENE_COUNT = 10;
 export function isSavedScene(value: unknown): value is SavedScene {
   if (!value || typeof value !== 'object') return false;
   const scene = value as SavedScene;
+  if (scene.name !== undefined && (typeof scene.name !== 'string' || scene.name.length > 40)) return false;
   const state = scene.viewer;
   const camera = state?.camera;
   const vector = (value: unknown) => Array.isArray(value) && value.length === 3 && value.every(Number.isFinite);
@@ -83,6 +84,7 @@ export class SavedSceneStore {
 
   update(scene: SavedScene): boolean {
     if (this.active === null) throw new Error('Selecione uma cena antes de atualizar.');
-    return this.save(this.active, scene);
+    const name = scene.name ?? this.get(this.active)?.name;
+    return this.save(this.active, name === undefined ? scene : { ...scene, name });
   }
 }

@@ -145,6 +145,7 @@ export function createApp(mount: HTMLElement): AppElements {
             <div id="scene-toolbar" class="viewer-toolbar" role="toolbar" aria-label="Vistas e cenas salvas">
               <button id="fit-view" type="button" class="scene-shortcut scene-navigation" title="Enquadrar toda a cena" aria-label="Enquadrar toda a cena">${iconMarkup('maximize')}</button>
               <button id="home-view" type="button" class="scene-shortcut scene-navigation" title="Vista inicial" aria-label="Vista inicial">${iconMarkup('home')}</button>
+              <input class="scene-name" type="text" maxlength="40" placeholder="Nome da cena" aria-label="Nome da cena para salvar ou atualizar" title="Digite o nome e clique em um espaço vazio para salvar, ou em Atualizar para substituir a cena aberta" />
               <div class="scene-slots" role="group" aria-label="Cenas de 1 a 10"></div>
               <button id="update-scene" type="button" class="scene-shortcut scene-update" title="Selecione uma cena para atualizar" aria-label="Selecione uma cena para atualizar" disabled>${iconMarkup('refresh')}</button>
               <div class="scene-export-actions"><span class="scene-feedback" role="status" aria-live="polite"></span><button id="export-view" class="image-export-button" type="button" disabled>${iconMarkup('printer')} Imprimir</button></div>

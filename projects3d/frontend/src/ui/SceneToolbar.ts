@@ -2,23 +2,31 @@ import type { SavedScene } from '../types/scenes';
 import { SavedSceneStore, SCENE_COUNT } from '../data/savedScenes';
 import { projectSceneKey } from '../data/projectSceneStorage';
 
+export interface ScenePrintSource {
+  list(): Array<{ index: number; name: string }>;
+  visit(indices: number[], capture: (name: string) => Promise<void>): Promise<void>;
+}
+
 export function mountSceneToolbar(
   host: HTMLElement, key: string, capture: () => SavedScene, restore: (scene: SavedScene) => void | Promise<void>,
   project?: { url: string; modelUrl: string | null },
-): void {
+): ScenePrintSource {
   let storage: Storage | null = null;
   try { storage = window.localStorage; } catch { /* O navegador pode bloquear a persistência. */ }
   const store = new SavedSceneStore(storage, project ? projectSceneKey(storage, project.url, project.modelUrl) : key);
   const slots = host.querySelector<HTMLElement>('.scene-slots')!;
   const update = host.querySelector<HTMLButtonElement>('#update-scene')!;
   const status = host.querySelector<HTMLElement>('.scene-feedback')!;
+  const name = host.querySelector<HTMLInputElement>('.scene-name');
   const buttons: HTMLButtonElement[] = [];
   let busy = false;
   slots.replaceChildren();
   const render = () => {
     buttons.forEach((button, index) => {
-      const saved = store.get(index) !== null;
-      const label = saved ? `Abrir cena ${index + 1}` : `Salvar visualização atual na cena ${index + 1}`;
+      const scene = store.get(index);
+      const saved = scene !== null;
+      button.textContent = scene?.name || String(index + 1);
+      const label = saved ? `Abrir cena ${index + 1}${scene?.name ? `: ${scene.name}` : ''}` : `Salvar visualização atual na cena ${index + 1}`;
       button.title = label;
       button.setAttribute('aria-label', label);
       button.setAttribute('aria-pressed', String(store.active === index));
@@ -26,6 +34,10 @@ export function mountSceneToolbar(
       button.disabled = busy;
     });
     update.disabled = busy || store.active === null;
+    if (name) {
+      name.disabled = busy;
+      if (!busy && store.active !== null) name.value = store.get(store.active)?.name ?? '';
+    }
     const label = store.active === null ? 'Selecione uma cena para atualizar' : `Atualizar cena ${store.active + 1} com a visualização atual`;
     update.title = label;
     update.setAttribute('aria-label', label);
@@ -50,7 +62,7 @@ export function mountSceneToolbar(
           await restore(scene);
           store.active = index;
           feedback(`Cena ${index + 1} aberta`);
-        } else feedback(`Cena ${index + 1} salva`, store.save(index, capture()));
+        } else feedback(`Cena ${index + 1} salva`, store.save(index, { ...capture(), name: name?.value.trim().slice(0, 40) || undefined }));
       } catch (error) { feedback(error instanceof Error ? error.message : 'Não foi possível abrir a cena.'); }
       finally { busy = false; render(); }
     };
@@ -60,10 +72,49 @@ export function mountSceneToolbar(
   update.onclick = () => {
     if (busy) return;
     try {
-      const persistent = store.update(capture());
+      const scene = capture();
+      const persistent = store.update(name ? { ...scene, name: name.value.trim().slice(0, 40) } : scene);
       feedback(`Cena ${store.active! + 1} atualizada`, persistent);
       render();
     } catch (error) { feedback(error instanceof Error ? error.message : 'Não foi possível atualizar a cena.'); }
   };
   render();
+  return {
+    list: () => buttons.flatMap((_, index) => {
+      const scene = store.get(index);
+      return scene ? [{ index, name: scene.name || `Cena ${index + 1}` }] : [];
+    }),
+    async visit(indices, captureImage) {
+      if (busy) throw new Error('Aguarde a abertura da cena atual.');
+      const scenes = [...new Set(indices)].map(index => {
+        const scene = store.get(index);
+        if (!scene) throw new Error('Selecione apenas cenas salvas.');
+        return { scene, label: scene.name || `Cena ${index + 1}` };
+      });
+      if (!scenes.length) throw new Error('Selecione pelo menos uma cena salva.');
+      const original = capture();
+      const active = store.active;
+      const draftName = name?.value;
+      store.active = null;
+      busy = true;
+      render();
+      try {
+        for (const { scene, label } of scenes) {
+          feedback(`Preparando ${label}…`);
+          await restore(scene);
+          await captureImage(label);
+        }
+      } finally {
+        let restored = false;
+        try { await restore(original); restored = true; }
+        finally {
+          store.active = restored ? active : null;
+          busy = false; render();
+          if (name && draftName !== undefined) name.value = draftName;
+          if (restored) feedback('Visualização atual recuperada');
+          else feedback('Não foi possível recuperar a visualização atual. Abra uma cena salva para continuar.');
+        }
+      }
+    },
+  };
 }
