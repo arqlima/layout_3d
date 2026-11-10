@@ -118,7 +118,7 @@ export function mountSolarPanel(container: HTMLElement, location?: { latitude: n
       exposureToggle.checked = true;
       exposureLegend.hidden = false;
       container.querySelector<HTMLElement>('#solar-exposure-max')!.textContent = `${Math.round(result.maxHours).toLocaleString('pt-BR')} h/ano`;
-      exposureStatus.textContent = `${result.year} · ${result.points.toLocaleString('pt-BR')} amostras · Azul: menos sol; vermelho: mais sol.${result.skipped ? ` ${result.skipped} objeto(s) sem suporte foram ignorados.` : ''}`;
+      exposureStatus.textContent = `${result.year} · ${result.points.toLocaleString('pt-BR')} amostras · Azul: menos sol; vermelho: mais sol.${result.reducedDetail ? ' Detalhe reduzido automaticamente para concluir o cálculo. Pequenos detalhes e limites de sombra podem ficar menos definidos.' : ''}${result.skipped ? ` ${result.skipped} objeto(s) sem suporte foram ignorados.` : ''}`;
     } catch (error) {
       if (revision === exposureRevision) exposureStatus.textContent = error instanceof Error && error.name !== 'AbortError' ? error.message : 'Cálculo cancelado.';
       throw error;

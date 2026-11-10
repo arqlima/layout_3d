@@ -32,11 +32,15 @@ efetiva de amostras depende da geometria e aparece no painel. Calculam-se horas
 de sol nos vértices, com cache separado por posição e normal da face.
 Assim, fachadas e coberturas que compartilham uma quina mantêm seus próprios
 valores. A quantidade é limitada a 25 mil amostras e 250 mil triângulos de
-visualização; modelos mais complexos pedem simplificação.
+visualização. Ao exceder esses limites, a amostragem é agrupada por posição,
+orientação aproximada e profundidade, e as subdivisões adicionais são
+limitadas. Todas as faces originais continuam cobertas; o painel informa
+quando reduz o detalhe. Veja [amostragem adaptativa](annual-exposure-adaptive.md).
 
 O gradiente interpola o valor escalar dentro de cada triângulo subdividido e
 aplica a escala azul/ciano/verde/amarelo/vermelho por fragmento. Não mistura
-resultados entre faces com normais diferentes. A suavização é de apresentação:
+resultados entre orientações diferentes no modo completo; no modo reduzido,
+orientações próximas podem compartilhar uma amostra. A suavização é de apresentação:
 não aumenta a precisão do cálculo. Sombras estreitas ainda podem não ser
 representadas pela resolução espacial/temporal adotada.
 

@@ -22,7 +22,20 @@ assert.equal(adaptive.root.children[0].geometry.getAttribute('position').count, 
   'Adaptive sampling still covers every original triangle');
 const denseValues = adaptive.root.children[0].geometry.getAttribute('exposure');
 for (let i = 0; i < denseValues.count; i++) assert.ok(denseValues.getX(i) > .99, 'Open surfaces keep their sunlight values');
-adaptive.dispose(); dense.geometry.dispose();
+const thinRoof = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), material);
+thinRoof.rotation.x = -Math.PI / 2; thinRoof.position.y = .001;
+await adaptive.calculate([{ object: dense, material }, { object: thinRoof, material }], settings,
+  new AbortController().signal, () => {}, 100);
+const adaptivePositions = adaptive.root.children[0].geometry.getAttribute('position');
+const adaptiveValues = adaptive.root.children[0].geometry.getAttribute('exposure');
+for (let i = 0; i < adaptiveValues.count; i++) {
+  assert.ok(adaptivePositions.getY(i) < .0005 ? adaptiveValues.getX(i) < .01 : adaptiveValues.getX(i) > .99,
+    'Reduced detail separates a shaded floor from a sunny roof at nearly the same height');
+}
+const adaptiveCancel = new AbortController();
+await assert.rejects(adaptive.calculate([{ object: dense, material }], settings, adaptiveCancel.signal,
+  percent => { if (percent >= 5) adaptiveCancel.abort(); }, 100), { name: 'AbortError' });
+adaptive.dispose(); dense.geometry.dispose(); thinRoof.geometry.dispose();
 const ground = new THREE.Mesh(new THREE.PlaneGeometry(10, 10), material);
 ground.rotation.x = -Math.PI / 2;
 const input = object => ({ object, material });
@@ -32,6 +45,7 @@ const result = await exposure.calculate([input(ground)], settings, new AbortCont
 assert.equal(progress, 100);
 assert.equal(result.year, '2026');
 assert.ok(result.points > 0);
+assert.equal(result.reducedDetail, false, 'Simple meshes retain full detail');
 assert.ok(exposure.root.children[0] instanceof THREE.Mesh, 'Exposure is a continuous surface mesh instead of points');
 assert.ok(exposure.root.children[0].geometry.getAttribute('position').count > ground.geometry.getAttribute('position').count, 'Large surfaces are subdivided to resolve shadow gradients');
 assert.equal(exposure.root.children[0].material.transparent, false, 'Heatmap fully replaces the original surface colors');
@@ -39,6 +53,16 @@ assert.ok(exposure.root.children[0].renderOrder > ground.renderOrder, 'Heatmap r
 const sunnyValues = exposure.root.children[0].geometry.getAttribute('exposure');
 for (let index = 0; index < sunnyValues.count; index++) assert.ok(sunnyValues.getX(index) > .99, 'Open upward surfaces receive all sampled sunlight');
 assert.equal(ground.material, material, 'Calculation preserves model materials');
+const highDensity = await exposure.calculate([input(ground)], settings, new AbortController().signal, () => {}, 500000);
+assert.equal(highDensity.reducedDetail, true, 'Excessive subdivision requests reduce detail instead of failing');
+const limitedPositions = exposure.root.children[0].geometry.getAttribute('position');
+assert.ok(limitedPositions.count <= 250000 * 3, 'Overlay subdivision respects the triangle budget');
+assert.ok(highDensity.points <= 25000);
+let coveredArea = 0;
+for (let i = 0; i < limitedPositions.count; i += 3) {
+  coveredArea += new THREE.Triangle(...[0, 1, 2].map(corner => new THREE.Vector3().fromBufferAttribute(limitedPositions, i + corner))).getArea();
+}
+assert.ok(Math.abs(coveredArea - 100) < .001, 'The subdivision budget does not drop any part of the original surface');
 const roof = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), material);
 roof.rotation.x = -Math.PI / 2;
 roof.position.y = .001;
@@ -87,4 +111,4 @@ const glass = new THREE.MeshBasicMaterial({ transparent: true, opacity: .5 });
 await assert.rejects(exposure.calculate([{ object: ground, material: glass }], settings, new AbortController().signal, () => {}), /superfícies opacas/);
 exposure.dispose();
 assert.equal(exposure.root.children.length, 0);
-console.log('Annual exposure tests passed: weighted sunlight, real shadow occlusion, area sampling, material preservation, cancellation, empty/transparent models and cleanup.');
+console.log('Annual exposure tests passed: adaptive sampling above 25,000 vertices, full surface coverage, thin roof/floor separation, unchanged simple meshes, sunlight, shadows, cancellation and cleanup.');

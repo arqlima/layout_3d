@@ -91,11 +91,12 @@ locked.panel.restore({ ...solarSaved, settings: { ...solarSaved.settings, latitu
 assert.equal(locked.panel.settings().latitude, -20, 'Saved scenes retain the authoritative KMZ location');
 assert.equal(locked.panel.settings().longitude, -54);
 assert.equal(mount().panel.settings().latitude, -20.4697, 'Legacy projects retain the existing fallback');
-manual.panel.onExposureCalculate(async progress => { progress(50); return { year: '2026', points: 1500, maxHours: 4300, skipped: 0 }; });
+manual.panel.onExposureCalculate(async progress => { progress(50); return { year: '2026', points: 1500, maxHours: 4300, skipped: 0, reducedDetail: true }; });
 await manual.elements['#solar-exposure-calculate'].action();
 assert.equal(manual.panel.exposureVisible(), true, 'Completed calculation activates the map');
 assert.equal(manual.elements['#solar-exposure-legend'].hidden, false);
 assert.match(manual.elements['#solar-exposure-status'].textContent, /2026/);
+assert.match(manual.elements['#solar-exposure-status'].textContent, /Detalhe reduzido automaticamente/, 'The panel explains adaptive sampling');
 manual.panel.invalidateExposure();
 assert.equal(manual.panel.exposureVisible(), false, 'Changed parameters invalidate displayed results');
 assert.equal(manual.elements['#solar-exposure-map'].disabled, true);
