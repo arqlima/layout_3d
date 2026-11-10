@@ -17,12 +17,20 @@ async function moduleUrl(path) {
 }
 const { mountSceneToolbar } = await import(await moduleUrl(resolve(import.meta.dirname, '../src/ui/SceneToolbar.ts')));
 const { defaultSolarSettings } = await import(await moduleUrl(resolve(import.meta.dirname, '../src/data/solar.ts')));
+const { SavedSceneStore, isSavedScene } = await import(await moduleUrl(resolve(import.meta.dirname, '../src/data/savedScenes.ts')));
 const scene = { version: 1, areaExclusions: { excludeUncovered: false, excludeParking: false }, viewer: {
   annualExposure: true, solar: { settings: defaultSolarSettings(), pathVisible: true, scale: 50, opacity: 12 },
   camera: { projection: 'perspective', position: [10, 10, 10], up: [0, 1, 0], target: [0, 0, 0], zoom: 1, near: .1, far: 1000, orthographicHeight: 10, maxDistance: 1000, label: 'PERSPECTIVA' },
   layers: [], elevation: [null, null], selectionMode: 'name', activeUsages: [], hideUnchecked: false, selected: null,
 } };
 const data = new Map();
+const storage = { getItem: key => data.get(key) ?? null, setItem: (key, value) => data.set(key, value) };
+const named = new SavedSceneStore(storage, 'names');
+named.save(0, { ...scene, name: 'persp1' });
+named.update(scene);
+assert.equal(new SavedSceneStore(storage, 'names').get(0).name, 'persp1', 'Updating a view preserves its name');
+assert.equal(isSavedScene({ ...scene, name: 42 }), false);
+assert.equal(isSavedScene(scene), true, 'Legacy scenes remain valid');
 globalThis.window = { localStorage: { getItem: key => data.get(key) ?? null, setItem: (key, value) => data.set(key, value) } };
 const element = () => ({ classList: { toggle() {} }, setAttribute() {}, disabled: false });
 globalThis.document = { createElement: element };
