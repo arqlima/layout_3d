@@ -11,6 +11,18 @@ const { AnnualExposure } = await import(`data:text/javascript;base64,${Buffer.fr
 const settings = { exposure: 0.8, shadowIntensity: 80, sunIntensity: 120,
   latitude: 0, longitude: 0, utcOffset: 0, date: '2026-11-04', minutes: 900, northAngle: 0 };
 const material = new THREE.MeshBasicMaterial({ color: '#ffffff' });
+// Existing mesh vertices alone exceed the old 25,000 point ceiling.
+const dense = new THREE.Mesh(new THREE.PlaneGeometry(10, 10, 160, 160), material);
+dense.rotation.x = -Math.PI / 2;
+const adaptive = new AnnualExposure();
+const denseResult = await adaptive.calculate([{ object: dense, material }], settings, new AbortController().signal, () => {}, 100);
+assert.ok(denseResult.points > 0 && denseResult.points <= 25000, 'Complex meshes respect the sample budget');
+assert.equal(denseResult.reducedDetail, true, 'Reduced detail is reported to the panel');
+assert.equal(adaptive.root.children[0].geometry.getAttribute('position').count, dense.geometry.index.count,
+  'Adaptive sampling still covers every original triangle');
+const denseValues = adaptive.root.children[0].geometry.getAttribute('exposure');
+for (let i = 0; i < denseValues.count; i++) assert.ok(denseValues.getX(i) > .99, 'Open surfaces keep their sunlight values');
+adaptive.dispose(); dense.geometry.dispose();
 const ground = new THREE.Mesh(new THREE.PlaneGeometry(10, 10), material);
 ground.rotation.x = -Math.PI / 2;
 const input = object => ({ object, material });
