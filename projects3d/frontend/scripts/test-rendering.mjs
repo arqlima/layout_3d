@@ -32,3 +32,31 @@ for (let i = 0; i < 8; i++) tick();
 assert.equal(settling, 0); assert.equal(frames.size, 0, 'Damping continues then stops');
 damping.dispose();
 console.log('Rendering scheduler tests passed: idle, coalescing, damping, pause, resume and disposal.');
+
+const THREE = await import('three');
+const { exportScenePng } = await import('../src/viewer/exportImage.ts');
+const scene = new THREE.Scene();
+const sun = new THREE.DirectionalLight(); sun.castShadow = true;
+sun.shadow.autoUpdate = false; sun.shadow.needsUpdate = false;
+scene.add(sun);
+const content = new THREE.Group(); scene.add(content);
+const reference = { outputColorSpace: THREE.SRGBColorSpace, toneMapping: THREE.ACESFilmicToneMapping,
+  toneMappingExposure: 1.5, shadowMap: { enabled: true, type: THREE.PCFShadowMap } };
+let shouldFail = false;
+const makeRenderer = () => ({
+  capabilities: { maxTextureSize: 8192 }, shadowMap: {},
+  getContext: () => ({ MAX_VIEWPORT_DIMS: 1, MAX_RENDERBUFFER_SIZE: 2, getParameter: key => key === 1 ? [8192, 8192] : 8192 }),
+  setPixelRatio() {}, setSize() {}, setClearColor() {}, dispose() {}, forceContextLoss() {},
+  render() { assert.equal(sun.shadow.autoUpdate, true, 'A separate export context must generate its own shadows');
+    if (shouldFail) throw new Error('export failed'); },
+  domElement: { toBlob(callback) { callback(new Blob(['png'])); } },
+});
+await exportScenePng(scene, new THREE.PerspectiveCamera(), content, reference,
+  { width: 800, height: 600 }, { longestEdge: 1024, transparent: true }, makeRenderer);
+assert.equal(sun.shadow.autoUpdate, false, 'Restore the live shadow policy');
+assert.equal(sun.shadow.needsUpdate, true, 'Refresh the live shadow after using a different renderer');
+sun.shadow.needsUpdate = false; shouldFail = true;
+await assert.rejects(exportScenePng(scene, new THREE.PerspectiveCamera(), content, reference,
+  { width: 800, height: 600 }, { longestEdge: 1024, transparent: false }, makeRenderer), /export failed/);
+assert.equal(sun.shadow.autoUpdate, false); assert.equal(sun.shadow.needsUpdate, true);
+console.log('Shadow export tests passed: separate context, restoration and failure recovery.');

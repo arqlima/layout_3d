@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RenderScheduler } from './RenderScheduler';
 import type { LayerInfo } from '../types/layers';
 import { matchingLayers, parseLayerName, layerLabel, isRepLayer, type SelectionMode } from '../data/layerSelection';
 import { USAGE_CODES, DEFAULT_USAGES, type AreaExclusions, type MarkedObject, type ObjectRecord, type ObjectSelection, type UsageCode } from '../types/model';
@@ -81,6 +82,7 @@ export class ArchitecturalViewer {
   private projectionMode: ProjectionMode = 'perspective';
   private viewLabel = 'PERSPECTIVA';
   private lastViewState = '';
+  private shadowProjectionKey = '';
   private content: THREE.Object3D | null = null;
   private layers: LayerInfo[] = [];
   private readonly originalVisibility = new Map<THREE.Object3D, boolean>();
@@ -103,7 +105,7 @@ export class ArchitecturalViewer {
   private excludeParking = false;
   private activeUsages = new Set<UsageCode>(DEFAULT_USAGES);
   private pointerStart: { id: number; x: number; y: number } | null = null;
-  private frameId = 0;
+  private renderScheduler: RenderScheduler | null = null;
   private measurement: MeasurementTool | null = null;
   private section: SectionState | null = null;
   private sectionTool: SectionTool | null = null;
@@ -128,11 +130,14 @@ export class ArchitecturalViewer {
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.5;
+    this.requestRender = this.requestRender.bind(this);
+    this.renderScheduler = new RenderScheduler(this.render);
     this.container.append(this.renderer.domElement);
     this.renderer.domElement.addEventListener('pointerdown', this.onPointerDown);
     this.renderer.domElement.addEventListener('pointerup', this.onPointerUp);
     this.renderer.domElement.addEventListener('pointercancel', this.onPointerCancel);
     window.addEventListener('keydown', this.onKeyDown);
+    document.addEventListener('visibilitychange', this.onVisibilityChange);
 
     this.camera.position.set(16, 13, 20);
     this.controls = this.createControls(this.camera);
@@ -143,17 +148,16 @@ export class ArchitecturalViewer {
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(this.container);
     this.resize();
-    this.render();
+    this.onVisibilityChange();
   }
 
   setActive(active: boolean): void {
     this.active = active;
-    cancelAnimationFrame(this.frameId);
+    this.renderScheduler?.setActive(active && !document.hidden);
     if (!active) this.sectionTool?.cancelDrawing();
     if (!active) this.measurement?.setEnabled(false);
     if (active) {
       this.resize();
-      this.render();
     }
   }
 
@@ -161,6 +165,7 @@ export class ArchitecturalViewer {
     if (!/^#[\da-f]{6}$/i.test(color)) return;
     this.scene.background = new THREE.Color(color);
     if (this.scene.fog instanceof THREE.Fog) this.scene.fog.color.copy(this.scene.background);
+    this.requestRender();
   }
 
   /** Ponto de entrada para uma cena convertida a partir de um modelo Rhino. */
@@ -231,6 +236,7 @@ export class ArchitecturalViewer {
       this.scene.fog.near = Math.max(50, sphere.radius * 4);
       this.scene.fog.far = Math.max(120, sphere.radius * 10);
     }
+    this.requestRender();
   }
 
   setSolarSettings(settings: SolarSettings | null): void {
@@ -294,18 +300,21 @@ export class ArchitecturalViewer {
     if (this.solarPath.root.visible) {
       this.solarPath.update(this.solarSettings!, this.content ? new THREE.Box3().setFromObject(this.content) : new THREE.Box3());
     }
+    this.requestRender();
   }
 
   setSolarPathScale(percent: number): void {
     if (!Number.isFinite(percent) || percent < 5 || percent > 200) return;
     this.solarPathScale = percent;
     this.solarPath?.setScale(percent);
+    this.requestRender();
   }
 
   setSolarPathOpacity(percent: number): void {
     if (!Number.isFinite(percent) || percent < 0 || percent > 100) return;
     this.solarPathOpacity = percent;
     this.solarPath?.setOpacity(percent);
+    this.requestRender();
   }
 
   onAnnualExposureInvalidated(callback: () => void): void { this.exposureInvalidated = callback; }
@@ -334,10 +343,12 @@ export class ArchitecturalViewer {
           && !isRepLayer(entry.layerIndex === null ? entry.object.name : this.layers[entry.layerIndex].name),
       }));
     this.annualExposure.root.visible = false;
+    this.requestRender();
     try {
       const result = await this.annualExposure.calculate(sources, { ...this.solarSettings }, controller.signal, progress);
       controller.signal.throwIfAborted();
       this.annualExposure.root.visible = true;
+      this.requestRender();
       return result;
     } finally {
       if (this.exposureAbort === controller) this.exposureAbort = null;
@@ -347,6 +358,7 @@ export class ArchitecturalViewer {
   setAnnualExposureVisible(visible: boolean): void {
     if (!visible) this.exposureAbort?.abort();
     if (this.annualExposure) this.annualExposure.root.visible = visible && this.exposureKey === this.annualExposureKey();
+    this.requestRender();
   }
 
   private prepareModelShadows(model: THREE.Object3D): void {
@@ -360,6 +372,9 @@ export class ArchitecturalViewer {
   }
 
   private configureSunShadow(size: number): void {
+    const key = JSON.stringify([size, ...this.sun.position.toArray(), ...this.sun.target.position.toArray(), this.sun.shadow.mapSize.x]);
+    if (key === this.shadowProjectionKey) return;
+    this.shadowProjectionKey = key;
     const camera = this.sun.shadow.camera;
     camera.left = camera.bottom = -size;
     camera.right = camera.top = size;
@@ -437,7 +452,8 @@ export class ArchitecturalViewer {
     if (!this.content) return Promise.reject(new Error('Carregue o modelo antes de exportar.'));
     if (this.exposureAbort) return Promise.reject(new Error('Aguarde o cálculo do mapa de exposição terminar antes de exportar.'));
     return exportScenePng(this.scene, this.camera, this.content, this.renderer,
-      { width: this.container.clientWidth, height: this.container.clientHeight }, options);
+      { width: this.container.clientWidth, height: this.container.clientHeight }, options)
+      .finally(() => this.requestRender());
   }
 
   captureState(): ViewerSnapshot {
@@ -760,6 +776,7 @@ export class ArchitecturalViewer {
         if (child instanceof LineSegments2) applySectionOutlineSettings(child, settings);
       }
     }
+    this.requestRender();
   }
 
   /** A visual section only: never alters source model geometry or project quantities. */
@@ -838,6 +855,7 @@ export class ArchitecturalViewer {
       this.controls.enableRotate = state.mode === '3d';
     }
     this.sectionTool?.setState(this.section, openCount, unsupportedCount);
+    this.invalidateShadows();
   }
 
   private syncSectionAppearance(): void {
@@ -871,13 +889,15 @@ export class ArchitecturalViewer {
     this.solarPath?.dispose();
     this.sectionTool?.dispose();
     this.measurement?.dispose();
-    cancelAnimationFrame(this.frameId);
+    this.renderScheduler?.dispose();
+    this.renderScheduler = null;
     this.resizeObserver.disconnect();
     this.controls.dispose();
     this.renderer.domElement.removeEventListener('pointerdown', this.onPointerDown);
     this.renderer.domElement.removeEventListener('pointerup', this.onPointerUp);
     this.renderer.domElement.removeEventListener('pointercancel', this.onPointerCancel);
     window.removeEventListener('keydown', this.onKeyDown);
+    document.removeEventListener('visibilitychange', this.onVisibilityChange);
     this.clearSelection();
     this.clearSelectionEntries();
     const geometries = new Set<THREE.BufferGeometry>();
@@ -907,6 +927,7 @@ export class ArchitecturalViewer {
       this.camera.right = -this.camera.left;
     }
     this.camera.updateProjectionMatrix();
+    this.requestRender();
   }
 
   private createControls(camera: THREE.Camera): OrbitControls {
@@ -920,6 +941,7 @@ export class ArchitecturalViewer {
     controls.minZoom = 0.1;
     controls.maxZoom = 30;
     controls.maxPolarAngle = Math.PI;
+    controls.addEventListener('change', this.requestRender);
     return controls;
   }
 
@@ -938,6 +960,7 @@ export class ArchitecturalViewer {
     this.fitToContent();
     this.controls.saveState();
     this.emitViewState();
+    this.requestRender();
   }
 
   private emitViewState(): void {
@@ -1012,6 +1035,7 @@ export class ArchitecturalViewer {
         this.notifySelection();
       }
     }
+    this.invalidateShadows();
   }
 
   private prepareSelection(content: THREE.Object3D, objectData?: Map<string, ObjectRecord>): void {
@@ -1173,7 +1197,10 @@ export class ArchitecturalViewer {
     const selectedObjects = this.selectedObjects;
     const selectedIds = new Set(this.selectionEntries.filter(entry => selectedObjects?.has(entry.object) && entry.objectId).map(entry => entry.objectId));
     const allUsages = DEFAULT_USAGES.every(code => this.activeUsages.has(code));
+    let shadowsChanged = false;
     for (const entry of this.selectionEntries) {
+      const wasVisible = entry.object.visible;
+      const castShadow = entry.object.castShadow;
       const checked = entry.layerIndex === null || this.layers[entry.layerIndex]?.visible !== false;
       const highlighted = checked && (entry.use === null ? allUsages : this.activeUsages.has(entry.use))
         && (this.selectionMode !== 'name' || selectedObjects == null
@@ -1189,6 +1216,7 @@ export class ArchitecturalViewer {
       entry.object.material = visuallyHighlighted || (rep && !excluded) ? entry.original : entry.muted;
       const solarMesh = this.solarSettings && entry.object instanceof THREE.Mesh;
       entry.object.castShadow = visuallyHighlighted && entry.castShadow;
+      shadowsChanged ||= wasVisible !== entry.object.visible || castShadow !== entry.object.castShadow;
       entry.object.receiveShadow = entry.receiveShadow;
       if (solarMesh) {
         entry.object.material = Array.isArray(entry.object.material)
@@ -1215,6 +1243,8 @@ export class ArchitecturalViewer {
       }
     }
     this.syncSectionAppearance();
+    if (shadowsChanged) this.invalidateShadows();
+    else this.requestRender();
   }
 
   private readonly onPointerDown = (event: PointerEvent): void => {
@@ -1319,8 +1349,19 @@ export class ArchitecturalViewer {
     return bounds;
   }
 
+  private requestRender(): void { this.renderScheduler?.invalidate(); }
+
+  private invalidateShadows(): void {
+    // The camera does not affect this directional light's shadow projection.
+    if (this.sun) this.sun.shadow.needsUpdate = true;
+    this.requestRender();
+  }
+
+  private readonly onVisibilityChange = (): void => {
+    this.renderScheduler?.setActive(this.active && !document.hidden);
+  };
+
   private render = (): void => {
-    this.frameId = requestAnimationFrame(this.render);
     this.controls.update();
     this.emitViewState();
     this.measurement?.update();
@@ -1334,6 +1375,7 @@ export class ArchitecturalViewer {
     const sun = this.sun;
     sun.position.set(-12, 22, 14);
     sun.castShadow = true;
+    sun.shadow.autoUpdate = false;
     const resolution = Math.min(4096, this.renderer.capabilities.maxTextureSize);
     sun.shadow.mapSize.set(resolution, resolution);
     sun.shadow.radius = 1.5;

@@ -67,12 +67,21 @@ export async function exportScenePng(
     const helpers = scene.children.filter(child => child !== content && !(child instanceof THREE.Light)
       && child.userData.includeInImageExport !== true);
     const helperVisibility = helpers.map(child => child.visible);
+    const shadows: Array<{ shadow: THREE.LightShadow; autoUpdate: boolean }> = [];
+    scene.traverse(object => {
+      if (object instanceof THREE.DirectionalLight || object instanceof THREE.SpotLight || object instanceof THREE.PointLight) {
+        shadows.push({ shadow: object.shadow, autoUpdate: object.shadow.autoUpdate });
+      }
+    });
     try {
+      // Export owns another WebGL context, even when the live shadow is cached.
+      shadows.forEach(({ shadow }) => { shadow.autoUpdate = true; });
       if (options.transparent) { scene.background = null; scene.fog = null; }
       // O piso artificial de sombras não pertence ao modelo enviado.
       helpers.forEach(child => { child.visible = false; });
       renderer.render(scene, exportCamera);
     } finally {
+      shadows.forEach(({ shadow, autoUpdate }) => { shadow.autoUpdate = autoUpdate; shadow.needsUpdate = true; });
       scene.background = background;
       scene.fog = fog;
       helpers.forEach((child, index) => { child.visible = helperVisibility[index]; });

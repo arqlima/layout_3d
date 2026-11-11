@@ -320,5 +320,9 @@ continua disponível. A seleção volta a funcionar no Estudo de massa.
 Testes adicionais: `node scripts/test-solar.mjs` e `node scripts/test-north.mjs`
 em `projects3d/frontend`.
 
-Para testar a sele??o sem precisar de um contexto WebGL, use Node.js 22.13+
-e execute `pnpm test` em `projects3d/frontend`.
+Para executar todos os testes frontend sem precisar de um contexto WebGL, use Node.js 22.13+
+e execute `pnpm test` em `projects3d/frontend` (`npm.cmd test` também funciona no PowerShell).
+
+O visualizador renderiza sob demanda e reutiliza as sombras durante a navegação da câmera.
+O ponto de restauração, os benchmarks e a validação das etapas 1 e 2 estão documentados em
+[docs/optimization-stages-1-2.md](docs/optimization-stages-1-2.md).

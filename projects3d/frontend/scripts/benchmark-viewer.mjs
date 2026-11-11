@@ -1,5 +1,6 @@
 // Local synthetic scenes only: no database, uploads or browser user profile are read.
-import { spawn } from 'node:child_process';
+import { spawn, execFileSync } from 'node:child_process';
+import assert from 'node:assert/strict';
 import { mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
@@ -13,6 +14,7 @@ const page = `<!doctype html><html><body style="margin:0"><div id="viewport" sty
 <script type="module">
 import * as THREE from 'three';
 import { ArchitecturalViewer } from '/src/viewer/ArchitecturalViewer.ts';
+import { snapVertex } from '/src/viewer/measurement.ts';
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 const nextFrame = () => new Promise(resolve => requestAnimationFrame(resolve));
 window.measureScene = async count => {
@@ -56,16 +58,87 @@ window.measureScene = async count => {
   const context = viewer.renderer.getContext();
   const extension = context.getExtension('WEBGL_debug_renderer_info');
   const gpu = extension ? context.getParameter(extension.UNMASKED_RENDERER_WEBGL) : 'unavailable';
+  const measurementStart = performance.now();
+  for (let i = 0; i < 30; i++) snapVertex(new THREE.Raycaster(), model.children, viewer.camera, 480 + i % 5, 320, 960, 640);
+  const measurement30PicksMs = +(performance.now() - measurementStart).toFixed(2);
+  viewer.setSolarSettings({ exposure: .8, shadowIntensity: 80, sunIntensity: 120, latitude: -20,
+    longitude: -54, utcOffset: -4, date: '2026-11-11', minutes: 720, northAngle: 0 });
+  await wait(100);
+  const annualStart = performance.now();
+  const annual = await viewer.calculateAnnualExposure(() => {});
+  const annualExposureMs = +(performance.now() - annualStart).toFixed(2);
   const result = { objects: count, triangles: count * 12, firstViewMs: +firstViewMs.toFixed(2), gpu,
-    idle, orbit, background, appearance, hidden, idleAfterResume };
+    idle, orbit, background, appearance, hidden, idleAfterResume,
+    measurement30PicksMs, annualExposureMs, annualSamples: annual.points };
   viewer.dispose();
   return result;
 };
 window.benchmarkReady = true;
+window.verifyViewer = async () => {
+  const check = (condition, label) => { if (!condition) throw new Error(label); };
+  const viewer = new ArchitecturalViewer(document.getElementById('viewport'));
+  viewer.controls.enableDamping = false;
+  const model = new THREE.Group();
+  model.userData.layers = [{ name: '00-Box-PRIV' }, { name: '01-Box-COM' }];
+  const records = new Map();
+  let frames = 0, shadowDraws = 0;
+  const render = viewer.renderer.render.bind(viewer.renderer);
+  viewer.renderer.render = (...args) => { frames++; render(...args); };
+  for (let i = 0; i < 2; i++) {
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2), new THREE.MeshStandardMaterial({ color: '#ccaa88' }));
+    mesh.position.set(i * 3, 1 + i * 3, 0);
+    mesh.userData.attributes = { layerIndex: i };
+    mesh.userData.objectId = mesh.uuid;
+    mesh.onBeforeShadow = () => shadowDraws++;
+    records.set(mesh.uuid, { id: mesh.uuid, areaM2: 4, elevationM: i * 3, use: i ? 'COM' : 'PRIV' });
+    model.add(mesh);
+  }
+  viewer.setContent(model, records); await wait(200);
+  const checks = [];
+  const edit = async (label, action, shadow) => {
+    frames = shadowDraws = 0;
+    await action(); await wait(180);
+    check(frames > 0, label + ': missing render');
+    check(shadow ? shadowDraws > 0 : shadowDraws === 0, label + ': shadow cache');
+    checks.push(label);
+  };
+  await edit('background', () => viewer.setBackgroundColor('#aabbcc'), false);
+  await edit('camera', () => viewer.setStandardView('front'), false);
+  viewer.controls.enableDamping = false;
+  await edit('model color', () => viewer.setModelAppearance({ overrideColor: true, color: '#ff0000', overrideEdges: false, edgeColor: '#000000' }), false);
+  const solar = { exposure: .8, shadowIntensity: 80, sunIntensity: 120, latitude: -20,
+    longitude: -54, utcOffset: -4, date: '2026-11-11', minutes: 720, northAngle: 0 };
+  await edit('sun direction', () => viewer.setSolarSettings(solar), true);
+  await edit('exposure only', () => viewer.setSolarSettings({ ...solar, exposure: 1.2 }), false);
+  await edit('solar path', () => viewer.setSolarPathVisible(true), false);
+  await edit('path scale', () => viewer.setSolarPathScale(75), false);
+  await edit('path opacity', () => viewer.setSolarPathOpacity(40), false);
+  await edit('hide layer', () => viewer.setLayerVisible(1, false), true);
+  await edit('restore layer', () => viewer.setLayerVisible(1, true), true);
+  await edit('elevation', () => viewer.setElevationRange(0, 0), true);
+  await edit('restore elevation', () => viewer.setElevationRange(0, 3), true);
+  const state = viewer.captureState();
+  await edit('section', () => viewer.setSection({ axis: 'x', coordinate: 0, side: 1, mode: 'orthographic' }, false), true);
+  await edit('section lines', () => viewer.setSectionLineSettings({ visible: true, color: '#ff0000', width: 2 }), false);
+  await edit('restore scene', () => viewer.restoreState(state), true);
+  viewer.controls.enableDamping = false; viewer.controls.update(); await wait(200);
+  const exported = await viewer.exportImage({ longestEdge: 1024, transparent: false });
+  check(exported.blob.size > 0, 'PNG export'); await wait(200); checks.push('PNG export');
+  await edit('annual map', () => viewer.calculateAnnualExposure(() => {}), false);
+  await edit('hide annual map', () => viewer.setAnnualExposureVisible(false), false);
+  frames = 0; await wait(250); check(frames === 0, 'idle after edits'); checks.push('idle after edits');
+  viewer.dispose(); await wait(100);
+  return checks;
+};
 </script></body></html>`;
 
 const server = await createServer({ root, configFile: false, server: { host: '127.0.0.1', port: 0 },
-  plugins: [{ name: 'local-benchmark', configureServer(server) {
+  plugins: [{ name: 'restore-reference-source', enforce: 'pre', load(id) {
+    if (!process.argv.includes('--reference')) return null;
+    const relative = id.replaceAll('\\', '/').split('/projects3d/frontend/')[1];
+    if (!['src/viewer/ArchitecturalViewer.ts', 'src/viewer/exportImage.ts'].includes(relative)) return null;
+    return execFileSync('git', ['show', 'pre-optimization-2026-11-11:projects3d/frontend/' + relative], { cwd: root, encoding: 'utf8', windowsHide: true });
+  } }, { name: 'local-benchmark', configureServer(server) {
     server.middlewares.use('/benchmark.html', async (_request, response, next) => {
       try {
         response.setHeader('Content-Type', 'text/html');
@@ -125,8 +198,21 @@ try {
     results.push(await evaluate(`window.measureScene(${count})`));
     console.log(JSON.stringify(results.at(-1)));
   }
+  let checks;
+  if (process.argv.includes('--verify')) {
+    for (const result of results) {
+      assert.equal(result.idle.frames, 0, 'Idle view must stop rendering');
+      assert.ok(result.orbit.frames > 0, 'Camera motion must render');
+      assert.equal(result.orbit.shadowDraws, 0, 'Camera motion reuses shadows');
+      assert.equal(result.hidden.frames, 0, 'Hidden view must stop rendering');
+      assert.equal(result.idleAfterResume.frames, 0, 'Resumed view settles');
+    }
+    checks = await evaluate('window.verifyViewer()');
+    console.log('Browser integration checks passed: ' + checks.join(', '));
+  }
   if (process.argv[2]) await writeFile(resolve(process.argv[2]), JSON.stringify({ recordedAt: new Date().toISOString(),
-    viewport: [960, 640], note: 'Synthetic scenes; submission timings are CPU-side, not GPU duration or process utilization.', results }, null, 2));
+    viewport: [960, 640], revision: process.argv.includes('--reference') ? 'pre-optimization-2026-11-11' : 'working-tree',
+    note: 'Synthetic scenes; submission timings are CPU-side, not GPU duration or process utilization.', results, checks }, null, 2));
   await send('Browser.close');
 } finally {
   socket?.close(); browser?.kill(); await server.close();
