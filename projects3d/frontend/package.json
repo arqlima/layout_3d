@@ -4,7 +4,8 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "test": "node scripts/test-selection.mjs",
+    "test": "node scripts/test-all.mjs",
+    "benchmark": "node scripts/benchmark-viewer.mjs",
     "test:build": "node --experimental-vm-modules scripts/test-build.mjs",
     "build": "node scripts/stage-vendor.mjs && tsc --noEmit && vite build"
   },

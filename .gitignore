@@ -15,3 +15,6 @@ media/
 projects3d/frontend/public/
 novo_estilo/
 
+# Local restoration archives contain database and private uploads.
+.backups/
+
