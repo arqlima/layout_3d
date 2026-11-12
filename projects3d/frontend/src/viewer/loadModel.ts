@@ -2,9 +2,9 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { loadRhinoModel } from './rhinoModel';
 
-export async function loadModel(url: string, libraryUrl: string): Promise<THREE.Object3D> {
+export async function loadModel(url: string, libraryUrl: string, options: { withEdges?: boolean } = {}): Promise<THREE.Object3D> {
   if (new URL(url, location.href).pathname.toLowerCase().endsWith('.3dm')) {
-    return loadRhinoModel(url, libraryUrl);
+    return loadRhinoModel(url, libraryUrl, options);
   }
   const { scene } = await new GLTFLoader().loadAsync(url);
   scene.updateMatrixWorld(true);

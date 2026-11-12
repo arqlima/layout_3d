@@ -1,9 +1,9 @@
 from django.urls import reverse, reverse_lazy
 from projects3d.forms import ProjectCreateForm, ProjectUpdateForm
-from projects3d.models import Project
+from projects3d.models import Project, ProjectImage
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import JsonResponse, FileResponse
+from django.http import JsonResponse, FileResponse, Http404, HttpResponseNotModified
 from django.middleware.csrf import get_token
 from django.views import View
 import io
@@ -19,6 +19,8 @@ from django.views.generic import FormView
 from projects3d.forms import ProjectFolderForm
 from projects3d.folder_import import save_folder
 from projects3d.viewer_assets import viewer_asset_url
+from projects3d.image_previews import PREVIEW_SIZES, image_revision, image_preview_url, open_image_preview
+from PIL import Image
 
 logger = logging.getLogger(__name__)
 
@@ -66,9 +68,10 @@ class ProjectDetailView(LoginRequiredMixin,DetailView):
             'editUrl': reverse('projects3d:project-update', args=[project.pk]),
             'importUrl': reverse('projects3d:project-folder-update', args=[project.pk]),
             'coverUrl': project.cover_image.url if project.cover_image else None,
+            'coverPreviewUrl': image_preview_url(project.pk, project.cover_image, 'cover'),
             'summary': project.summary_data,
             'guidelines': project.guidelines_data,
-            'images': [{'url': image.image.url, 'name': image.original_name,
+            'images': [{'url': image.image.url, 'thumbnailUrl': image_preview_url(project.pk, image.image, 'thumbnail', image.pk), 'name': image.original_name,
                         'position': image.position} for image in project.images.all()],
         }
         return context
@@ -76,6 +79,29 @@ class ProjectDetailView(LoginRequiredMixin,DetailView):
 
 class ProjectOverviewView(ProjectDetailView):
     pass
+
+
+class ProjectImagePreviewView(LoginRequiredMixin, View):
+    def get(self, request, pk, revision, variant, image_pk=None):
+        if variant not in PREVIEW_SIZES:
+            raise Http404
+        if image_pk is None:
+            field = get_object_or_404(Project, pk=pk).cover_image
+        else:
+            field = get_object_or_404(ProjectImage, pk=image_pk, project_id=pk).image
+        if not field or image_revision(field) != revision:
+            raise Http404
+        headers = {'Cache-Control': 'private, max-age=86400', 'ETag': f'"preview-v1-{revision}-{variant}"'}
+        if request.headers.get('If-None-Match') == headers['ETag']:
+            return HttpResponseNotModified(headers=headers)
+        try:
+            preview = open_image_preview(field, variant)
+        except (OSError, ValueError, NotImplementedError, Image.DecompressionBombError):
+            logger.warning('Não foi possível gerar a prévia da imagem do projeto %s.', pk)
+            return redirect(field.url)
+        response = FileResponse(preview, content_type='image/webp', headers=headers)
+        response['X-Content-Type-Options'] = 'nosniff'
+        return response
 
 
 class ProjectSimulationExportView(LoginRequiredMixin, View):

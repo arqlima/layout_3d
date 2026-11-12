@@ -33,7 +33,7 @@ export function mountProjectPanels(mount: HTMLElement): void {
   const cover = mount.querySelector<HTMLElement>('#cover-panel')!;
   if (projectConfig.coverUrl) {
     const image = element('img', 'project-cover-art');
-    image.src = projectConfig.coverUrl;
+    image.src = projectConfig.coverPreviewUrl ?? projectConfig.coverUrl;
     image.alt = `Capa de ${projectConfig.name}`;
     image.fetchPriority = 'high';
     cover.append(image);
@@ -126,7 +126,7 @@ export function mountProjectPanels(mount: HTMLElement): void {
       button.setAttribute('aria-label', `Mostrar imagem ${index + 1} de ${projectConfig.images.length}`);
       button.setAttribute('aria-controls', mainImage.id);
       const image = element('img', '');
-      image.src = item.url;
+      image.src = item.thumbnailUrl ?? item.url;
       image.alt = '';
       image.loading = 'lazy';
       button.append(image);

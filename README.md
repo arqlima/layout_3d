@@ -326,3 +326,8 @@ e execute `pnpm test` em `projects3d/frontend` (`npm.cmd test` também funciona 
 O visualizador renderiza sob demanda e reutiliza as sombras durante a navegação da câmera.
 O ponto de restauração, os benchmarks e a validação das etapas 1 e 2 estão documentados em
 [docs/optimization-stages-1-2.md](docs/optimization-stages-1-2.md).
+
+A etapa 3 reutiliza buffers de arestas em geometrias compartilhadas, prepara as arestas
+ao abrir a vista 3D e libera recursos gráficos ao substituir ou encerrar visualizações.
+Capas e miniaturas usam prévias WebP com cache. Resultados, limites e ponto de restauração
+estão em [docs/optimization-stage-3.md](docs/optimization-stage-3.md).

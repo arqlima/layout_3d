@@ -1,5 +1,8 @@
 import * as THREE from 'three';
 import { Rhino3dmLoader } from 'three/addons/loaders/3DMLoader.js';
+import { addMeshEdges } from './meshEdges';
+
+const rhinoModels = new WeakSet<THREE.Object3D>();
 
 interface RhinoColor { r: number; g: number; b: number; a?: number }
 interface RhinoLayer { color?: RhinoColor }
@@ -46,53 +49,13 @@ export function applyLayerAppearance(model: THREE.Object3D): void {
   });
 }
 
-/** Contorna cada peça, sem desenhar as diagonais coplanares da malha. */
-function addMeshEdges(model: THREE.Object3D): void {
-  const meshes: THREE.Mesh[] = [];
-  model.traverse((object) => {
-    if (object instanceof THREE.Mesh) meshes.push(object);
-  });
-
-  const edgeMaterials = new Map<number, THREE.LineBasicMaterial>();
-  for (const mesh of meshes) {
-    const edgeGeometry = new THREE.EdgesGeometry(mesh.geometry, 25);
-    if (edgeGeometry.getAttribute('position').count === 0) {
-      edgeGeometry.dispose();
-      continue;
-    }
-
-    const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-    const meshOpacity = Math.min(...materials.map((material) => material.opacity));
-    const edgeOpacity = Math.round(meshOpacity * 75) / 100;
-    let edgeMaterial = edgeMaterials.get(edgeOpacity);
-    if (!edgeMaterial) {
-      edgeMaterial = new THREE.LineBasicMaterial({
-        color: '#3f4a4d',
-        transparent: true,
-        opacity: edgeOpacity,
-        depthTest: true,
-        depthWrite: false,
-        toneMapped: false,
-      });
-      edgeMaterials.set(edgeOpacity, edgeMaterial);
-    }
-
-    for (const material of materials) {
-      material.polygonOffset = true;
-      material.polygonOffsetFactor = 1;
-      material.polygonOffsetUnits = 1;
-    }
-
-    const edges = new THREE.LineSegments(edgeGeometry, edgeMaterial);
-    edges.name = `${mesh.name || 'Peça'} / arestas`;
-    edges.userData.isEdgeHelper = true;
-    edges.renderOrder = 1;
-    mesh.add(edges);
-  }
+/** Simulation can load the source model before the 3D view needs its edges. */
+export function prepareRhinoEdges(model: THREE.Object3D, progress?: (percent: number) => void): Promise<void> {
+  return rhinoModels.has(model) ? addMeshEdges(model, progress) : Promise.resolve();
 }
 
 /** Carrega o modelo Rhino do projeto selecionado no Django. */
-export async function loadRhinoModel(url: string, libraryUrl: string): Promise<THREE.Object3D> {
+export async function loadRhinoModel(url: string, libraryUrl: string, options: { withEdges?: boolean } = {}): Promise<THREE.Object3D> {
   const loader = new Rhino3dmLoader();
   loader.setLibraryPath(libraryUrl);
   loader.setWorkerLimit(2);
@@ -112,7 +75,8 @@ export async function loadRhinoModel(url: string, libraryUrl: string): Promise<T
     // Rhino3dmLoader usa branco para volumes sem material; a cor da layer
     // fornece a aparência de exibição e a transparência do material é preservada.
     applyLayerAppearance(model);
-    addMeshEdges(model);
+    rhinoModels.add(model);
+    if (options.withEdges !== false) await addMeshEdges(model);
 
     // O GUID original associa cada objeto à tabela de dados do projeto.
     model.traverse((object) => {

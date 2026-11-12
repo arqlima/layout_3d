@@ -11,7 +11,7 @@ export function loadProjectModel(): Promise<ProjectModel> {
     const { loadModel } = await import('../viewer/loadModel');
     let dataError = false;
     const [model, records] = await Promise.all([
-      loadModel(projectConfig.modelUrl, projectConfig.rhinoLibraryUrl),
+      loadModel(projectConfig.modelUrl, projectConfig.rhinoLibraryUrl, { withEdges: false }),
       loadObjectData().catch(error => {
         console.warn('Tabela de áreas indisponível.', error);
         dataError = true;

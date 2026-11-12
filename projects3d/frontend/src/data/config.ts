@@ -13,9 +13,10 @@ export interface ViewerConfig {
   editUrl: string;
   importUrl: string;
   coverUrl: string | null;
+  coverPreviewUrl?: string | null;
   summary: Array<{ label: string; value: string }>;
   guidelines: string[][];
-  images: Array<{ url: string; name: string; position: number }>;
+  images: Array<{ url: string; thumbnailUrl?: string; name: string; position: number }>;
 }
 
 const element = document.getElementById('viewer-config');

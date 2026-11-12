@@ -10,11 +10,29 @@ import { createServer } from 'vite';
 const root = fileURLToPath(new URL('..', import.meta.url));
 const browserPath = process.env.CHROME_PATH ?? 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const profile = await mkdtemp(resolve(tmpdir(), 'layout3d-benchmark-'));
+let rhinoFixture;
+if (process.argv.includes('--stage3')) {
+  const { default: rhino3dm } = await import('rhino3dm');
+  const rhino = await rhino3dm();
+  const document = new rhino.File3dm();
+  const layer = new rhino.Layer(); layer.name = '00-Synthetic-PRIV';
+  const layerIndex = document.layers().add(layer);
+  const mesh = new rhino.Mesh();
+  for (const vertex of [[0,0,0], [2,0,0], [2,2,0], [0,2,0], [0,0,2], [2,0,2], [2,2,2], [0,2,2]]) mesh.vertices().add(...vertex);
+  for (const face of [[0,3,2,1], [4,5,6,7], [0,1,5,4], [3,7,6,2], [0,4,7,3], [1,2,6,5]]) mesh.faces().addQuadFace(...face);
+  mesh.normals().computeNormals();
+  const attributes = new rhino.ObjectAttributes(); attributes.layerIndex = layerIndex;
+  document.objects().addMesh(mesh, attributes);
+  rhinoFixture = Buffer.from(document.toByteArray());
+  attributes.delete(); mesh.delete(); layer.delete(); document.delete();
+}
 const page = `<!doctype html><html><body style="margin:0"><div id="viewport" style="width:960px;height:640px"></div>
 <script type="module">
 import * as THREE from 'three';
 import { ArchitecturalViewer } from '/src/viewer/ArchitecturalViewer.ts';
 import { snapVertex } from '/src/viewer/measurement.ts';
+import { disposeObjectResources } from '/src/viewer/disposeResources.ts';
+import { loadRhinoModel, prepareRhinoEdges } from '/src/viewer/rhinoModel.ts';
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 const nextFrame = () => new Promise(resolve => requestAnimationFrame(resolve));
 window.measureScene = async count => {
@@ -130,6 +148,48 @@ window.verifyViewer = async () => {
   viewer.dispose(); await wait(100);
   return checks;
 };
+window.verifyStage3 = async () => {
+  const check = (condition, label) => { if (!condition) throw new Error(label); };
+  const model = await loadRhinoModel('/stage3-fixture.3dm', '/vendor/rhino3dm/', { withEdges: false });
+  const meshes = [];
+  model.traverse(object => { if (object instanceof THREE.Mesh) meshes.push(object); });
+  check(meshes.length === 1 && meshes[0].userData.objectId, 'Rhino source geometry and GUID');
+  check(meshes[0].children.length === 0, 'Deferred Rhino edges');
+  await prepareRhinoEdges(model);
+  await prepareRhinoEdges(model);
+  check(meshes[0].children.length === 1 && meshes[0].children[0].userData.isEdgeHelper, 'Rhino edges exactly once');
+  const immediate = await loadRhinoModel('/stage3-fixture.3dm', '/vendor/rhino3dm/');
+  let edgeCount = 0;
+  immediate.traverse(object => { if (object.userData.isEdgeHelper) edgeCount++; });
+  check(edgeCount === 1, 'Existing loader callers include edges');
+  disposeObjectResources(immediate);
+  const viewer = new ArchitecturalViewer(document.getElementById('viewport'));
+  const demo = new THREE.Group();
+  const texture = new THREE.DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1);
+  texture.needsUpdate = true;
+  const demoMesh = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial({ map: texture }));
+  demo.add(demoMesh);
+  let geometryDisposals = 0, textureDisposals = 0, sharedDisposals = 0;
+  demoMesh.geometry.addEventListener('dispose', () => geometryDisposals++);
+  texture.addEventListener('dispose', () => textureDisposals++);
+  meshes[0].geometry.addEventListener('dispose', () => sharedDisposals++);
+  viewer.setContent(demo); await wait(200);
+  viewer.setContent(model, undefined, { ownsResources: false }); await wait(200);
+  check(geometryDisposals === 1 && textureDisposals === 1, 'Owned scene resources released on replacement');
+  const originalMaterial = meshes[0].material;
+  viewer.setModelAppearance({ overrideColor: true, color: '#ff0000', overrideEdges: false, edgeColor: '#000000' });
+  viewer.setSection({ axis: 'x', coordinate: 0, side: 1, mode: 'orthographic' }, false);
+  await wait(200); viewer.dispose(); await wait(100);
+  check(viewer.renderer.getContext().isContextLost(), 'Disposed renderer releases its WebGL context');
+  check(sharedDisposals === 0 && meshes[0].material === originalMaterial, 'Borrowed model survives viewer disposal');
+  check(meshes[0].customDepthMaterial === undefined && meshes[0].children.length === 1, 'Viewer depth material and caps released');
+  const remounted = new ArchitecturalViewer(document.getElementById('viewport'));
+  remounted.setContent(model, undefined, { ownsResources: false }); await wait(200);
+  check(meshes[0].customDepthMaterial === remounted.shadowDepthMaterial, 'Remounted shadows use the new viewer');
+  remounted.dispose(); disposeObjectResources(model);
+  check(sharedDisposals === 1, 'Shared geometry released only by its owner');
+  return ['Rhino lazy edges', 'Rhino default loader', 'GUID preservation', 'owned replacement', 'shared disposal', 'WebGL context release', 'remount and shadows'];
+};
 </script></body></html>`;
 
 const server = await createServer({ root, configFile: false, server: { host: '127.0.0.1', port: 0 },
@@ -139,6 +199,10 @@ const server = await createServer({ root, configFile: false, server: { host: '12
     if (!['src/viewer/ArchitecturalViewer.ts', 'src/viewer/exportImage.ts'].includes(relative)) return null;
     return execFileSync('git', ['show', 'pre-optimization-2026-11-11:projects3d/frontend/' + relative], { cwd: root, encoding: 'utf8', windowsHide: true });
   } }, { name: 'local-benchmark', configureServer(server) {
+    server.middlewares.use('/stage3-fixture.3dm', (_request, response) => {
+      if (!rhinoFixture) { response.statusCode = 404; response.end(); return; }
+      response.setHeader('Content-Type', 'application/octet-stream'); response.end(rhinoFixture);
+    });
     server.middlewares.use('/benchmark.html', async (_request, response, next) => {
       try {
         response.setHeader('Content-Type', 'text/html');
@@ -210,9 +274,14 @@ try {
     checks = await evaluate('window.verifyViewer()');
     console.log('Browser integration checks passed: ' + checks.join(', '));
   }
+  let stage3Checks;
+  if (process.argv.includes('--stage3')) {
+    stage3Checks = await evaluate('window.verifyStage3()');
+    console.log('Stage 3 browser checks passed: ' + stage3Checks.join(', '));
+  }
   if (process.argv[2]) await writeFile(resolve(process.argv[2]), JSON.stringify({ recordedAt: new Date().toISOString(),
     viewport: [960, 640], revision: process.argv.includes('--reference') ? 'pre-optimization-2026-11-11' : 'working-tree',
-    note: 'Synthetic scenes; submission timings are CPU-side, not GPU duration or process utilization.', results, checks }, null, 2));
+    note: 'Synthetic scenes; submission timings are CPU-side, not GPU duration or process utilization.', results, checks, stage3Checks }, null, 2));
   await send('Browser.close');
 } finally {
   socket?.close(); browser?.kill(); await server.close();

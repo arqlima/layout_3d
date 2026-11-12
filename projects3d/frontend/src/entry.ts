@@ -74,7 +74,9 @@ async function start(): Promise<void> {
     if (dataError) showNotice('O modelo será exibido, mas a tabela de objetos não pôde ser carregada.');
     model.name = projectConfig.name;
     objectData = records;
-    viewer.setContent(model, records);
+    const { prepareRhinoEdges } = await import('./viewer/rhinoModel');
+    await prepareRhinoEdges(model, percent => ui.setSceneInfo(projectConfig.name, 'Preparando a visualização', `${percent}%`));
+    viewer.setContent(model, records, { ownsResources: false });
     ui.setInitialNorthAngle(readModelNorth(model));
     ui.setSceneInfo(projectConfig.name, 'Modelo do projeto', 'MODELO DO PROJETO');
     let usageFilter: ReturnType<typeof ui.setUsageFilter> | null = null;

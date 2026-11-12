@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RenderScheduler } from './RenderScheduler';
+import { disposeObjectResources } from './disposeResources';
 import type { LayerInfo } from '../types/layers';
 import { matchingLayers, parseLayerName, layerLabel, isRepLayer, type SelectionMode } from '../data/layerSelection';
 import { USAGE_CODES, DEFAULT_USAGES, type AreaExclusions, type MarkedObject, type ObjectRecord, type ObjectSelection, type UsageCode } from '../types/model';
@@ -84,6 +85,7 @@ export class ArchitecturalViewer {
   private lastViewState = '';
   private shadowProjectionKey = '';
   private content: THREE.Object3D | null = null;
+  private ownsContent = true;
   private layers: LayerInfo[] = [];
   private readonly originalVisibility = new Map<THREE.Object3D, boolean>();
   private readonly elevationEntries: ElevationEntry[] = [];
@@ -169,15 +171,19 @@ export class ArchitecturalViewer {
   }
 
   /** Ponto de entrada para uma cena convertida a partir de um modelo Rhino. */
-  setContent(content: THREE.Object3D, objectData?: Map<string, ObjectRecord>): void {
+  setContent(content: THREE.Object3D, objectData?: Map<string, ObjectRecord>, options: { ownsResources?: boolean } = {}): void {
     this.selectionHistory = [];
     this.beforeSectionDrawing = null;
     this.setSection(null, false);
     this.measurement?.setEnabled(false);
     this.clearSelection();
     this.clearSelectionEntries();
-    if (this.content) this.scene.remove(this.content);
+    if (this.content && this.content !== content) {
+      this.scene.remove(this.content);
+      if (this.ownsContent) disposeObjectResources(this.content, content);
+    }
     this.content = content;
+    this.ownsContent = options.ownsResources ?? true;
     this.activeUsages = new Set(DEFAULT_USAGES);
     this.readLayers(content);
     this.prepareModelShadows(content);
@@ -884,6 +890,7 @@ export class ArchitecturalViewer {
   }
 
   dispose(): void {
+    this.setSection(null, false);
     this.exposureAbort?.abort();
     this.annualExposure?.dispose();
     this.solarPath?.dispose();
@@ -900,19 +907,13 @@ export class ArchitecturalViewer {
     document.removeEventListener('visibilitychange', this.onVisibilityChange);
     this.clearSelection();
     this.clearSelectionEntries();
-    const geometries = new Set<THREE.BufferGeometry>();
-    const materials = new Set<THREE.Material>();
-    this.scene.traverse((object) => {
-      if (!(object instanceof THREE.Mesh || object instanceof THREE.Line || object instanceof THREE.Points)) return;
-      geometries.add(object.geometry);
-      const objectMaterials = Array.isArray(object.material) ? object.material : [object.material];
-      objectMaterials.forEach((material) => materials.add(material));
-    });
-    geometries.forEach((geometry) => geometry.dispose());
-    materials.forEach((material) => material.dispose());
+    const shared = this.ownsContent ? undefined : this.content ?? undefined;
+    shared?.removeFromParent();
+    disposeObjectResources(this.scene, shared);
     this.shadowDepthMaterial.dispose();
     this.sun.shadow.dispose();
     this.renderer.dispose();
+    this.renderer.forceContextLoss();
     this.renderer.domElement.remove();
   }
 
@@ -1083,6 +1084,15 @@ export class ArchitecturalViewer {
   }
 
   private clearSelectionEntries(): void {
+    for (const entry of this.selectionEntries) {
+      entry.object.material = entry.original;
+      entry.object.visible = entry.originalVisible;
+      entry.object.castShadow = entry.castShadow;
+      entry.object.receiveShadow = entry.receiveShadow;
+      if (entry.object instanceof THREE.Mesh && entry.object.customDepthMaterial === this.shadowDepthMaterial) {
+        entry.object.customDepthMaterial = undefined;
+      }
+    }
     this.usageMaterials?.forEach(appearance => appearance.clear());
     this.usageMaterials?.clear();
     this.modelAppearance?.clear();

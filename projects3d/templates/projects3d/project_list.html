@@ -30,7 +30,7 @@
   <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
     {% for project in projects %}
       <article class="au-project-card flex flex-col bg-white/60 border border-preto/10 p-6 transition-colors hover:border-verde/40">
-        {% if project.cover_image %}<a href="{% url 'projects3d:project-detail' project.pk %}"><img src="{{ project.cover_image.url }}" alt="Capa de {{ project.name }}" loading="lazy" class="w-full h-44 object-cover mb-5"></a>{% else %}<a href="{% url 'projects3d:project-detail' project.pk %}" class="au-project-placeholder" aria-label="Abrir {{ project.name }}">{% include "partials/_icon.html" with name="box" %}</a>{% endif %}
+        {% if project.cover_image %}<a href="{% url 'projects3d:project-detail' project.pk %}"><img src="{{ project.cover_thumbnail_url }}" alt="Capa de {{ project.name }}" loading="lazy" class="w-full h-44 object-cover mb-5"></a>{% else %}<a href="{% url 'projects3d:project-detail' project.pk %}" class="au-project-placeholder" aria-label="Abrir {{ project.name }}">{% include "partials/_icon.html" with name="box" %}</a>{% endif %}
         <h2 class="font-serifa text-2xl">{{ project.name }}</h2>
         <p class="mt-3 flex-1 text-sm text-preto/60">{{ project.description|default:"Sem descrição."|truncatewords:20 }}</p>
 

@@ -40,6 +40,11 @@ class Project(models.Model):
     def __str__(self):
         return self.name
 
+    @property
+    def cover_thumbnail_url(self):
+        from projects3d.image_previews import image_preview_url
+        return image_preview_url(self.pk, self.cover_image, 'card')
+
 
 class ProjectImage(models.Model):
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='images')

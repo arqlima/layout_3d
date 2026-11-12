@@ -16,7 +16,7 @@
     "name": "three.core"
   },
   "src/data/modelNorth.ts": {
-    "file": "chunks/modelNorth-85tyiehC.js",
+    "file": "chunks/modelNorth-SbDGQ5o8.js",
     "name": "modelNorth",
     "src": "src/data/modelNorth.ts",
     "isDynamicEntry": true,
@@ -26,7 +26,7 @@
     ]
   },
   "src/data/simulation.ts": {
-    "file": "chunks/simulation-Cje9yG6C.js",
+    "file": "chunks/simulation-DDMQAAPh.js",
     "name": "simulation",
     "src": "src/data/simulation.ts",
     "isDynamicEntry": true,
@@ -36,7 +36,7 @@
     ]
   },
   "src/entry.ts": {
-    "file": "viewer-Cz_3EyZv.js",
+    "file": "viewer-Bsxf6Ee4.js",
     "name": "entry",
     "src": "src/entry.ts",
     "isEntry": true,
@@ -45,6 +45,7 @@
       "src/viewer/ArchitecturalViewer.ts",
       "src/viewer/demoScene.ts",
       "src/data/modelNorth.ts",
+      "src/viewer/rhinoModel.ts",
       "src/ui/SimulationPanel.ts",
       "src/data/simulation.ts"
     ],
@@ -58,7 +59,7 @@
     ]
   },
   "src/ui/SimulationPanel.ts": {
-    "file": "chunks/SimulationPanel-DrhTuFLE.js",
+    "file": "chunks/SimulationPanel-CsVXCy4n.js",
     "name": "SimulationPanel",
     "src": "src/ui/SimulationPanel.ts",
     "isDynamicEntry": true,
@@ -68,7 +69,7 @@
     ]
   },
   "src/viewer/ArchitecturalViewer.ts": {
-    "file": "chunks/ArchitecturalViewer-DEZYgHxo.js",
+    "file": "chunks/ArchitecturalViewer-B5CFvkEi.js",
     "name": "ArchitecturalViewer",
     "src": "src/viewer/ArchitecturalViewer.ts",
     "isDynamicEntry": true,
@@ -87,9 +88,19 @@
     ]
   },
   "src/viewer/loadModel.ts": {
-    "file": "chunks/loadModel-BpRx0PyR.js",
+    "file": "chunks/loadModel-C73hKHDx.js",
     "name": "loadModel",
     "src": "src/viewer/loadModel.ts",
+    "isDynamicEntry": true,
+    "imports": [
+      "_three.core-BP0vW5Zf.js",
+      "src/viewer/rhinoModel.ts"
+    ]
+  },
+  "src/viewer/rhinoModel.ts": {
+    "file": "chunks/rhinoModel-DCeShqUt.js",
+    "name": "rhinoModel",
+    "src": "src/viewer/rhinoModel.ts",
     "isDynamicEntry": true,
     "imports": [
       "_three.core-BP0vW5Zf.js"
